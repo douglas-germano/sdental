@@ -99,7 +99,7 @@ class EvolutionService:
             logger.info('Auto-configuring webhook for %s: %s', self.instance_name, webhook_url)
             self.set_webhook(webhook_url)
         except Exception as e:
-            logger.error('Failed to auto-configure webhook: %s', str(e)))
+            logger.error('Failed to auto-configure webhook: %s', str(e))
 
 
     def send_message(self, phone: str, message: str) -> dict:
