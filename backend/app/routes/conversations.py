@@ -1,0 +1,150 @@
+from flask import Blueprint, request, jsonify
+
+from app import db
+from app.models import Conversation, BotTransfer, ConversationStatus
+from app.utils.auth import clinic_required
+
+bp = Blueprint('conversations', __name__, url_prefix='/api/conversations')
+
+
+@bp.route('', methods=['GET'])
+@clinic_required
+def list_conversations(current_clinic):
+    """List conversations with filters."""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    status = request.args.get('status')
+    needs_attention = request.args.get('needs_attention', type=bool)
+
+    query = Conversation.query.filter_by(clinic_id=current_clinic.id)
+
+    if status:
+        query = query.filter_by(status=status)
+
+    if needs_attention:
+        query = query.filter_by(status=ConversationStatus.TRANSFERRED_TO_HUMAN)
+
+    query = query.order_by(Conversation.last_message_at.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    return jsonify({
+        'conversations': [c.to_dict(include_messages=False) for c in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page,
+        'needs_attention_count': Conversation.query.filter_by(
+            clinic_id=current_clinic.id,
+            status=ConversationStatus.TRANSFERRED_TO_HUMAN
+        ).count()
+    })
+
+
+@bp.route('/<conversation_id>', methods=['GET'])
+@clinic_required
+def get_conversation(conversation_id, current_clinic):
+    """Get conversation details with full message history."""
+    conversation = Conversation.query.filter_by(
+        id=conversation_id,
+        clinic_id=current_clinic.id
+    ).first()
+
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    # Get bot transfers for this conversation
+    transfers = BotTransfer.query.filter_by(
+        conversation_id=conversation.id
+    ).order_by(BotTransfer.transferred_at.desc()).all()
+
+    data = conversation.to_dict(include_messages=True)
+    data['transfers'] = [t.to_dict() for t in transfers]
+
+    return jsonify(data)
+
+
+@bp.route('/<conversation_id>/transfer', methods=['POST'])
+@clinic_required
+def transfer_conversation(conversation_id, current_clinic):
+    """Transfer conversation to human (manual trigger)."""
+    conversation = Conversation.query.filter_by(
+        id=conversation_id,
+        clinic_id=current_clinic.id
+    ).first()
+
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    data = request.get_json()
+    reason = data.get('reason', 'Manual transfer by operator')
+
+    # Update conversation status
+    conversation.status = ConversationStatus.TRANSFERRED_TO_HUMAN
+
+    # Create transfer record
+    transfer = BotTransfer(
+        conversation_id=conversation.id,
+        reason=reason
+    )
+
+    db.session.add(transfer)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Conversation transferred to human',
+        'transfer': transfer.to_dict()
+    })
+
+
+@bp.route('/<conversation_id>/resolve', methods=['PUT'])
+@clinic_required
+def resolve_conversation(conversation_id, current_clinic):
+    """Mark conversation as resolved."""
+    conversation = Conversation.query.filter_by(
+        id=conversation_id,
+        clinic_id=current_clinic.id
+    ).first()
+
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    # Mark conversation as completed
+    conversation.status = ConversationStatus.COMPLETED
+
+    # Resolve any pending transfers
+    pending_transfers = BotTransfer.query.filter_by(
+        conversation_id=conversation.id,
+        resolved=False
+    ).all()
+
+    for transfer in pending_transfers:
+        transfer.resolve()
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Conversation resolved',
+        'conversation': conversation.to_dict(include_messages=False)
+    })
+
+
+@bp.route('/<conversation_id>/reactivate', methods=['PUT'])
+@clinic_required
+def reactivate_conversation(conversation_id, current_clinic):
+    """Reactivate a conversation (return to bot handling)."""
+    conversation = Conversation.query.filter_by(
+        id=conversation_id,
+        clinic_id=current_clinic.id
+    ).first()
+
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    conversation.status = ConversationStatus.ACTIVE
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Conversation reactivated',
+        'conversation': conversation.to_dict(include_messages=False)
+    })
