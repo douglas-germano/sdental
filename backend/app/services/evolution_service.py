@@ -21,9 +21,9 @@ class EvolutionService:
         
         # Ensure clinic has an instance name
         if not self.clinic.evolution_instance_name:
-            # Generate a consistent instance name: clinic_{short_uuid}
-            short_id = str(self.clinic.id)[:8]
-            self.clinic.evolution_instance_name = f"clinic_{short_id}"
+            # Use only the clinic ID as instance name
+            short_id = str(self.clinic.id).replace('-', '')[:12]
+            self.clinic.evolution_instance_name = short_id
             from app import db
             db.session.commit()
             
