@@ -39,6 +39,7 @@ class EvolutionService:
     def create_instance(self) -> dict:
         """
         Create a new WhatsApp instance for this clinic.
+        Automatically configures webhook after creation.
         """
         if not self.api_url or not self.api_key:
             return {'error': 'Evolution API not configured globally'}
@@ -65,14 +66,48 @@ class EvolutionService:
                 r_json = response.json()
                 # Check if it's "instance already exists" error
                 if "already in use" in str(r_json):
+                    logger.info('Instance %s already exists, configuring webhook', self.instance_name)
+                    # Configure webhook for existing instance
+                    self._auto_configure_webhook()
                     return {'status': 'exists', 'instance': self.instance_name}
                     
             response.raise_for_status()
             logger.info('Instance %s created', self.instance_name)
+            
+            # Automatically configure webhook for new instance
+            self._auto_configure_webhook()
+            
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error('Failed to create instance: %s', str(e))
             return {'error': str(e)}
+
+    def _auto_configure_webhook(self):
+        """
+        Automatically configure webhook for this instance.
+        Uses the current request context or falls back to environment.
+        """
+        try:
+            # Try to get the base URL from Flask request context
+            from flask import request
+            if request:
+                # Build webhook URL from current request
+                scheme = request.scheme
+                host = request.host
+                webhook_url = f"{scheme}://{host}/api/webhook/evolution"
+            else:
+                # Fallback: try to get from environment or config
+                base_url = current_app.config.get('BASE_URL')
+                if not base_url:
+                    logger.warning('No BASE_URL configured, skipping auto webhook setup')
+                    return
+                webhook_url = f"{base_url}/api/webhook/evolution"
+            
+            logger.info('Auto-configuring webhook for %s: %s', self.instance_name, webhook_url)
+            self.set_webhook(webhook_url)
+        except Exception as e:
+            logger.error('Failed to auto-configure webhook: %s', str(e))
+
 
     def send_message(self, phone: str, message: str) -> dict:
         """
