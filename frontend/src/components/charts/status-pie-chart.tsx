@@ -8,32 +8,32 @@ interface StatusPieChartProps {
 }
 
 const COLORS = {
-  completed: '#22c55e',
-  cancelled: '#ef4444',
-  no_shows: '#6b7280',
-  upcoming: '#3b82f6',
+  completed: 'hsl(160, 84%, 39%)',
+  cancelled: 'hsl(350, 89%, 60%)',
+  no_shows: 'hsl(var(--muted-foreground))',
+  upcoming: 'hsl(238, 84%, 67%)',
 }
 
 export function StatusPieChart({ overview }: StatusPieChartProps) {
   if (!overview) {
     return (
       <div className="h-[200px] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
       </div>
     )
   }
 
   const data = [
-    { name: 'Concluídos', value: overview.appointments.completed, color: COLORS.completed },
+    { name: 'Concluidos', value: overview.appointments.completed, color: COLORS.completed },
     { name: 'Cancelados', value: overview.appointments.cancelled, color: COLORS.cancelled },
     { name: 'Faltas', value: overview.appointments.no_shows, color: COLORS.no_shows },
-    { name: 'Próximos', value: overview.appointments.upcoming, color: COLORS.upcoming },
+    { name: 'Proximos', value: overview.appointments.upcoming, color: COLORS.upcoming },
   ].filter(item => item.value > 0)
 
   if (data.length === 0) {
     return (
       <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-        Nenhum dado disponível
+        Nenhum dado disponivel
       </div>
     )
   }
@@ -47,26 +47,27 @@ export function StatusPieChart({ overview }: StatusPieChartProps) {
           cy="50%"
           innerRadius={50}
           outerRadius={70}
-          paddingAngle={2}
+          paddingAngle={3}
           dataKey="value"
         >
           {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
+            <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
           ))}
         </Pie>
         <Tooltip
           formatter={(value: number) => [value, 'Agendamentos']}
           contentStyle={{
-            backgroundColor: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
+            backgroundColor: 'hsl(var(--background))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '12px',
             fontSize: '12px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
           }}
         />
         <Legend
           verticalAlign="bottom"
           height={36}
-          formatter={(value) => <span className="text-xs">{value}</span>}
+          formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
         />
       </PieChart>
     </ResponsiveContainer>

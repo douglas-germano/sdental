@@ -16,7 +16,7 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
   return (
     <div className="fixed inset-0 z-50">
       <div
-        className="fixed inset-0 bg-black/50"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
         onClick={() => onOpenChange?.(false)}
       />
       {children}
@@ -43,7 +43,9 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg',
+      'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg gap-4',
+      'border bg-background p-6 shadow-xl rounded-2xl',
+      'animate-scale-in',
       className
     )}
     {...props}
@@ -59,7 +61,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col space-y-1.5 text-center sm:text-left',
+      'flex flex-col space-y-2 text-center sm:text-left',
       className
     )}
     {...props}
@@ -73,7 +75,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
+      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-2 sm:gap-0 pt-4',
       className
     )}
     {...props}
@@ -88,7 +90,7 @@ const DialogTitle = React.forwardRef<
   <h2
     ref={ref}
     className={cn(
-      'text-lg font-semibold leading-none tracking-tight',
+      'text-xl font-semibold leading-none tracking-tight',
       className
     )}
     {...props}
@@ -115,7 +117,10 @@ const DialogClose = React.forwardRef<
   <button
     ref={ref}
     className={cn(
-      'absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none',
+      'absolute right-4 top-4 rounded-lg p-1.5 opacity-70 ring-offset-background transition-all duration-200',
+      'hover:opacity-100 hover:bg-muted',
+      'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+      'disabled:pointer-events-none',
       className
     )}
     {...props}

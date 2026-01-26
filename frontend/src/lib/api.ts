@@ -85,9 +85,6 @@ export const clinicsApi = {
   updateProfile: (data: { name?: string; phone?: string }) =>
     api.put('/clinics/profile', data),
 
-  updateProfile: (data: { name?: string; phone?: string }) =>
-    api.put('/clinics/profile', data),
-
   createEvolutionInstance: () => api.post('/clinics/evolution/instance', {}),
 
   getEvolutionStatus: () => api.get('/clinics/evolution/status'),

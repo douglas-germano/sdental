@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
-import { Loader2 } from 'lucide-react'
+import { User, Phone, Mail, FileText } from 'lucide-react'
 
 interface NewPatientModalProps {
   open: boolean
@@ -63,7 +63,7 @@ export function NewPatientModal({
     if (!formData.name.trim() || !formData.phone.trim()) {
       toast({
         title: 'Erro',
-        description: 'Nome e telefone são obrigatórios.',
+        description: 'Nome e telefone sao obrigatorios.',
         variant: 'error',
       })
       return
@@ -73,7 +73,7 @@ export function NewPatientModal({
     if (phoneDigits.length < 10) {
       toast({
         title: 'Erro',
-        description: 'Telefone inválido.',
+        description: 'Telefone invalido.',
         variant: 'error',
       })
       return
@@ -100,7 +100,7 @@ export function NewPatientModal({
       console.error('Error creating patient:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível cadastrar o paciente. Tente novamente.',
+        description: 'Nao foi possivel cadastrar o paciente. Tente novamente.',
         variant: 'error',
       })
     } finally {
@@ -110,51 +110,71 @@ export function NewPatientModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[450px]">
         <DialogClose onClick={() => handleOpenChange(false)} />
         <DialogHeader>
-          <DialogTitle>Novo Paciente</DialogTitle>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+              <User className="h-5 w-5 text-white" />
+            </div>
+            <DialogTitle>Novo Paciente</DialogTitle>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-2">
             <Label htmlFor="name">Nome *</Label>
-            <Input
-              id="name"
-              placeholder="Nome completo"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="name"
+                placeholder="Nome completo"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="pl-11"
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="phone">Telefone *</Label>
-            <Input
-              id="phone"
-              placeholder="(11) 99999-9999"
-              value={formData.phone}
-              onChange={handlePhoneChange}
-              required
-            />
+            <div className="relative">
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="phone"
+                placeholder="(11) 99999-9999"
+                value={formData.phone}
+                onChange={handlePhoneChange}
+                className="pl-11"
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="email@exemplo.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="email@exemplo.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="pl-11"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Observações</Label>
+            <Label htmlFor="notes" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Observacoes
+            </Label>
             <Textarea
               id="notes"
-              placeholder="Observações sobre o paciente..."
+              placeholder="Observacoes sobre o paciente..."
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
@@ -170,8 +190,7 @@ export function NewPatientModal({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" variant="gradient" loading={loading}>
               Cadastrar
             </Button>
           </DialogFooter>

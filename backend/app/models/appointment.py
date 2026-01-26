@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 
 from app import db
+from .mixins import SoftDeleteMixin
 
 
 class AppointmentStatus:
@@ -13,7 +14,7 @@ class AppointmentStatus:
     NO_SHOW = 'no_show'
 
 
-class Appointment(db.Model):
+class Appointment(db.Model, SoftDeleteMixin):
     __tablename__ = 'appointments'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -41,7 +42,8 @@ class Appointment(db.Model):
             'notes': self.notes,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None
+            'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None,
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None
         }
 
     def cancel(self) -> None:

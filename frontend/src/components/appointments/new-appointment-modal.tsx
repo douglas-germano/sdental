@@ -18,7 +18,7 @@ import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
 import { appointmentsApi, patientsApi } from '@/lib/api'
 import { Patient, AvailabilitySlot } from '@/types'
-import { Loader2 } from 'lucide-react'
+import { Loader2, CalendarPlus, User, Stethoscope, Calendar, Clock, FileText } from 'lucide-react'
 
 interface NewAppointmentModalProps {
   open: boolean
@@ -103,7 +103,7 @@ export function NewAppointmentModal({
     if (!formData.patient_id || !formData.service_name || !formData.time_slot) {
       toast({
         title: 'Erro',
-        description: 'Por favor, preencha todos os campos obrigatórios.',
+        description: 'Por favor, preencha todos os campos obrigatorios.',
         variant: 'error',
       })
       return
@@ -132,7 +132,7 @@ export function NewAppointmentModal({
       console.error('Error creating appointment:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível criar o agendamento. Tente novamente.',
+        description: 'Nao foi possivel criar o agendamento. Tente novamente.',
         variant: 'error',
       })
     } finally {
@@ -147,14 +147,22 @@ export function NewAppointmentModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogClose onClick={() => onOpenChange(false)} />
         <DialogHeader>
-          <DialogTitle>Novo Agendamento</DialogTitle>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+              <CalendarPlus className="h-5 w-5 text-white" />
+            </div>
+            <DialogTitle>Novo Agendamento</DialogTitle>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="patient">Paciente *</Label>
+            <Label htmlFor="patient" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Paciente *
+            </Label>
             {loadingPatients ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Carregando pacientes...
               </div>
@@ -178,7 +186,10 @@ export function NewAppointmentModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="service">Serviço *</Label>
+            <Label htmlFor="service" className="flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" />
+              Servico *
+            </Label>
             <Select
               id="service"
               value={formData.service_name}
@@ -187,7 +198,7 @@ export function NewAppointmentModal({
               }
               required
             >
-              <option value="">Selecione um serviço</option>
+              <option value="">Selecione um servico</option>
               {services.map((service) => (
                 <option key={service.name} value={service.name}>
                   {service.name} ({service.duration} min)
@@ -197,7 +208,10 @@ export function NewAppointmentModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="date">Data *</Label>
+            <Label htmlFor="date" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Data *
+            </Label>
             <Input
               id="date"
               type="date"
@@ -211,19 +225,22 @@ export function NewAppointmentModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="time">Horário *</Label>
+            <Label htmlFor="time" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Horario *
+            </Label>
             {loadingSlots ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Verificando disponibilidade...
               </div>
             ) : !formData.date || !formData.service_name ? (
-              <p className="text-sm text-muted-foreground">
-                Selecione uma data e serviço para ver os horários disponíveis
+              <p className="text-sm text-muted-foreground h-11 flex items-center px-4 bg-muted/30 rounded-xl">
+                Selecione uma data e servico para ver os horarios disponiveis
               </p>
             ) : slots.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nenhum horário disponível para esta data
+              <p className="text-sm text-muted-foreground h-11 flex items-center px-4 bg-muted/30 rounded-xl">
+                Nenhum horario disponivel para esta data
               </p>
             ) : (
               <Select
@@ -234,7 +251,7 @@ export function NewAppointmentModal({
                 }
                 required
               >
-                <option value="">Selecione um horário</option>
+                <option value="">Selecione um horario</option>
                 {slots.map((slot) => (
                   <option key={slot.datetime} value={slot.datetime}>
                     {slot.start_time} - {slot.end_time}
@@ -245,10 +262,13 @@ export function NewAppointmentModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Observações</Label>
+            <Label htmlFor="notes" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Observacoes
+            </Label>
             <Textarea
               id="notes"
-              placeholder="Observações adicionais..."
+              placeholder="Observacoes adicionais..."
               value={formData.notes}
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
@@ -266,8 +286,7 @@ export function NewAppointmentModal({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" variant="gradient" loading={loading}>
               Criar Agendamento
             </Button>
           </DialogFooter>

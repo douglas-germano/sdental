@@ -1,14 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { X } from 'lucide-react'
+import { X, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface Toast {
   id: string
   title?: string
   description?: string
-  variant?: 'default' | 'success' | 'error'
+  variant?: 'default' | 'success' | 'error' | 'warning'
 }
 
 interface ToastContextValue {
@@ -63,7 +63,7 @@ function Toaster() {
   const { toasts, removeToast } = context
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-3">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
@@ -78,24 +78,58 @@ function ToastItem({
   toast: Toast
   onClose: () => void
 }) {
+  const Icon = {
+    success: CheckCircle,
+    error: AlertCircle,
+    warning: AlertCircle,
+    default: Info,
+  }[toast.variant || 'default']
+
   return (
     <div
       className={cn(
-        'pointer-events-auto flex w-full max-w-md items-center justify-between space-x-4 rounded-lg border p-4 shadow-lg transition-all',
-        toast.variant === 'success' && 'bg-green-50 border-green-200 text-green-800',
-        toast.variant === 'error' && 'bg-red-50 border-red-200 text-red-800',
-        (!toast.variant || toast.variant === 'default') && 'bg-background border-border'
+        'pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border p-4 shadow-lg transition-all duration-300 animate-slide-in-right',
+        'bg-background/95 backdrop-blur-sm',
+        toast.variant === 'success' && 'border-success/30 bg-success/5',
+        toast.variant === 'error' && 'border-destructive/30 bg-destructive/5',
+        toast.variant === 'warning' && 'border-warning/30 bg-warning/5',
+        (!toast.variant || toast.variant === 'default') && 'border-border'
       )}
     >
-      <div className="flex-1">
-        {toast.title && <p className="font-semibold">{toast.title}</p>}
+      <div
+        className={cn(
+          'flex-shrink-0 mt-0.5',
+          toast.variant === 'success' && 'text-success',
+          toast.variant === 'error' && 'text-destructive',
+          toast.variant === 'warning' && 'text-warning',
+          (!toast.variant || toast.variant === 'default') && 'text-primary'
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        {toast.title && (
+          <p
+            className={cn(
+              'font-semibold text-sm',
+              toast.variant === 'success' && 'text-success',
+              toast.variant === 'error' && 'text-destructive',
+              toast.variant === 'warning' && 'text-warning',
+              (!toast.variant || toast.variant === 'default') && 'text-foreground'
+            )}
+          >
+            {toast.title}
+          </p>
+        )}
         {toast.description && (
-          <p className={cn('text-sm', toast.title && 'mt-1')}>{toast.description}</p>
+          <p className={cn('text-sm text-muted-foreground', toast.title && 'mt-1')}>
+            {toast.description}
+          </p>
         )}
       </div>
       <button
         onClick={onClose}
-        className="rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+        className="flex-shrink-0 rounded-lg p-1 opacity-70 transition-all duration-200 hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
       >
         <X className="h-4 w-4" />
       </button>

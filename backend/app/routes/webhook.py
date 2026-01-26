@@ -5,6 +5,8 @@ from app.models import Clinic
 from app.services.claude_service import ClaudeService
 from app.services.evolution_service import EvolutionService
 from app.services.conversation_service import ConversationService
+from app.utils.webhook_auth import webhook_auth_required
+from app.utils.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +14,8 @@ bp = Blueprint('webhook', __name__, url_prefix='/api/webhook')
 
 
 @bp.route('/evolution', methods=['POST'])
+@limiter.limit("100 per minute")
+@webhook_auth_required
 def evolution_webhook():
     """
     Receive messages from Evolution API webhook.
@@ -117,6 +121,8 @@ def evolution_webhook():
 
 
 @bp.route('/evolution/status', methods=['POST'])
+@limiter.limit("100 per minute")
+@webhook_auth_required
 def evolution_status_webhook():
     """
     Receive connection status updates from Evolution API.

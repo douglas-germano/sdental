@@ -13,7 +13,13 @@ import {
   MessageSquare,
   TrendingUp,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+  CheckCircle2,
+  XCircle,
+  UserX,
+  UserPlus
 } from 'lucide-react'
 import { AppointmentsChart } from '@/components/charts/appointments-chart'
 import { StatusPieChart } from '@/components/charts/status-pie-chart'
@@ -49,88 +55,115 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="text-muted-foreground text-sm">Carregando dados...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="animate-fade-in">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mt-1">
           Visao geral da sua clinica
         </p>
       </div>
 
       {/* Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        {/* Agendamentos do Mes */}
+        <Card hover className="animate-fade-in-up" style={{ animationDelay: '0ms' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Agendamentos do Mes
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold">
               {overview?.appointments.this_month || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {overview?.appointments.completed || 0} concluidos
-            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center text-xs text-success">
+                <ArrowUpRight className="h-3 w-3 mr-1" />
+                {overview?.appointments.completed || 0} concluidos
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Proximos Agendamentos */}
+        <Card hover className="animate-fade-in-up" style={{ animationDelay: '50ms' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Proximos Agendamentos
             </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-accent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold">
               {overview?.appointments.upcoming || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-2">
               Nos proximos 7 dias
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Total de Pacientes */}
+        <Card hover className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total de Pacientes
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+              <Users className="h-5 w-5 text-success" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold">
               {overview?.patients.total || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
-              +{overview?.patients.new_this_month || 0} novos este mes
-            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center text-xs text-success">
+                <ArrowUpRight className="h-3 w-3 mr-1" />
+                +{overview?.patients.new_this_month || 0} novos este mes
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Conversas Ativas */}
+        <Card hover className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Conversas Ativas
             </CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-warning" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold">
               {overview?.conversations.active || 0}
             </div>
             {(overview?.conversations.needs_attention || 0) > 0 && (
-              <p className="text-xs text-orange-500 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
+              <div className="flex items-center text-xs text-warning mt-2">
+                <AlertCircle className="h-3 w-3 mr-1" />
                 {overview?.conversations.needs_attention} precisam de atencao
+              </div>
+            )}
+            {(overview?.conversations.needs_attention || 0) === 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Todas em dia
               </p>
             )}
           </CardContent>
@@ -138,16 +171,19 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <CardHeader>
-            <CardTitle>Visão Geral de Agendamentos</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Visao Geral de Agendamentos
+            </CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             <AppointmentsChart />
           </CardContent>
         </Card>
-        <Card className="col-span-3">
+        <Card className="lg:col-span-3 animate-fade-in-up" style={{ animationDelay: '250ms' }}>
           <CardHeader>
             <CardTitle>Status dos Agendamentos</CardTitle>
           </CardHeader>
@@ -159,36 +195,45 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Upcoming Appointments */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+        <Card className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Calendar className="h-4 w-4 text-primary" />
+              </div>
               Proximos Agendamentos
             </CardTitle>
           </CardHeader>
           <CardContent>
             {upcomingAppointments.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                Nenhum agendamento proximo.
-              </p>
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <Calendar className="h-12 w-12 mb-3 opacity-50" />
+                <p className="text-sm">Nenhum agendamento proximo</p>
+              </div>
             ) : (
-              <div className="space-y-4">
-                {upcomingAppointments.slice(0, 5).map((apt) => (
+              <div className="space-y-3">
+                {upcomingAppointments.slice(0, 5).map((apt, index) => (
                   <div
                     key={apt.id}
-                    className="flex items-center justify-between border-b pb-2 last:border-0"
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div>
-                      <p className="font-medium">{apt.patient?.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {apt.service_name}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
+                        {apt.patient?.name?.charAt(0).toUpperCase() || '?'}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{apt.patient?.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {apt.service_name}
+                        </p>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm">
+                      <p className="text-xs text-muted-foreground mb-1">
                         {formatDateTime(apt.scheduled_datetime)}
                       </p>
-                      <Badge className={getStatusColor(apt.status)}>
+                      <Badge className={getStatusColor(apt.status)} variant="secondary">
                         {getStatusLabel(apt.status)}
                       </Badge>
                     </div>
@@ -198,45 +243,55 @@ export default function DashboardPage() {
             )}
             <Link
               href="/appointments"
-              className="block mt-4 text-sm text-primary hover:underline"
+              className="flex items-center justify-center gap-1 mt-4 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todos os agendamentos
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </CardContent>
         </Card>
 
         {/* Conversations Needing Attention */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
+        <Card className="animate-fade-in-up" style={{ animationDelay: '350ms' }}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
+                <MessageSquare className="h-4 w-4 text-warning" />
+              </div>
               Conversas Aguardando Atencao
             </CardTitle>
           </CardHeader>
           <CardContent>
             {recentConversations.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                Nenhuma conversa aguardando atencao.
-              </p>
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mb-3 opacity-50" />
+                <p className="text-sm">Nenhuma conversa aguardando atencao</p>
+              </div>
             ) : (
-              <div className="space-y-4">
-                {recentConversations.map((conv) => (
+              <div className="space-y-3">
+                {recentConversations.map((conv, index) => (
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between border-b pb-2 last:border-0 hover:bg-gray-50 -mx-2 px-2 py-1 rounded"
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors block animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div>
-                      <p className="font-medium">
-                        {conv.patient?.name || conv.phone_number}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {conv.messages && conv.messages.length > 0
-                          ? conv.messages[conv.messages.length - 1].content
-                          : 'Sem mensagens'}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
+                        {conv.patient?.name?.charAt(0).toUpperCase() || conv.phone_number?.charAt(0) || '?'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">
+                          {conv.patient?.name || conv.phone_number}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          {conv.messages && conv.messages.length > 0
+                            ? conv.messages[conv.messages.length - 1].content
+                            : 'Sem mensagens'}
+                        </p>
+                      </div>
                     </div>
-                    <Badge className={getStatusColor(conv.status)}>
+                    <Badge className={getStatusColor(conv.status)} variant="secondary">
                       {getStatusLabel(conv.status)}
                     </Badge>
                   </Link>
@@ -245,47 +300,62 @@ export default function DashboardPage() {
             )}
             <Link
               href="/conversations"
-              className="block mt-4 text-sm text-primary hover:underline"
+              className="flex items-center justify-center gap-1 mt-4 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todas as conversas
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Stats */}
-      <Card>
+      <Card className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </div>
             Resumo do Mes
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">
+            <div className="text-center p-5 bg-success/5 border border-success/20 rounded-xl hover:bg-success/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+              </div>
+              <p className="text-2xl font-bold text-success">
                 {overview?.appointments.completed || 0}
               </p>
-              <p className="text-sm text-green-700">Concluidos</p>
+              <p className="text-xs text-muted-foreground mt-1">Concluidos</p>
             </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <p className="text-2xl font-bold text-red-600">
+            <div className="text-center p-5 bg-destructive/5 border border-destructive/20 rounded-xl hover:bg-destructive/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-3">
+                <XCircle className="h-5 w-5 text-destructive" />
+              </div>
+              <p className="text-2xl font-bold text-destructive">
                 {overview?.appointments.cancelled || 0}
               </p>
-              <p className="text-sm text-red-700">Cancelados</p>
+              <p className="text-xs text-muted-foreground mt-1">Cancelados</p>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-600">
+            <div className="text-center p-5 bg-muted border border-border rounded-xl hover:bg-muted/80 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-muted-foreground/20 flex items-center justify-center mx-auto mb-3">
+                <UserX className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-2xl font-bold">
                 {overview?.appointments.no_shows || 0}
               </p>
-              <p className="text-sm text-gray-700">Faltas</p>
+              <p className="text-xs text-muted-foreground mt-1">Faltas</p>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">
+            <div className="text-center p-5 bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                <UserPlus className="h-5 w-5 text-primary" />
+              </div>
+              <p className="text-2xl font-bold text-primary">
                 {overview?.patients.new_this_month || 0}
               </p>
-              <p className="text-sm text-blue-700">Novos Pacientes</p>
+              <p className="text-xs text-muted-foreground mt-1">Novos Pacientes</p>
             </div>
           </div>
         </CardContent>

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { conversationsApi } from '@/lib/api'
 import { Conversation } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { MessageSquare, AlertCircle, ChevronRight } from 'lucide-react'
+import { MessageSquare, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react'
 
 export default function ConversationsPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -49,44 +49,48 @@ export default function ConversationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Conversas</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">
+            Conversas
+          </h1>
           <p className="text-muted-foreground">
             Acompanhe as conversas do chatbot
           </p>
         </div>
         {needsAttentionCount > 0 && (
-          <Badge className="bg-orange-100 text-orange-800 text-base px-4 py-2">
-            <AlertCircle className="h-4 w-4 mr-2" />
+          <Badge variant="warning" size="lg" className="gap-2">
+            <AlertCircle className="h-4 w-4" />
             {needsAttentionCount} aguardando atencao
           </Badge>
         )}
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 p-1.5 bg-muted/50 rounded-xl w-fit">
         <Button
-          variant={filter === 'all' ? 'default' : 'outline'}
+          variant={filter === 'all' ? 'default' : 'ghost'}
           onClick={() => {
             setFilter('all')
             setPage(1)
           }}
+          className="rounded-lg"
         >
           Todas
         </Button>
         <Button
-          variant={filter === 'needs_attention' ? 'default' : 'outline'}
+          variant={filter === 'needs_attention' ? 'warning' : 'ghost'}
           onClick={() => {
             setFilter('needs_attention')
             setPage(1)
           }}
+          className="rounded-lg gap-2"
         >
-          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertCircle className="h-4 w-4" />
           Aguardando Atencao
           {needsAttentionCount > 0 && (
-            <span className="ml-2 bg-white text-primary rounded-full px-2 py-0.5 text-xs">
+            <span className="bg-white/20 rounded-full px-2 py-0.5 text-xs font-medium">
               {needsAttentionCount}
             </span>
           )}
@@ -99,40 +103,48 @@ export default function ConversationsPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : conversations.length === 0 ? (
-        <Card>
+        <Card className="border-border/50">
           <CardContent className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <MessageSquare className="h-12 w-12 mb-4" />
-            <p>Nenhuma conversa encontrada</p>
+            <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+              <MessageSquare className="h-8 w-8 opacity-50" />
+            </div>
+            <p className="font-medium">Nenhuma conversa encontrada</p>
+            <p className="text-sm">As conversas do WhatsApp aparecerão aqui</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
           {conversations.map((conv) => (
             <Link key={conv.id} href={`/conversations/${conv.id}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="hover:shadow-medium transition-all duration-200 cursor-pointer border-border/50 group">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="font-medium">
-                          {conv.patient?.name || 'Paciente Desconhecido'}
-                        </span>
-                        <Badge className={getStatusColor(conv.status)}>
-                          {getStatusLabel(conv.status)}
-                        </Badge>
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-lg flex-shrink-0">
+                        {conv.patient?.name?.charAt(0).toUpperCase() || '?'}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        {formatPhone(conv.phone_number)}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {getLastMessage(conv)}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="font-semibold truncate">
+                            {conv.patient?.name || 'Paciente Desconhecido'}
+                          </span>
+                          <Badge className={getStatusColor(conv.status)}>
+                            {getStatusLabel(conv.status)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          {formatPhone(conv.phone_number)}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {getLastMessage(conv)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                       <span className="text-sm text-muted-foreground">
                         {formatDateTime(conv.last_message_at)}
                       </span>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                   </div>
                 </CardContent>
@@ -144,23 +156,40 @@ export default function ConversationsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-3">
           <Button
             variant="outline"
+            size="icon"
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
+            className="h-9 w-9"
           >
-            Anterior
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-muted-foreground">
-            Pagina {page} de {totalPages}
-          </span>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              const pageNum = i + 1
+              return (
+                <Button
+                  key={pageNum}
+                  variant={page === pageNum ? 'default' : 'ghost'}
+                  size="icon"
+                  onClick={() => setPage(pageNum)}
+                  className="h-9 w-9"
+                >
+                  {pageNum}
+                </Button>
+              )
+            })}
+          </div>
           <Button
             variant="outline"
+            size="icon"
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
+            className="h-9 w-9"
           >
-            Proxima
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       )}

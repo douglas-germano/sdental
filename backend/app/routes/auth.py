@@ -4,11 +4,13 @@ from flask_jwt_extended import create_access_token, create_refresh_token, jwt_re
 from app import db
 from app.models import Clinic
 from app.utils.validators import validate_email, validate_phone, validate_password
+from app.utils.rate_limiter import limiter
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
 
 @bp.route('/register', methods=['POST'])
+@limiter.limit("5 per minute")
 def register():
     """Register a new clinic."""
     data = request.get_json()
@@ -77,6 +79,7 @@ def register():
 
 
 @bp.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
     """Login and get JWT tokens."""
     data = request.get_json()
@@ -104,6 +107,7 @@ def login():
 
 
 @bp.route('/refresh', methods=['POST'])
+@limiter.limit("30 per minute")
 @jwt_required(refresh=True)
 def refresh():
     """Refresh access token."""

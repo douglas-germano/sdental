@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 import { formatPhone, formatDate, formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Loader2, User, Phone, Mail, Calendar, FileText, Edit2 } from 'lucide-react'
+import { User, Phone, Mail, Calendar, FileText, Edit2 } from 'lucide-react'
 
 interface PatientDetailModalProps {
   patient: Patient | null
@@ -74,7 +74,7 @@ export function PatientDetailModal({
     if (!formData.name.trim() || !formData.phone.trim()) {
       toast({
         title: 'Erro',
-        description: 'Nome e telefone são obrigatórios.',
+        description: 'Nome e telefone sao obrigatorios.',
         variant: 'error',
       })
       return
@@ -84,7 +84,7 @@ export function PatientDetailModal({
     if (phoneDigits.length < 10) {
       toast({
         title: 'Erro',
-        description: 'Telefone inválido.',
+        description: 'Telefone invalido.',
         variant: 'error',
       })
       return
@@ -111,7 +111,7 @@ export function PatientDetailModal({
       console.error('Error updating patient:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar o paciente.',
+        description: 'Nao foi possivel atualizar o paciente.',
         variant: 'error',
       })
     } finally {
@@ -125,10 +125,15 @@ export function PatientDetailModal({
         <DialogClose onClick={() => onOpenChange(false)} />
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Detalhes do Paciente</DialogTitle>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+                <User className="h-5 w-5 text-white" />
+              </div>
+              <DialogTitle>Detalhes do Paciente</DialogTitle>
+            </div>
             {!isEditing && (
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-                <Edit2 className="h-4 w-4 mr-1" />
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="gap-1">
+                <Edit2 className="h-4 w-4" />
                 Editar
               </Button>
             )}
@@ -136,37 +141,52 @@ export function PatientDetailModal({
         </DialogHeader>
 
         {isEditing ? (
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Nome *</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="pl-11"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="edit-phone">Telefone *</Label>
-              <Input
-                id="edit-phone"
-                value={formData.phone}
-                onChange={handlePhoneChange}
-              />
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="edit-phone"
+                  value={formData.phone}
+                  onChange={handlePhoneChange}
+                  className="pl-11"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="pl-11"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-notes">Observações</Label>
+              <Label htmlFor="edit-notes" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Observacoes
+              </Label>
               <Textarea
                 id="edit-notes"
                 value={formData.notes}
@@ -183,19 +203,18 @@ export function PatientDetailModal({
               >
                 Cancelar
               </Button>
-              <Button onClick={handleSave} disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button variant="gradient" onClick={handleSave} loading={loading}>
                 Salvar
               </Button>
             </DialogFooter>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             {/* Patient Info */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+            <div className="bg-muted/30 p-4 rounded-xl space-y-3 border border-border/50">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-6 w-6 text-primary" />
+                <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-lg">
+                  {patient.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <p className="font-semibold text-lg">{patient.name}</p>
@@ -207,12 +226,12 @@ export function PatientDetailModal({
 
               <div className="grid gap-2 pt-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <Phone className="h-4 w-4 text-primary" />
                   <span>{formatPhone(patient.phone)}</span>
                 </div>
                 {patient.email && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <Mail className="h-4 w-4 text-primary" />
                     <span>{patient.email}</span>
                   </div>
                 )}
@@ -222,11 +241,11 @@ export function PatientDetailModal({
             {/* Notes */}
             {patient.notes && (
               <div className="space-y-2">
-                <Label className="flex items-center gap-1">
+                <Label className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
-                  Observações
+                  Observacoes
                 </Label>
-                <p className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl border border-border/50">
                   {patient.notes}
                 </p>
               </div>
@@ -235,15 +254,15 @@ export function PatientDetailModal({
             {/* Recent Appointments */}
             {patient.appointments && patient.appointments.length > 0 && (
               <div className="space-y-2">
-                <Label className="flex items-center gap-1">
+                <Label className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Últimos Agendamentos
+                  Ultimos Agendamentos
                 </Label>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {patient.appointments.slice(0, 5).map((apt) => (
                     <div
                       key={apt.id}
-                      className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
+                      className="flex items-center justify-between text-sm bg-muted/30 p-3 rounded-xl border border-border/50 transition-colors hover:bg-muted/50"
                     >
                       <div>
                         <p className="font-medium">{apt.service_name}</p>

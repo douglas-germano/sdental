@@ -26,8 +26,24 @@ def create_app(config_name: str = None) -> Flask:
     jwt.init_app(app)
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+    # Initialize rate limiter
+    from .utils.rate_limiter import init_limiter
+    init_limiter(app)
+
+    # Initialize cache
+    from .utils.cache import init_cache
+    init_cache(app)
+
+    # Setup structured logging
+    from .utils.logging_config import setup_logging
+    setup_logging(app)
+
+    # Register error handlers
+    from .utils.error_handlers import register_error_handlers
+    register_error_handlers(app)
+
     # Register blueprints
-    from .routes import auth, clinics, patients, appointments, conversations, webhook, analytics
+    from .routes import auth, clinics, patients, appointments, conversations, webhook, analytics, health
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(clinics.bp)
@@ -35,14 +51,10 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(appointments.bp)
     app.register_blueprint(conversations.bp)
     app.register_blueprint(webhook.bp)
-
     app.register_blueprint(analytics.bp)
+    app.register_blueprint(health.bp)
+
     from .routes import agents
     app.register_blueprint(agents.bp)
-
-    # Health check endpoint
-    @app.route('/health')
-    def health():
-        return {'status': 'healthy'}
 
     return app

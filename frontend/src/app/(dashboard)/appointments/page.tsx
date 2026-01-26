@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -24,7 +26,7 @@ import {
 import { appointmentsApi } from '@/lib/api'
 import { Appointment } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Calendar, Search, Filter, X, Check, MoreVertical, Plus, FileText, Ban, Eye } from 'lucide-react'
+import { Calendar, Filter, X, Check, MoreVertical, Plus, FileText, Ban, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { NewAppointmentModal } from '@/components/appointments/new-appointment-modal'
 import { AppointmentDetailModal } from '@/components/appointments/appointment-detail-modal'
 import { useToast } from '@/components/ui/toast'
@@ -120,34 +122,37 @@ export default function AppointmentsPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Agendamentos</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">
+            Agendamentos
+          </h1>
           <p className="text-muted-foreground">
             Gerencie os agendamentos da clínica
           </p>
         </div>
-        <Button onClick={() => setShowNewModal(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button variant="gradient" onClick={() => setShowNewModal(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
           Novo Agendamento
         </Button>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+            <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+              <Filter className="h-4 w-4 text-white" />
+            </div>
             Filtros
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Status</label>
-              <select
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value)
@@ -157,10 +162,10 @@ export default function AppointmentsPage() {
                 {statuses.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Data Inicial</label>
+            <div className="space-y-2">
+              <Label>Data Inicial</Label>
               <Input
                 type="date"
                 value={dateFrom}
@@ -170,8 +175,8 @@ export default function AppointmentsPage() {
                 }}
               />
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Data Final</label>
+            <div className="space-y-2">
+              <Label>Data Final</Label>
               <Input
                 type="date"
                 value={dateTo}
@@ -182,8 +187,8 @@ export default function AppointmentsPage() {
               />
             </div>
             <div className="flex items-end">
-              <Button variant="outline" onClick={clearFilters} className="w-full">
-                <X className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={clearFilters} className="w-full gap-2">
+                <X className="h-4 w-4" />
                 Limpar
               </Button>
             </div>
@@ -192,7 +197,7 @@ export default function AppointmentsPage() {
       </Card>
 
       {/* Appointments Table */}
-      <Card>
+      <Card className="border-border/50">
         <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center h-64">
@@ -200,8 +205,11 @@ export default function AppointmentsPage() {
             </div>
           ) : appointments.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-              <Calendar className="h-12 w-12 mb-4 opacity-20" />
-              <p>Nenhum agendamento encontrado</p>
+              <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                <Calendar className="h-8 w-8 opacity-50" />
+              </div>
+              <p className="font-medium">Nenhum agendamento encontrado</p>
+              <p className="text-sm">Crie um novo agendamento ou ajuste os filtros</p>
             </div>
           ) : (
             <Table>
@@ -216,13 +224,18 @@ export default function AppointmentsPage() {
               </TableHeader>
               <TableBody>
                 {appointments.map((apt) => (
-                  <TableRow key={apt.id}>
+                  <TableRow key={apt.id} className="group">
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{apt.patient?.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatPhone(apt.patient?.phone || '')}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-medium">
+                          {apt.patient?.name?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                        <div>
+                          <p className="font-medium">{apt.patient?.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatPhone(apt.patient?.phone || '')}
+                          </p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -230,7 +243,9 @@ export default function AppointmentsPage() {
                         {apt.service_name}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDateTime(apt.scheduled_datetime)}</TableCell>
+                    <TableCell>
+                      <span className="text-sm">{formatDateTime(apt.scheduled_datetime)}</span>
+                    </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(apt.status)}>
                         {getStatusLabel(apt.status)}
@@ -239,7 +254,7 @@ export default function AppointmentsPage() {
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                             <span className="sr-only">Menu</span>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
@@ -283,23 +298,40 @@ export default function AppointmentsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-3">
           <Button
             variant="outline"
+            size="icon"
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
+            className="h-9 w-9"
           >
-            Anterior
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-muted-foreground">
-            Página {page} de {totalPages}
-          </span>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              const pageNum = i + 1
+              return (
+                <Button
+                  key={pageNum}
+                  variant={page === pageNum ? 'default' : 'ghost'}
+                  size="icon"
+                  onClick={() => setPage(pageNum)}
+                  className="h-9 w-9"
+                >
+                  {pageNum}
+                </Button>
+              )
+            })}
+          </div>
           <Button
             variant="outline"
+            size="icon"
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
+            className="h-9 w-9"
           >
-            Próxima
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       )}

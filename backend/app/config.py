@@ -28,6 +28,19 @@ class Config:
     EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL')
     EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY')
 
+    # Webhook authentication
+    WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')
+
+    # Rate limiting
+    RATELIMIT_STORAGE_URI = os.getenv('REDIS_URL', 'memory://')
+    RATELIMIT_STRATEGY = 'fixed-window'
+    RATELIMIT_DEFAULT = "200 per day;50 per hour"
+
+    # Cache
+    CACHE_TYPE = os.getenv('CACHE_TYPE', 'simple')
+    CACHE_DEFAULT_TIMEOUT = 300
+    REDIS_URL = os.getenv('REDIS_URL')
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""

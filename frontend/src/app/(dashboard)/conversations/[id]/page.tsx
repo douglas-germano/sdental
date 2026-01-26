@@ -5,10 +5,11 @@ import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import { conversationsApi } from '@/lib/api'
 import { Conversation, Message } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { ArrowLeft, User, Bot, AlertCircle, CheckCircle, RotateCcw } from 'lucide-react'
+import { ArrowLeft, User, Bot, AlertCircle, CheckCircle, RotateCcw, Phone, Mail, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function ConversationDetailPage() {
@@ -72,12 +73,15 @@ export default function ConversationDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-xl">
           <ArrowLeft className="h-5 w-5" />
         </Button>
+        <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-lg">
+          {conversation.patient?.name?.charAt(0).toUpperCase() || '?'}
+        </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">
             {conversation.patient?.name || 'Paciente Desconhecido'}
@@ -86,33 +90,35 @@ export default function ConversationDetailPage() {
             {formatPhone(conversation.phone_number)}
           </p>
         </div>
-        <Badge className={cn(getStatusColor(conversation.status), 'text-base px-4 py-2')}>
+        <Badge className={cn(getStatusColor(conversation.status))} size="lg">
           {getStatusLabel(conversation.status)}
         </Badge>
       </div>
 
       {/* Actions */}
       {conversation.status === 'transferred_to_human' && (
-        <Card className="bg-orange-50 border-orange-200">
+        <Card className="bg-warning/10 border-warning/30">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
+              <div className="h-10 w-10 rounded-xl bg-warning/20 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-warning" />
+              </div>
               <div>
-                <p className="font-medium text-orange-800">Aguardando Atencao Humana</p>
+                <p className="font-semibold text-warning">Aguardando Atencao Humana</p>
                 {conversation.transfers && conversation.transfers.length > 0 && (
-                  <p className="text-sm text-orange-600">
+                  <p className="text-sm text-muted-foreground">
                     Motivo: {conversation.transfers[0].reason}
                   </p>
                 )}
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleReactivate}>
-                <RotateCcw className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={handleReactivate} className="gap-2">
+                <RotateCcw className="h-4 w-4" />
                 Devolver ao Bot
               </Button>
-              <Button onClick={handleResolve}>
-                <CheckCircle className="h-4 w-4 mr-2" />
+              <Button variant="success" onClick={handleResolve} className="gap-2">
+                <CheckCircle className="h-4 w-4" />
                 Marcar Resolvido
               </Button>
             </div>
@@ -122,39 +128,47 @@ export default function ConversationDetailPage() {
 
       {conversation.status === 'active' && (
         <div className="flex justify-end">
-          <Button variant="outline" onClick={handleResolve}>
-            <CheckCircle className="h-4 w-4 mr-2" />
+          <Button variant="outline" onClick={handleResolve} className="gap-2">
+            <CheckCircle className="h-4 w-4" />
             Finalizar Conversa
           </Button>
         </div>
       )}
 
       {/* Messages */}
-      <Card>
+      <Card className="border-border/50">
         <CardHeader>
-          <CardTitle>Historico da Conversa</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+              <Bot className="h-4 w-4 text-white" />
+            </div>
+            Historico da Conversa
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4 max-h-[600px] overflow-y-auto">
+          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
             {(!conversation.messages || conversation.messages.length === 0) ? (
-              <p className="text-center text-muted-foreground py-8">
-                Nenhuma mensagem nesta conversa
-              </p>
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                  <Bot className="h-8 w-8 opacity-50" />
+                </div>
+                <p className="font-medium">Nenhuma mensagem nesta conversa</p>
+              </div>
             ) : (
               conversation.messages.map((msg, index) => (
                 <div
                   key={index}
                   className={cn(
-                    'flex gap-3',
+                    'flex gap-3 animate-fade-in',
                     msg.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'
                   )}
                 >
                   <div
                     className={cn(
-                      'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+                      'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
                       msg.role === 'assistant'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-gray-200'
+                        ? 'bg-gradient-primary text-white'
+                        : 'bg-muted'
                     )}
                   >
                     {msg.role === 'assistant' ? (
@@ -165,14 +179,14 @@ export default function ConversationDetailPage() {
                   </div>
                   <div
                     className={cn(
-                      'max-w-[70%] rounded-lg p-3',
+                      'max-w-[70%] rounded-2xl px-4 py-3',
                       msg.role === 'assistant'
-                        ? 'bg-primary/10'
-                        : 'bg-gray-100'
+                        ? 'bg-primary/10 rounded-tl-md'
+                        : 'bg-muted rounded-tr-md'
                     )}
                   >
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
                       {formatDateTime(msg.timestamp)}
                     </p>
                   </div>
@@ -185,33 +199,50 @@ export default function ConversationDetailPage() {
 
       {/* Patient Info */}
       {conversation.patient && (
-        <Card>
+        <Card className="border-border/50">
           <CardHeader>
-            <CardTitle>Informacoes do Paciente</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+                <User className="h-4 w-4 text-white" />
+              </div>
+              Informacoes do Paciente
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-2 gap-4">
-              <div>
-                <dt className="text-sm text-muted-foreground">Nome</dt>
-                <dd className="font-medium">{conversation.patient.name}</dd>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                <Label className="flex items-center gap-2 text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  Nome
+                </Label>
+                <p className="font-medium">{conversation.patient.name}</p>
               </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Telefone</dt>
-                <dd className="font-medium">{formatPhone(conversation.patient.phone)}</dd>
+              <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                <Label className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="h-4 w-4" />
+                  Telefone
+                </Label>
+                <p className="font-medium">{formatPhone(conversation.patient.phone)}</p>
               </div>
               {conversation.patient.email && (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Email</dt>
-                  <dd className="font-medium">{conversation.patient.email}</dd>
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                  <Label className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <p className="font-medium">{conversation.patient.email}</p>
                 </div>
               )}
               {conversation.patient.notes && (
-                <div className="col-span-2">
-                  <dt className="text-sm text-muted-foreground">Observacoes</dt>
-                  <dd className="font-medium">{conversation.patient.notes}</dd>
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50 md:col-span-2">
+                  <Label className="flex items-center gap-2 text-muted-foreground">
+                    <FileText className="h-4 w-4" />
+                    Observacoes
+                  </Label>
+                  <p className="font-medium">{conversation.patient.notes}</p>
                 </div>
               )}
-            </dl>
+            </div>
           </CardContent>
         </Card>
       )}

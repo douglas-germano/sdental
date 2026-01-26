@@ -18,8 +18,10 @@ def list_patients(current_clinic):
     per_page = request.args.get('per_page', 20, type=int)
     search = request.args.get('search', '')
 
-    # Build query
-    query = Patient.query.filter_by(clinic_id=current_clinic.id)
+    # Build query (exclude soft deleted)
+    query = Patient.query.filter_by(clinic_id=current_clinic.id).filter(
+        Patient.deleted_at.is_(None)
+    )
 
     # Apply search filter
     if search:
@@ -52,7 +54,7 @@ def get_patient(patient_id, current_clinic):
     patient = Patient.query.filter_by(
         id=patient_id,
         clinic_id=current_clinic.id
-    ).first()
+    ).filter(Patient.deleted_at.is_(None)).first()
 
     if not patient:
         return jsonify({'error': 'Patient not found'}), 404
@@ -79,11 +81,11 @@ def create_patient(current_clinic):
 
     phone = normalize_phone(data['phone'])
 
-    # Check if patient already exists
+    # Check if patient already exists (exclude soft deleted)
     existing = Patient.query.filter_by(
         clinic_id=current_clinic.id,
         phone=phone
-    ).first()
+    ).filter(Patient.deleted_at.is_(None)).first()
 
     if existing:
         return jsonify({'error': 'Patient with this phone already exists'}), 409
@@ -112,7 +114,7 @@ def update_patient(patient_id, current_clinic):
     patient = Patient.query.filter_by(
         id=patient_id,
         clinic_id=current_clinic.id
-    ).first()
+    ).filter(Patient.deleted_at.is_(None)).first()
 
     if not patient:
         return jsonify({'error': 'Patient not found'}), 404
@@ -127,11 +129,11 @@ def update_patient(patient_id, current_clinic):
         patient.notes = data['notes']
     if 'phone' in data:
         new_phone = normalize_phone(data['phone'])
-        # Check if phone is already used by another patient
+        # Check if phone is already used by another patient (exclude soft deleted)
         existing = Patient.query.filter_by(
             clinic_id=current_clinic.id,
             phone=new_phone
-        ).first()
+        ).filter(Patient.deleted_at.is_(None)).first()
         if existing and existing.id != patient.id:
             return jsonify({'error': 'Phone number already in use'}), 409
         patient.phone = new_phone
@@ -147,16 +149,38 @@ def update_patient(patient_id, current_clinic):
 @bp.route('/<patient_id>', methods=['DELETE'])
 @clinic_required
 def delete_patient(patient_id, current_clinic):
-    """Delete a patient."""
+    """Soft delete a patient."""
     patient = Patient.query.filter_by(
         id=patient_id,
         clinic_id=current_clinic.id
-    ).first()
+    ).filter(Patient.deleted_at.is_(None)).first()
 
     if not patient:
         return jsonify({'error': 'Patient not found'}), 404
 
-    db.session.delete(patient)
+    # Soft delete instead of hard delete
+    patient.soft_delete()
     db.session.commit()
 
     return jsonify({'message': 'Patient deleted successfully'})
+
+
+@bp.route('/<patient_id>/restore', methods=['POST'])
+@clinic_required
+def restore_patient(patient_id, current_clinic):
+    """Restore a soft-deleted patient."""
+    patient = Patient.query.filter_by(
+        id=patient_id,
+        clinic_id=current_clinic.id
+    ).filter(Patient.deleted_at.isnot(None)).first()
+
+    if not patient:
+        return jsonify({'error': 'Deleted patient not found'}), 404
+
+    patient.restore()
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Patient restored successfully',
+        'patient': patient.to_dict()
+    })

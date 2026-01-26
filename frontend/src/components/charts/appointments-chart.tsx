@@ -31,7 +31,6 @@ export function AppointmentsChart() {
         setData(chartData)
       } catch (error) {
         console.error('Error fetching chart data:', error)
-        // Generate sample data if API fails
         setData(generateSampleData())
       } finally {
         setLoading(false)
@@ -60,7 +59,7 @@ export function AppointmentsChart() {
   if (loading) {
     return (
       <div className="h-[200px] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
       </div>
     )
   }
@@ -73,48 +72,51 @@ export function AppointmentsChart() {
       >
         <defs>
           <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+            <stop offset="5%" stopColor="hsl(238, 84%, 67%)" stopOpacity={0.4} />
+            <stop offset="95%" stopColor="hsl(238, 84%, 67%)" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+            <stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.4} />
+            <stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
+            backgroundColor: 'hsl(var(--background))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '12px',
             fontSize: '12px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
           }}
         />
         <Area
           type="monotone"
           dataKey="total"
           name="Total"
-          stroke="#3b82f6"
+          stroke="hsl(238, 84%, 67%)"
+          strokeWidth={2}
           fillOpacity={1}
           fill="url(#colorTotal)"
         />
         <Area
           type="monotone"
           dataKey="completed"
-          name="Concluídos"
-          stroke="#22c55e"
+          name="Concluidos"
+          stroke="hsl(160, 84%, 39%)"
+          strokeWidth={2}
           fillOpacity={1}
           fill="url(#colorCompleted)"
         />

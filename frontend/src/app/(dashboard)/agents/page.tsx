@@ -164,16 +164,18 @@ Telefone: ${clinic?.phone || 'Não informado'}`
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Agentes IA</h1>
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">
+                    Agentes IA
+                </h1>
                 <p className="text-muted-foreground">
                     Personalize o comportamento e conhecimento da sua assistente virtual
                 </p>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList>
+                <TabsList className="grid w-full max-w-md grid-cols-3">
                     <TabsTrigger value="general" className="gap-2">
                         <Bot className="h-4 w-4" />
                         Geral
@@ -189,22 +191,33 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                 </TabsList>
 
                 <TabsContent value="general" className="space-y-4">
-                    <Card>
+                    <Card className="border-border/50">
                         <CardHeader>
-                            <CardTitle>Configurações Gerais</CardTitle>
-                            <CardDescription>
-                                Defina a identidade e parâmetros do modelo
-                            </CardDescription>
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+                                    <Bot className="h-5 w-5 text-white" />
+                                </div>
+                                <div>
+                                    <CardTitle>Configurações Gerais</CardTitle>
+                                    <CardDescription>
+                                        Defina a identidade e parâmetros do modelo
+                                    </CardDescription>
+                                </div>
+                            </div>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-6">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Nome do Agente</Label>
-                                    <Input
-                                        id="name"
-                                        value={agentConfig.name}
-                                        onChange={(e) => setAgentConfig({ ...agentConfig, name: e.target.value })}
-                                    />
+                                    <div className="relative">
+                                        <Bot className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="name"
+                                            value={agentConfig.name}
+                                            onChange={(e) => setAgentConfig({ ...agentConfig, name: e.target.value })}
+                                            className="pl-11"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="model">Modelo IA</Label>
@@ -212,14 +225,14 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                         id="model"
                                         value={agentConfig.model}
                                         disabled
-                                        className="bg-gray-100"
+                                        className="bg-muted/30"
                                     />
                                     <p className="text-xs text-muted-foreground">O modelo é gerenciado pelo sistema.</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="temperature">Criatividade (Temperatura): {agentConfig.temperature}</Label>
+                            <div className="space-y-3 bg-muted/30 p-4 rounded-xl border border-border/50">
+                                <Label htmlFor="temperature">Criatividade (Temperatura): <span className="text-primary font-semibold">{agentConfig.temperature}</span></Label>
                                 <input
                                     type="range"
                                     min="0"
@@ -227,7 +240,7 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                     step="0.1"
                                     value={agentConfig.temperature}
                                     onChange={(e) => setAgentConfig({ ...agentConfig, temperature: parseFloat(e.target.value) })}
-                                    className="w-full"
+                                    className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>Preciso</span>
@@ -249,8 +262,8 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                 </p>
                             </div>
 
-                            <Button onClick={handleSave} disabled={saving}>
-                                <Save className="h-4 w-4 mr-2" />
+                            <Button variant="gradient" onClick={handleSave} disabled={saving} className="gap-2">
+                                <Save className="h-4 w-4" />
                                 {saving ? 'Salvando...' : 'Salvar Alterações'}
                             </Button>
                         </CardContent>
@@ -258,12 +271,19 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                 </TabsContent>
 
                 <TabsContent value="knowledge" className="space-y-4">
-                    <Card>
+                    <Card className="border-border/50">
                         <CardHeader>
-                            <CardTitle>Base de Conhecimento</CardTitle>
-                            <CardDescription>
-                                Informações específicas que o agente pode consultar
-                            </CardDescription>
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                                    <Sparkles className="h-5 w-5 text-white" />
+                                </div>
+                                <div>
+                                    <CardTitle>Base de Conhecimento</CardTitle>
+                                    <CardDescription>
+                                        Informações específicas que o agente pode consultar
+                                    </CardDescription>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -279,8 +299,8 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                     Adicione informações sobre horários, localização, procedimentos e políticas.
                                 </p>
                             </div>
-                            <Button onClick={handleSave} disabled={saving}>
-                                <Save className="h-4 w-4 mr-2" />
+                            <Button variant="gradient" onClick={handleSave} disabled={saving} className="gap-2">
+                                <Save className="h-4 w-4" />
                                 {saving ? 'Salvando...' : 'Salvar Conhecimento'}
                             </Button>
                         </CardContent>
@@ -288,14 +308,19 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                 </TabsContent>
 
                 <TabsContent value="test">
-                    <Card>
+                    <Card className="border-border/50">
                         <CardHeader>
                             <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle>Testar Agente</CardTitle>
-                                    <CardDescription>
-                                        Converse com o agente para testar suas respostas
-                                    </CardDescription>
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                                        <MessageSquare className="h-5 w-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <CardTitle>Testar Agente</CardTitle>
+                                        <CardDescription>
+                                            Converse com o agente para testar suas respostas
+                                        </CardDescription>
+                                    </div>
                                 </div>
                                 {testMessages.length > 0 && (
                                     <Button variant="outline" size="sm" onClick={clearTestChat}>
@@ -305,26 +330,30 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="border rounded-lg h-[400px] flex flex-col">
+                            <div className="border border-border/50 rounded-2xl h-[400px] flex flex-col bg-muted/20 overflow-hidden">
                                 {/* Messages */}
                                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                     {testMessages.length === 0 ? (
-                                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                                            Envie uma mensagem para testar o agente
+                                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                            <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                                                <Bot className="h-8 w-8 opacity-50" />
+                                            </div>
+                                            <p className="font-medium">Envie uma mensagem para testar</p>
+                                            <p className="text-sm">Simule uma conversa com o agente</p>
                                         </div>
                                     ) : (
                                         testMessages.map((msg, index) => (
                                             <div
                                                 key={index}
-                                                className={`flex items-start gap-3 ${
+                                                className={`flex items-start gap-3 animate-fade-in ${
                                                     msg.role === 'user' ? 'flex-row-reverse' : ''
                                                 }`}
                                             >
                                                 <div
-                                                    className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                                                    className={`h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 ${
                                                         msg.role === 'user'
-                                                            ? 'bg-primary text-primary-foreground'
-                                                            : 'bg-gray-100'
+                                                            ? 'bg-gradient-primary text-white'
+                                                            : 'bg-muted'
                                                     }`}
                                                 >
                                                     {msg.role === 'user' ? (
@@ -334,10 +363,10 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                                     )}
                                                 </div>
                                                 <div
-                                                    className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                                                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${
                                                         msg.role === 'user'
-                                                            ? 'bg-primary text-primary-foreground'
-                                                            : 'bg-gray-100'
+                                                            ? 'bg-gradient-primary text-white rounded-tr-md'
+                                                            : 'bg-background border border-border/50 rounded-tl-md'
                                                     }`}
                                                 >
                                                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -346,12 +375,12 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                         ))
                                     )}
                                     {sendingTest && (
-                                        <div className="flex items-start gap-3">
-                                            <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                        <div className="flex items-start gap-3 animate-fade-in">
+                                            <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
                                                 <Bot className="h-4 w-4" />
                                             </div>
-                                            <div className="bg-gray-100 rounded-lg px-4 py-2">
-                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            <div className="bg-background border border-border/50 rounded-2xl rounded-tl-md px-4 py-3">
+                                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
                                             </div>
                                         </div>
                                     )}
@@ -359,14 +388,15 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                 </div>
 
                                 {/* Input */}
-                                <form onSubmit={handleSendTestMessage} className="border-t p-4 flex gap-2">
+                                <form onSubmit={handleSendTestMessage} className="border-t border-border/50 p-4 flex gap-2 bg-background">
                                     <Input
                                         value={testInput}
                                         onChange={(e) => setTestInput(e.target.value)}
                                         placeholder="Digite sua mensagem..."
                                         disabled={sendingTest}
+                                        className="rounded-xl"
                                     />
-                                    <Button type="submit" disabled={sendingTest || !testInput.trim()}>
+                                    <Button type="submit" variant="gradient" disabled={sendingTest || !testInput.trim()} size="icon" className="rounded-xl">
                                         <Send className="h-4 w-4" />
                                     </Button>
                                 </form>

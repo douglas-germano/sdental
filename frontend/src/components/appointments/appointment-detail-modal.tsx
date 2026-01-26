@@ -17,7 +17,7 @@ import { useToast } from '@/components/ui/toast'
 import { appointmentsApi } from '@/lib/api'
 import { Appointment } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Loader2, User, Calendar, Clock, FileText, Phone, Mail } from 'lucide-react'
+import { User, Calendar, Clock, FileText, Phone, Mail, CheckCircle, Edit2 } from 'lucide-react'
 
 interface AppointmentDetailModalProps {
   appointment: Appointment | null
@@ -45,7 +45,7 @@ export function AppointmentDetailModal({
       await appointmentsApi.update(appointment.id, { notes })
       toast({
         title: 'Sucesso',
-        description: 'Observações atualizadas!',
+        description: 'Observacoes atualizadas!',
         variant: 'success',
       })
       setIsEditing(false)
@@ -54,7 +54,7 @@ export function AppointmentDetailModal({
       console.error('Error updating notes:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível salvar as observações.',
+        description: 'Nao foi possivel salvar as observacoes.',
         variant: 'error',
       })
     } finally {
@@ -77,7 +77,7 @@ export function AppointmentDetailModal({
       console.error('Error updating status:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar o status.',
+        description: 'Nao foi possivel atualizar o status.',
         variant: 'error',
       })
     } finally {
@@ -95,32 +95,34 @@ export function AppointmentDetailModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogClose onClick={() => onOpenChange(false)} />
         <DialogHeader>
-          <DialogTitle>Detalhes do Agendamento</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Status */}
-          <div className="flex items-center justify-between">
-            <Label>Status</Label>
-            <Badge className={getStatusColor(appointment.status)}>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <DialogTitle>Detalhes do Agendamento</DialogTitle>
+            </div>
+            <Badge className={getStatusColor(appointment.status)} size="lg">
               {getStatusLabel(appointment.status)}
             </Badge>
           </div>
+        </DialogHeader>
 
+        <div className="space-y-4 pt-2">
           {/* Patient Info */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+          <div className="bg-muted/30 p-4 rounded-xl space-y-2 border border-border/50">
             <div className="flex items-center gap-2 text-sm font-medium">
-              <User className="h-4 w-4" />
+              <User className="h-4 w-4 text-primary" />
               Paciente
             </div>
             <div className="pl-6 space-y-1">
               <p className="font-medium">{appointment.patient?.name}</p>
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Phone className="h-3 w-3" />
                 {formatPhone(appointment.patient?.phone || '')}
               </p>
               {appointment.patient?.email && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
                   <Mail className="h-3 w-3" />
                   {appointment.patient.email}
                 </p>
@@ -130,36 +132,40 @@ export function AppointmentDetailModal({
 
           {/* Appointment Info */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label className="flex items-center gap-1">
+            <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+              <Label className="flex items-center gap-2 text-muted-foreground">
                 <FileText className="h-4 w-4" />
-                Serviço
+                Servico
               </Label>
-              <p className="text-sm">{appointment.service_name}</p>
+              <p className="font-medium">{appointment.service_name}</p>
             </div>
-            <div className="space-y-1">
-              <Label className="flex items-center gap-1">
+            <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+              <Label className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                Duração
+                Duracao
               </Label>
-              <p className="text-sm">{appointment.duration_minutes} minutos</p>
+              <p className="font-medium">{appointment.duration_minutes} minutos</p>
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label className="flex items-center gap-1">
+          <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+            <Label className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
               Data e Hora
             </Label>
-            <p className="text-sm">{formatDateTime(appointment.scheduled_datetime)}</p>
+            <p className="font-medium">{formatDateTime(appointment.scheduled_datetime)}</p>
           </div>
 
           {/* Notes */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Observações</Label>
+              <Label className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Observacoes
+              </Label>
               {!isEditing && (
-                <Button variant="ghost" size="sm" onClick={startEditing}>
+                <Button variant="ghost" size="sm" onClick={startEditing} className="gap-1">
+                  <Edit2 className="h-3 w-3" />
                   Editar
                 </Button>
               )}
@@ -169,16 +175,15 @@ export function AppointmentDetailModal({
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Adicionar observações..."
+                  placeholder="Adicionar observacoes..."
                   rows={3}
                 />
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     onClick={handleSaveNotes}
-                    disabled={loading}
+                    loading={loading}
                   >
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Salvar
                   </Button>
                   <Button
@@ -192,8 +197,8 @@ export function AppointmentDetailModal({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                {appointment.notes || 'Nenhuma observação'}
+              <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl border border-border/50">
+                {appointment.notes || 'Nenhuma observacao'}
               </p>
             )}
           </div>
@@ -203,22 +208,23 @@ export function AppointmentDetailModal({
           {appointment.status === 'pending' && (
             <Button
               onClick={() => handleStatusChange('confirmed')}
-              disabled={loading}
-              className="w-full sm:w-auto"
+              loading={loading}
+              variant="gradient"
+              className="w-full sm:w-auto gap-2"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <CheckCircle className="h-4 w-4" />
               Confirmar
             </Button>
           )}
           {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
             <Button
               onClick={() => handleStatusChange('completed')}
-              disabled={loading}
-              variant="outline"
-              className="w-full sm:w-auto"
+              loading={loading}
+              variant="success"
+              className="w-full sm:w-auto gap-2"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Marcar como Concluído
+              <CheckCircle className="h-4 w-4" />
+              Marcar como Concluido
             </Button>
           )}
           <Button
