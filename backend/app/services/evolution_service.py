@@ -85,28 +85,21 @@ class EvolutionService:
     def _auto_configure_webhook(self):
         """
         Automatically configure webhook for this instance.
-        Uses the current request context or falls back to environment.
+        Always uses production URL from BASE_URL environment variable.
         """
         try:
-            # Try to get the base URL from Flask request context
-            from flask import request
-            if request:
-                # Build webhook URL from current request
-                scheme = request.scheme
-                host = request.host
-                webhook_url = f"{scheme}://{host}/api/webhook/evolution"
-            else:
-                # Fallback: try to get from environment or config
-                base_url = current_app.config.get('BASE_URL')
-                if not base_url:
-                    logger.warning('No BASE_URL configured, skipping auto webhook setup')
-                    return
-                webhook_url = f"{base_url}/api/webhook/evolution"
+            # Always use BASE_URL from environment (production URL)
+            base_url = current_app.config.get('BASE_URL')
+            if not base_url:
+                logger.warning('No BASE_URL configured, skipping auto webhook setup')
+                return
+            
+            webhook_url = f"{base_url}/api/webhook/evolution"
             
             logger.info('Auto-configuring webhook for %s: %s', self.instance_name, webhook_url)
             self.set_webhook(webhook_url)
         except Exception as e:
-            logger.error('Failed to auto-configure webhook: %s', str(e))
+            logger.error('Failed to auto-configure webhook: %s', str(e)))
 
 
     def send_message(self, phone: str, message: str) -> dict:
