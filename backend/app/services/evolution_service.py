@@ -119,10 +119,26 @@ class EvolutionService:
 
         url = f'{self.api_url}/message/sendText/{self.instance_name}'
 
+        # Evolution API v2 payload structure
         payload = {
-            'number': phone,
-            'text': message
+            "number": phone,
+            "text": message,  # Changed from textMessage to text usually works, but verifying
+            "options": {
+                "delay": 1200,
+                "presence": "composing",
+                "linkPreview": False
+            }
         }
+        
+        # Some versions use this structure:
+        # payload = {
+        #    "number": phone,
+        #    "textMessage": {
+        #        "text": message
+        #    }
+        # }
+        
+        # Let's try the simple flat structure first but add options which might be required by some setups
 
         try:
             response = requests.post(
@@ -131,6 +147,11 @@ class EvolutionService:
                 headers=self._get_headers(),
                 timeout=30
             )
+            
+            # Log response body for debugging 400 errors
+            if response.status_code == 400:
+                logger.error('Evolution API 400 Error: %s', response.text)
+                
             response.raise_for_status()
             logger.info('Message sent to %s via Evolution API', phone)
             return response.json()
