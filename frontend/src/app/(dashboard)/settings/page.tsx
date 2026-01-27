@@ -10,7 +10,7 @@ import { clinicsApi } from '@/lib/api'
 import { getDayName } from '@/lib/utils'
 import {
   Save, Wifi, Clock, Stethoscope, Trash2, Plus, CheckCircle, XCircle,
-  ChevronRight, X, Loader2, User, Building2, Mail, Phone, Link
+  ChevronRight, X, Loader2, User, Building2, Mail, Phone, Link, Copy
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -339,18 +339,24 @@ export default function SettingsPage() {
                       <Link className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">Link de Agendamento</span>
                     </div>
-                    {clinic?.slug ? (
-                      <a
-                        href={`/agendar/${clinic.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
+                    <div className="flex items-center gap-2">
+                      <span className="text-primary">
+                        {typeof window !== 'undefined' ? window.location.origin : ''}/agendar/{clinic?.slug || clinic?.id?.slice(0, 8)}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const url = `${window.location.origin}/agendar/${clinic?.slug || clinic?.id?.slice(0, 8)}`
+                          navigator.clipboard.writeText(url)
+                          showMessage('success', 'Link copiado!')
+                        }}
+                        className="gap-1"
                       >
-                        /agendar/{clinic.slug}
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">Não configurado</span>
-                    )}
+                        <Copy className="h-4 w-4" />
+                        Copiar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
