@@ -16,8 +16,6 @@ import {
   X,
   Bot,
   Sparkles,
-  ChevronLeft,
-  ChevronRight,
   PanelLeftClose,
   PanelLeft
 } from 'lucide-react'
@@ -43,7 +41,6 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Persistir estado da sidebar no localStorage
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved !== null) {
@@ -65,7 +62,7 @@ export default function DashboardLayout({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
@@ -81,40 +78,37 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-muted/30">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Clean white design */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 bg-gradient-dark transform transition-all duration-300 ease-out',
-          // Mobile: sempre escondido por padrão, aparece com sidebarOpen
+          'fixed inset-y-0 left-0 z-50 bg-white border-r border-border/60 transform transition-all duration-300 ease-out',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-          // Desktop: largura varia conforme collapsed
-          sidebarCollapsed ? 'lg:w-20' : 'lg:w-72',
-          // Mobile sempre tem largura total
-          'w-72'
+          sidebarCollapsed ? 'lg:w-20' : 'lg:w-64',
+          'w-64'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className={cn(
-            'flex items-center h-20 px-4 border-b border-white/10',
-            sidebarCollapsed ? 'lg:justify-center lg:px-2' : 'justify-between px-6'
+            'flex items-center h-14 px-4 border-b border-border/60',
+            sidebarCollapsed ? 'lg:justify-center lg:px-2' : 'justify-between'
           )}>
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-shadow flex-shrink-0">
-                <Sparkles className="h-5 w-5 text-white" />
+              <div className="w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow flex-shrink-0">
+                <Sparkles className="h-4 w-4 text-white" />
               </div>
               <span className={cn(
-                'text-xl font-bold text-white transition-all duration-300',
+                'text-lg font-semibold text-foreground transition-all duration-300',
                 sidebarCollapsed ? 'lg:hidden' : 'lg:block'
               )}>
                 SDental
@@ -123,34 +117,34 @@ export default function DashboardLayout({
 
             {/* Mobile close button */}
             <button
-              className="lg:hidden text-white/70 hover:text-white transition-colors"
+              className="lg:hidden p-1.5 hover:bg-muted rounded-lg transition-colors"
               onClick={() => setSidebarOpen(false)}
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5 text-muted-foreground" />
             </button>
           </div>
 
           {/* Toggle collapse button - Desktop only */}
-          <div className="hidden lg:flex justify-end px-2 py-2 border-b border-white/5">
+          <div className="hidden lg:flex justify-end px-2 py-2">
             <button
               onClick={toggleSidebarCollapse}
               className={cn(
-                'p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200',
+                'p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200',
                 sidebarCollapsed && 'mx-auto'
               )}
               title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
             >
               {sidebarCollapsed ? (
-                <PanelLeft className="h-5 w-5" />
+                <PanelLeft className="h-4 w-4" />
               ) : (
-                <PanelLeftClose className="h-5 w-5" />
+                <PanelLeftClose className="h-4 w-4" />
               )}
             </button>
           </div>
 
           {/* Navigation */}
           <nav className={cn(
-            'flex-1 py-4 space-y-1 overflow-y-auto',
+            'flex-1 py-2 space-y-1 overflow-y-auto',
             sidebarCollapsed ? 'lg:px-2' : 'px-3'
           )}>
             {navigation.map((item, index) => {
@@ -160,21 +154,20 @@ export default function DashboardLayout({
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 text-sm font-medium rounded-xl transition-all duration-200',
+                    'flex items-center gap-3 text-sm font-medium rounded-lg transition-all duration-200',
                     'animate-slide-in-left',
-                    // Padding diferente quando colapsado
-                    sidebarCollapsed ? 'lg:px-0 lg:py-3 lg:justify-center px-4 py-3' : 'px-4 py-3',
+                    sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-2.5' : 'px-3 py-2.5',
                     isActive
-                      ? 'bg-gradient-primary text-white shadow-glow'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   )}
                   style={{ animationDelay: `${index * 50}ms` }}
                   onClick={() => setSidebarOpen(false)}
                   title={sidebarCollapsed ? item.name : undefined}
                 >
                   <item.icon className={cn(
-                    'h-5 w-5 transition-transform flex-shrink-0',
-                    isActive && 'scale-110'
+                    'h-4 w-4 transition-transform flex-shrink-0',
+                    isActive && 'scale-105'
                   )} />
                   <span className={cn(
                     'transition-all duration-300',
@@ -182,9 +175,6 @@ export default function DashboardLayout({
                   )}>
                     {item.name}
                   </span>
-                  {isActive && !sidebarCollapsed && (
-                    <div className="ml-auto w-2 h-2 rounded-full bg-white animate-pulse lg:block hidden" />
-                  )}
                 </Link>
               )
             })}
@@ -192,45 +182,46 @@ export default function DashboardLayout({
 
           {/* User section */}
           <div className={cn(
-            'p-3 border-t border-white/10',
-            sidebarCollapsed ? 'lg:px-2' : 'p-4'
+            'p-3 border-t border-border/60',
+            sidebarCollapsed ? 'lg:px-2' : ''
           )}>
-            {/* User info - esconde quando colapsado */}
+            {/* User info - hidden when collapsed */}
             <div className={cn(
-              'mb-3 px-2 transition-all duration-300',
+              'mb-3 px-1 transition-all duration-300',
               sidebarCollapsed ? 'lg:hidden' : 'block'
             )}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
                   {clinic.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{clinic.name}</p>
-                  <p className="text-xs text-white/50 truncate">{clinic.email}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{clinic.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{clinic.email}</p>
                 </div>
               </div>
             </div>
 
-            {/* Avatar mini quando colapsado */}
+            {/* Mini avatar when collapsed */}
             <div className={cn(
               'hidden mb-3 justify-center',
               sidebarCollapsed && 'lg:flex'
             )}>
-              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
                 {clinic.name.charAt(0).toUpperCase()}
               </div>
             </div>
 
             <Button
               variant="ghost"
+              size="sm"
               className={cn(
-                'w-full text-white/70 hover:text-white hover:bg-white/10',
+                'w-full text-muted-foreground hover:text-foreground hover:bg-muted',
                 sidebarCollapsed ? 'lg:px-0 lg:justify-center justify-start' : 'justify-start'
               )}
               onClick={logout}
               title={sidebarCollapsed ? 'Sair' : undefined}
             >
-              <LogOut className={cn('h-4 w-4', sidebarCollapsed ? '' : 'mr-3')} />
+              <LogOut className={cn('h-4 w-4', sidebarCollapsed ? '' : 'mr-2')} />
               <span className={cn(
                 sidebarCollapsed ? 'lg:hidden' : 'lg:block'
               )}>
@@ -244,12 +235,12 @@ export default function DashboardLayout({
       {/* Main content */}
       <div className={cn(
         'min-h-screen flex flex-col transition-all duration-300',
-        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'
+        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
       )}>
-        {/* Top bar - compacto */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border/40 bg-background/95 backdrop-blur-sm px-4 lg:px-6">
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border/60 bg-white/95 backdrop-blur-sm px-4 lg:px-6">
           <button
-            className="lg:hidden p-2 -ml-2 hover:bg-accent rounded-lg transition-colors"
+            className="lg:hidden p-2 -ml-2 hover:bg-muted rounded-lg transition-colors"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-5 w-5 text-muted-foreground" />
@@ -263,7 +254,7 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page content - ocupa todo espaço disponível */}
+        {/* Page content */}
         <main className="flex-1 p-4 lg:p-6 animate-fade-in-up">
           <div className="h-full w-full max-w-[1600px] mx-auto">
             {children}
