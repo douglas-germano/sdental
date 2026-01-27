@@ -60,6 +60,8 @@ class Clinic(db.Model):
             'name': self.name,
             'email': self.email,
             'phone': self.phone,
+            'slug': self.slug,
+            'booking_enabled': self.booking_enabled,
             'business_hours': self.business_hours,
             'services': self.services,
             'active': self.active,
