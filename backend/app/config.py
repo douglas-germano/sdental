@@ -31,6 +31,9 @@ class Config:
     # Webhook authentication
     WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')
 
+    # Base URL for webhook configuration
+    BASE_URL = os.getenv('BASE_URL')
+
     # Rate limiting
     RATELIMIT_STORAGE_URI = os.getenv('REDIS_URL', 'memory://')
     RATELIMIT_STRATEGY = 'fixed-window'
