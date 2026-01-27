@@ -14,6 +14,10 @@ class Clinic(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False)
     phone = db.Column(db.String(20), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    
+    # Public booking
+    slug = db.Column(db.String(100), unique=True, nullable=True)  # URL-friendly identifier
+    booking_enabled = db.Column(db.Boolean, default=True)
 
     # Evolution API configuration
     evolution_api_url = db.Column(db.String(500), nullable=True)

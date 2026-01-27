@@ -43,7 +43,7 @@ def create_app(config_name: str = None) -> Flask:
     register_error_handlers(app)
 
     # Register blueprints
-    from .routes import auth, clinics, patients, appointments, conversations, webhook, analytics, health
+    from .routes import auth, clinics, patients, appointments, conversations, webhook, analytics, health, public
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(clinics.bp)
@@ -53,6 +53,7 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(webhook.bp)
     app.register_blueprint(analytics.bp)
     app.register_blueprint(health.bp)
+    app.register_blueprint(public.bp)
 
     from .routes import agents
     app.register_blueprint(agents.bp)

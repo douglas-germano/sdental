@@ -158,6 +158,15 @@ class ClaudeService:
                     },
                     "required": ["reason"]
                 }
+            },
+            {
+                "name": "send_booking_link",
+                "description": "Envia o link do calendário de agendamento online para o paciente agendar por conta própria. Use quando o paciente preferir escolher o horário sozinho ou quando houver muitas opções disponíveis.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
             }
         ]
 
@@ -313,6 +322,18 @@ class ClaudeService:
             except Exception as e:
                 logger.error('Error transferring to human: %s', str(e))
                 return f"Erro ao transferir: {str(e)}"
+
+        elif tool_name == "send_booking_link":
+            try:
+                base_url = current_app.config.get('BASE_URL', 'https://sdental.onrender.com')
+                slug = self.clinic.slug
+                if not slug:
+                    return "O agendamento online não está configurado para esta clínica."
+                booking_url = f"{base_url}/agendar/{slug}"
+                return f"Link de agendamento: {booking_url}"
+            except Exception as e:
+                logger.error('Error generating booking link: %s', str(e))
+                return f"Erro ao gerar link: {str(e)}"
 
         return "Ferramenta não reconhecida."
 
