@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
@@ -15,9 +15,12 @@ import {
   Menu,
   X,
   Bot,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeft
 } from 'lucide-react'
-import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -38,6 +41,21 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Persistir estado da sidebar no localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar-collapsed')
+    if (saved !== null) {
+      setSidebarCollapsed(JSON.parse(saved))
+    }
+  }, [])
+
+  const toggleSidebarCollapse = () => {
+    const newValue = !sidebarCollapsed
+    setSidebarCollapsed(newValue)
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(newValue))
+  }
 
   useEffect(() => {
     if (!isLoading && !clinic) {
@@ -75,19 +93,35 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-72 bg-gradient-dark transform transition-transform duration-300 ease-out lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-0 left-0 z-50 bg-gradient-dark transform transition-all duration-300 ease-out',
+          // Mobile: sempre escondido por padrão, aparece com sidebarOpen
+          'lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+          // Desktop: largura varia conforme collapsed
+          sidebarCollapsed ? 'lg:w-20' : 'lg:w-72',
+          // Mobile sempre tem largura total
+          'w-72'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-20 px-6 border-b border-white/10">
+          <div className={cn(
+            'flex items-center h-20 px-4 border-b border-white/10',
+            sidebarCollapsed ? 'lg:justify-center lg:px-2' : 'justify-between px-6'
+          )}>
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-shadow">
+              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-shadow flex-shrink-0">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">SDental</span>
+              <span className={cn(
+                'text-xl font-bold text-white transition-all duration-300',
+                sidebarCollapsed ? 'lg:hidden' : 'lg:block'
+              )}>
+                SDental
+              </span>
             </Link>
+
+            {/* Mobile close button */}
             <button
               className="lg:hidden text-white/70 hover:text-white transition-colors"
               onClick={() => setSidebarOpen(false)}
@@ -96,8 +130,29 @@ export default function DashboardLayout({
             </button>
           </div>
 
+          {/* Toggle collapse button - Desktop only */}
+          <div className="hidden lg:flex justify-end px-2 py-2 border-b border-white/5">
+            <button
+              onClick={toggleSidebarCollapse}
+              className={cn(
+                'p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200',
+                sidebarCollapsed && 'mx-auto'
+              )}
+              title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeft className="h-5 w-5" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <nav className={cn(
+            'flex-1 py-4 space-y-1 overflow-y-auto',
+            sidebarCollapsed ? 'lg:px-2' : 'px-3'
+          )}>
             {navigation.map((item, index) => {
               const isActive = pathname === item.href
               return (
@@ -105,22 +160,30 @@ export default function DashboardLayout({
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200',
+                    'flex items-center gap-3 text-sm font-medium rounded-xl transition-all duration-200',
                     'animate-slide-in-left',
+                    // Padding diferente quando colapsado
+                    sidebarCollapsed ? 'lg:px-0 lg:py-3 lg:justify-center px-4 py-3' : 'px-4 py-3',
                     isActive
                       ? 'bg-gradient-primary text-white shadow-glow'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   )}
                   style={{ animationDelay: `${index * 50}ms` }}
                   onClick={() => setSidebarOpen(false)}
+                  title={sidebarCollapsed ? item.name : undefined}
                 >
                   <item.icon className={cn(
-                    'h-5 w-5 transition-transform',
+                    'h-5 w-5 transition-transform flex-shrink-0',
                     isActive && 'scale-110'
                   )} />
-                  {item.name}
-                  {isActive && (
-                    <div className="ml-auto w-2 h-2 rounded-full bg-white animate-pulse" />
+                  <span className={cn(
+                    'transition-all duration-300',
+                    sidebarCollapsed ? 'lg:hidden' : 'lg:block'
+                  )}>
+                    {item.name}
+                  </span>
+                  {isActive && !sidebarCollapsed && (
+                    <div className="ml-auto w-2 h-2 rounded-full bg-white animate-pulse lg:block hidden" />
                   )}
                 </Link>
               )
@@ -128,10 +191,17 @@ export default function DashboardLayout({
           </nav>
 
           {/* User section */}
-          <div className="p-4 border-t border-white/10">
-            <div className="mb-4 px-2">
+          <div className={cn(
+            'p-3 border-t border-white/10',
+            sidebarCollapsed ? 'lg:px-2' : 'p-4'
+          )}>
+            {/* User info - esconde quando colapsado */}
+            <div className={cn(
+              'mb-3 px-2 transition-all duration-300',
+              sidebarCollapsed ? 'lg:hidden' : 'block'
+            )}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm">
+                <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                   {clinic.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -140,20 +210,42 @@ export default function DashboardLayout({
                 </div>
               </div>
             </div>
+
+            {/* Avatar mini quando colapsado */}
+            <div className={cn(
+              'hidden mb-3 justify-center',
+              sidebarCollapsed && 'lg:flex'
+            )}>
+              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm">
+                {clinic.name.charAt(0).toUpperCase()}
+              </div>
+            </div>
+
             <Button
               variant="ghost"
-              className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
+              className={cn(
+                'w-full text-white/70 hover:text-white hover:bg-white/10',
+                sidebarCollapsed ? 'lg:px-0 lg:justify-center justify-start' : 'justify-start'
+              )}
               onClick={logout}
+              title={sidebarCollapsed ? 'Sair' : undefined}
             >
-              <LogOut className="mr-3 h-4 w-4" />
-              Sair
+              <LogOut className={cn('h-4 w-4', sidebarCollapsed ? '' : 'mr-3')} />
+              <span className={cn(
+                sidebarCollapsed ? 'lg:hidden' : 'lg:block'
+              )}>
+                Sair
+              </span>
             </Button>
           </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-72">
+      <div className={cn(
+        'transition-all duration-300',
+        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'
+      )}>
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white/80 backdrop-blur-xl px-4 md:px-6 shadow-soft">
           <button
@@ -162,7 +254,9 @@ export default function DashboardLayout({
           >
             <Menu className="h-5 w-5" />
           </button>
+
           <div className="flex-1" />
+
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 text-sm">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
