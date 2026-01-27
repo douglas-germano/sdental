@@ -161,7 +161,10 @@ export const conversationsApi = {
 
   resolve: (id: string) => api.put(`/conversations/${id}/resolve`),
 
-  reactivate: (id: string) => api.put(`/conversations/${id}/reactivate`)
+  reactivate: (id: string) => api.put(`/conversations/${id}/reactivate`),
+
+  linkPatient: (id: string, data: { name: string; phone?: string; email?: string; notes?: string }) =>
+    api.post(`/conversations/${id}/link-patient`, data)
 }
 
 // Analytics API

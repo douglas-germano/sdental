@@ -97,6 +97,27 @@ export default function ConversationDetailPage() {
     }
   }
 
+  const handleCreatePatient = async () => {
+    if (!patientForm.name) return
+
+    setSaving(true)
+    try {
+      await conversationsApi.linkPatient(params.id as string, {
+        name: patientForm.name,
+        phone: patientForm.phone || undefined,
+        email: patientForm.email || undefined,
+        notes: patientForm.notes || undefined
+      })
+      setIsEditing(false)
+      fetchConversation()
+    } catch (error) {
+      console.error('Error creating patient:', error)
+      alert('Erro ao criar paciente')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleCancelEdit = () => {
     if (conversation?.patient) {
       setPatientForm({
@@ -328,9 +349,96 @@ export default function ConversationDetailPage() {
               </div>
             )
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>Paciente não identificado</p>
-            </div>
+            // No patient - show create form
+            isEditing ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Nome *
+                    </Label>
+                    <Input
+                      id="name"
+                      value={patientForm.name}
+                      onChange={(e) => setPatientForm({ ...patientForm, name: e.target.value })}
+                      placeholder="Nome do paciente"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Telefone
+                    </Label>
+                    <Input
+                      id="phone"
+                      value={patientForm.phone || conversation.phone_number}
+                      onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
+                      placeholder="Telefone"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={patientForm.email}
+                      onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Observações
+                    </Label>
+                    <Input
+                      id="notes"
+                      value={patientForm.notes}
+                      onChange={(e) => setPatientForm({ ...patientForm, notes: e.target.value })}
+                      placeholder="Observações"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditing(false)}
+                    disabled={saving}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleCreatePatient}
+                    disabled={saving || !patientForm.name}
+                    className="gap-2 bg-primary hover:bg-primary/90"
+                  >
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Criar Paciente
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                  <User className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground mb-4">Paciente não identificado</p>
+                <Button onClick={() => setIsEditing(true)} className="gap-2">
+                  <User className="h-4 w-4" />
+                  Cadastrar Paciente
+                </Button>
+              </div>
+            )
           )}
         </CardContent>
       </Card>
