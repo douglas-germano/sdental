@@ -6,10 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import { conversationsApi } from '@/lib/api'
+import { Input } from '@/components/ui/input'
+import { conversationsApi, patientsApi } from '@/lib/api'
 import { Conversation, Message } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { ArrowLeft, User, Bot, AlertCircle, CheckCircle, RotateCcw, Phone, Mail, FileText } from 'lucide-react'
+import {
+  ArrowLeft, User, Bot, AlertCircle, CheckCircle, RotateCcw,
+  Phone, Mail, FileText, Save, X, Edit2, Loader2
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function ConversationDetailPage() {
@@ -18,10 +22,29 @@ export default function ConversationDetailPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Patient editing state
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [patientForm, setPatientForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    notes: ''
+  })
+
   const fetchConversation = async () => {
     try {
       const response = await conversationsApi.get(params.id as string)
       setConversation(response.data)
+      // Initialize form with patient data
+      if (response.data.patient) {
+        setPatientForm({
+          name: response.data.patient.name || '',
+          phone: response.data.patient.phone || '',
+          email: response.data.patient.email || '',
+          notes: response.data.patient.notes || ''
+        })
+      }
     } catch (error) {
       console.error('Error fetching conversation:', error)
     } finally {
@@ -51,6 +74,39 @@ export default function ConversationDetailPage() {
     } catch (error) {
       console.error('Error reactivating conversation:', error)
     }
+  }
+
+  const handleSavePatient = async () => {
+    if (!conversation?.patient?.id) return
+
+    setSaving(true)
+    try {
+      await patientsApi.update(conversation.patient.id, {
+        name: patientForm.name,
+        phone: patientForm.phone,
+        email: patientForm.email || undefined,
+        notes: patientForm.notes || undefined
+      })
+      setIsEditing(false)
+      fetchConversation()
+    } catch (error) {
+      console.error('Error saving patient:', error)
+      alert('Erro ao salvar dados do paciente')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    if (conversation?.patient) {
+      setPatientForm({
+        name: conversation.patient.name || '',
+        phone: conversation.patient.phone || '',
+        email: conversation.patient.email || '',
+        notes: conversation.patient.notes || ''
+      })
+    }
+    setIsEditing(false)
   }
 
   if (loading) {
@@ -135,6 +191,150 @@ export default function ConversationDetailPage() {
         </div>
       )}
 
+      {/* Patient Info - Editable */}
+      <Card className="border-border/50">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+                <User className="h-4 w-4 text-white" />
+              </div>
+              Informações do Paciente
+            </CardTitle>
+            {conversation.patient && !isEditing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="gap-2"
+              >
+                <Edit2 className="h-4 w-4" />
+                Editar
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {conversation.patient ? (
+            isEditing ? (
+              // Edit Mode
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Nome
+                    </Label>
+                    <Input
+                      id="name"
+                      value={patientForm.name}
+                      onChange={(e) => setPatientForm({ ...patientForm, name: e.target.value })}
+                      placeholder="Nome do paciente"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Telefone
+                    </Label>
+                    <Input
+                      id="phone"
+                      value={patientForm.phone}
+                      onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
+                      placeholder="Telefone"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={patientForm.email}
+                      onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="notes" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Observações
+                    </Label>
+                    <Input
+                      id="notes"
+                      value={patientForm.notes}
+                      onChange={(e) => setPatientForm({ ...patientForm, notes: e.target.value })}
+                      placeholder="Observações sobre o paciente"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSavePatient}
+                    disabled={saving || !patientForm.name || !patientForm.phone}
+                    className="gap-2 bg-primary hover:bg-primary/90"
+                  >
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Salvar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // View Mode
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                  <Label className="flex items-center gap-2 text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    Nome
+                  </Label>
+                  <p className="font-medium">{conversation.patient.name}</p>
+                </div>
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                  <Label className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    Telefone
+                  </Label>
+                  <p className="font-medium">{formatPhone(conversation.patient.phone)}</p>
+                </div>
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                  <Label className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <p className="font-medium">{conversation.patient.email || '-'}</p>
+                </div>
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                  <Label className="flex items-center gap-2 text-muted-foreground">
+                    <FileText className="h-4 w-4" />
+                    Observações
+                  </Label>
+                  <p className="font-medium">{conversation.patient.notes || '-'}</p>
+                </div>
+              </div>
+            )
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Paciente não identificado</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Messages */}
       <Card className="border-border/50">
         <CardHeader>
@@ -196,56 +396,6 @@ export default function ConversationDetailPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Patient Info */}
-      {conversation.patient && (
-        <Card className="border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
-              </div>
-              Informacoes do Paciente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
-                <Label className="flex items-center gap-2 text-muted-foreground">
-                  <User className="h-4 w-4" />
-                  Nome
-                </Label>
-                <p className="font-medium">{conversation.patient.name}</p>
-              </div>
-              <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
-                <Label className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-4 w-4" />
-                  Telefone
-                </Label>
-                <p className="font-medium">{formatPhone(conversation.patient.phone)}</p>
-              </div>
-              {conversation.patient.email && (
-                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
-                  <Label className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </Label>
-                  <p className="font-medium">{conversation.patient.email}</p>
-                </div>
-              )}
-              {conversation.patient.notes && (
-                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50 md:col-span-2">
-                  <Label className="flex items-center gap-2 text-muted-foreground">
-                    <FileText className="h-4 w-4" />
-                    Observacoes
-                  </Label>
-                  <p className="font-medium">{conversation.patient.notes}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
