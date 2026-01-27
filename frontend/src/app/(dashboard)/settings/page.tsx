@@ -110,7 +110,8 @@ export default function SettingsPage() {
     try {
       await clinicsApi.updateProfile({
         name: profileForm.name,
-        phone: profileForm.phone
+        phone: profileForm.phone,
+        slug: profileForm.slug
       })
       await refreshClinic()
       showMessage('success', 'Perfil salvo!')
@@ -333,30 +334,45 @@ export default function SettingsPage() {
                     )}
                   </div>
 
-                  {/* Booking URL */}
-                  <div className="flex items-center justify-between py-3 border-b border-border/50">
+                  {/* Booking URL / Slug */}
+                  <div className={cn(
+                    "flex items-center justify-between py-3 border-b border-border/50",
+                    editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
+                  )}>
                     <div className="flex items-center gap-3">
                       <Link className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">Link de Agendamento</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-primary">
-                        {typeof window !== 'undefined' ? window.location.origin : ''}/agendar/{clinic?.slug || clinic?.id?.slice(0, 8)}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const url = `${window.location.origin}/agendar/${clinic?.slug || clinic?.id?.slice(0, 8)}`
-                          navigator.clipboard.writeText(url)
-                          showMessage('success', 'Link copiado!')
-                        }}
-                        className="gap-1"
-                      >
-                        <Copy className="h-4 w-4" />
-                        Copiar
-                      </Button>
-                    </div>
+                    {editingField === 'profile' ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-sm">/agendar/</span>
+                        <Input
+                          value={profileForm.slug}
+                          onChange={(e) => setProfileForm({ ...profileForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                          className="w-48"
+                          placeholder="minha-clinica"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-primary">
+                          {typeof window !== 'undefined' ? window.location.origin : ''}/agendar/{clinic?.slug || clinic?.id?.slice(0, 8)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const url = `${window.location.origin}/agendar/${clinic?.slug || clinic?.id?.slice(0, 8)}`
+                            navigator.clipboard.writeText(url)
+                            showMessage('success', 'Link copiado!')
+                          }}
+                          className="gap-1"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copiar
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
