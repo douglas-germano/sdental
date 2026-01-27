@@ -5,6 +5,7 @@ export interface Clinic {
   phone: string
   slug?: string
   booking_enabled?: boolean
+  agent_enabled?: boolean
   business_hours: Record<string, BusinessHour>
   services: Service[]
   active: boolean

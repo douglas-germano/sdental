@@ -82,7 +82,7 @@ export const authApi = {
 export const clinicsApi = {
   getProfile: () => api.get('/clinics/profile'),
 
-  updateProfile: (data: { name?: string; phone?: string; slug?: string }) =>
+  updateProfile: (data: { name?: string; phone?: string; slug?: string; agent_enabled?: boolean }) =>
     api.put('/clinics/profile', data),
 
   createEvolutionInstance: () => api.post('/clinics/evolution/instance', {}),

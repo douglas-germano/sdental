@@ -37,6 +37,7 @@ class Clinic(db.Model):
     agent_temperature = db.Column(db.Float, default=0.7)
     agent_system_prompt = db.Column(db.Text, nullable=True)
     agent_context = db.Column(db.Text, nullable=True)
+    agent_enabled = db.Column(db.Boolean, default=True)
 
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -62,6 +63,7 @@ class Clinic(db.Model):
             'phone': self.phone,
             'slug': self.slug,
             'booking_enabled': self.booking_enabled,
+            'agent_enabled': self.agent_enabled,
             'business_hours': self.business_hours,
             'services': self.services,
             'active': self.active,

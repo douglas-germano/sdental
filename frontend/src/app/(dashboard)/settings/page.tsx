@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { clinicsApi } from '@/lib/api'
 import { getDayName } from '@/lib/utils'
 import {
@@ -94,10 +96,25 @@ export default function SettingsPage() {
         phone: clinic.phone || '',
         slug: clinic.slug || ''
       })
+      setAgentEnabled(clinic.agent_enabled ?? true)
       setBusinessHours(clinic.business_hours || {})
       setServices(clinic.services || [])
     }
   }, [clinic])
+
+  const [agentEnabled, setAgentEnabled] = useState(true)
+
+  const handleToggleAgent = async (enabled: boolean) => {
+    setAgentEnabled(enabled)
+    try {
+      await clinicsApi.updateProfile({ agent_enabled: enabled })
+      showMessage('success', enabled ? 'IA ativada com sucesso!' : 'IA desativada com sucesso!')
+      await refreshClinic()
+    } catch (err) {
+      setAgentEnabled(!enabled) // revert
+      showMessage('error', 'Erro ao atualizar configuração.')
+    }
+  }
 
   const handleConnect = async () => {
     setSaving('evolution')
@@ -404,6 +421,19 @@ export default function SettingsPage() {
                   badge={evolutionStatus === 'connected' ? 'Conectado' : 'Desconectado'}
                   badgeVariant={evolutionStatus === 'connected' ? 'success' : 'outline'}
                 />
+
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-card mt-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Agente de IA (Claude)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Quando ativado, a IA responderá automaticamente aos pacientes.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={agentEnabled}
+                    onCheckedChange={handleToggleAgent}
+                  />
+                </div>
 
                 {evolutionStatus === 'disconnected' && !qrCode && (
                   <div className="pt-4">

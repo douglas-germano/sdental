@@ -20,7 +20,7 @@ def update_profile(current_clinic):
     data = request.get_json()
 
     # Fields that can be updated
-    allowed_fields = ['name', 'phone', 'slug']
+    allowed_fields = ['name', 'phone', 'slug', 'agent_enabled']
     for field in allowed_fields:
         if field in data:
             setattr(current_clinic, field, data[field])

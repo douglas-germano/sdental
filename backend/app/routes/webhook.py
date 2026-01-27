@@ -90,6 +90,11 @@ def evolution_webhook():
             logger.warning('No clinic found for instance: %s', instance_name)
             return jsonify({'error': 'Clinic not found'}), 404
 
+        # Check if AI agent is enabled
+        if not clinic.agent_enabled:
+            logger.info('Agent disabled for clinic %s, ignoring message', clinic.name)
+            return jsonify({'status': 'ignored', 'reason': 'Agent disabled'})
+
         # Process message
         try:
             conversation_service = ConversationService(clinic)
