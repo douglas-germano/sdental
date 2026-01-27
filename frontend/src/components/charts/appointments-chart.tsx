@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { analyticsApi } from '@/lib/api'
+import { Calendar } from 'lucide-react'
 
 interface ChartData {
   date: string
@@ -22,6 +23,7 @@ interface ChartData {
 export function AppointmentsChart() {
   const [data, setData] = useState<ChartData[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,9 +31,11 @@ export function AppointmentsChart() {
         const response = await analyticsApi.appointmentsByPeriod('day', 30)
         const chartData = response.data.data || []
         setData(chartData)
+        setError(false)
       } catch (error) {
         console.error('Error fetching chart data:', error)
-        setData(generateSampleData())
+        setData([])
+        setError(true)
       } finally {
         setLoading(false)
       }
@@ -40,26 +44,20 @@ export function AppointmentsChart() {
     fetchData()
   }, [])
 
-  const generateSampleData = (): ChartData[] => {
-    const data: ChartData[] = []
-    const today = new Date()
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i)
-      data.push({
-        date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-        total: Math.floor(Math.random() * 10) + 2,
-        completed: Math.floor(Math.random() * 8) + 1,
-        cancelled: Math.floor(Math.random() * 2),
-      })
-    }
-    return data
-  }
-
   if (loading) {
     return (
       <div className="h-[200px] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      </div>
+    )
+  }
+
+  if (error || data.length === 0) {
+    return (
+      <div className="h-[200px] flex flex-col items-center justify-center text-muted-foreground">
+        <Calendar className="h-10 w-10 mb-2 opacity-40" />
+        <p className="text-sm">Nenhum dado disponivel</p>
+        <p className="text-xs mt-1">Os dados aparecerao conforme os agendamentos forem criados</p>
       </div>
     )
   }
