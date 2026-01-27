@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/button'
@@ -15,7 +16,6 @@ import {
   Menu,
   X,
   Bot,
-  Sparkles,
   PanelLeftClose,
   PanelLeft
 } from 'lucide-react'
@@ -104,8 +104,14 @@ export default function DashboardLayout({
             sidebarCollapsed ? 'lg:justify-center lg:px-2' : 'justify-between'
           )}>
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow flex-shrink-0">
-                <Sparkles className="h-4 w-4 text-white" />
+              <div className="shrink-0 transition-transform hover:scale-105 duration-200">
+                <Image
+                  src="/icon.png"
+                  alt="SDental Logo"
+                  width={36}
+                  height={36}
+                  className="w-9 h-9 rounded-lg shadow-sm group-hover:shadow-md"
+                />
               </div>
               <span className={cn(
                 'text-lg font-semibold text-foreground transition-all duration-300',
