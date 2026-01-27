@@ -10,15 +10,15 @@ import { clinicsApi } from '@/lib/api'
 import { getDayName } from '@/lib/utils'
 import {
   Save, Wifi, Clock, Stethoscope, Trash2, Plus, CheckCircle, XCircle,
-  ChevronRight, X, Loader2
+  ChevronRight, X, Loader2, User, Building2, Mail, Phone, Link
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type Section = 'whatsapp' | 'hours' | 'services'
+type Section = 'profile' | 'whatsapp' | 'hours' | 'services'
 
 export default function SettingsPage() {
   const { clinic, refreshClinic } = useAuth()
-  const [activeSection, setActiveSection] = useState<Section>('whatsapp')
+  const [activeSection, setActiveSection] = useState<Section>('profile')
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -35,7 +35,15 @@ export default function SettingsPage() {
   const [services, setServices] = useState(clinic?.services || [])
   const [newService, setNewService] = useState({ name: '', duration: 30 })
 
+  // Profile State
+  const [profileForm, setProfileForm] = useState({
+    name: clinic?.name || '',
+    phone: clinic?.phone || '',
+    slug: clinic?.slug || ''
+  })
+
   const sections = [
+    { id: 'profile' as Section, label: 'Perfil da Clínica', icon: Building2 },
     { id: 'whatsapp' as Section, label: 'WhatsApp / Evolution', icon: Wifi },
     { id: 'hours' as Section, label: 'Horários de Funcionamento', icon: Clock },
     { id: 'services' as Section, label: 'Serviços / Procedimentos', icon: Stethoscope },
@@ -92,6 +100,23 @@ export default function SettingsPage() {
     } catch (err: any) {
       console.error(err)
       showMessage('error', 'Erro ao iniciar conexão. Tente novamente.')
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    setSaving('profile')
+    try {
+      await clinicsApi.updateProfile({
+        name: profileForm.name,
+        phone: profileForm.phone
+      })
+      await refreshClinic()
+      showMessage('success', 'Perfil salvo!')
+      setEditingField(null)
+    } catch {
+      showMessage('error', 'Erro ao salvar perfil')
     } finally {
       setSaving(null)
     }
@@ -229,6 +254,108 @@ export default function SettingsPage() {
         {/* Content Area */}
         <Card className="flex-1 border-border/50">
           <CardContent className="p-6">
+            {/* Profile Section */}
+            {activeSection === 'profile' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Perfil da Clínica</h2>
+                  {editingField !== 'profile' ? (
+                    <Button variant="outline" size="sm" onClick={() => setEditingField('profile')}>
+                      Editar
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)}>
+                        <X className="h-4 w-4 mr-1" />
+                        Cancelar
+                      </Button>
+                      <Button size="sm" onClick={handleSaveProfile} disabled={saving === 'profile'}>
+                        {saving === 'profile' ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-1" />
+                        )}
+                        Salvar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  {/* Clinic Name */}
+                  <div className={cn(
+                    "flex items-center justify-between py-3 border-b border-border/50",
+                    editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
+                  )}>
+                    <div className="flex items-center gap-3">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Nome da Clínica</span>
+                    </div>
+                    {editingField === 'profile' ? (
+                      <Input
+                        value={profileForm.name}
+                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                        className="w-64"
+                        placeholder="Nome da clínica"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">{clinic?.name || '-'}</span>
+                    )}
+                  </div>
+
+                  {/* Email (read-only) */}
+                  <div className="flex items-center justify-between py-3 border-b border-border/50">
+                    <div className="flex items-center gap-3">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Email</span>
+                    </div>
+                    <span className="text-muted-foreground">{clinic?.email || '-'}</span>
+                  </div>
+
+                  {/* Phone */}
+                  <div className={cn(
+                    "flex items-center justify-between py-3 border-b border-border/50",
+                    editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
+                  )}>
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Telefone</span>
+                    </div>
+                    {editingField === 'profile' ? (
+                      <Input
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        className="w-64"
+                        placeholder="Telefone"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">{clinic?.phone || '-'}</span>
+                    )}
+                  </div>
+
+                  {/* Booking URL */}
+                  <div className="flex items-center justify-between py-3 border-b border-border/50">
+                    <div className="flex items-center gap-3">
+                      <Link className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Link de Agendamento</span>
+                    </div>
+                    {clinic?.slug ? (
+                      <a
+                        href={`/agendar/${clinic.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        /agendar/{clinic.slug}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">Não configurado</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* WhatsApp Section */}
             {activeSection === 'whatsapp' && (
               <div className="space-y-2">

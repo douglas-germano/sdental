@@ -3,6 +3,8 @@ export interface Clinic {
   name: string
   email: string
   phone: string
+  slug?: string
+  booking_enabled?: boolean
   business_hours: Record<string, BusinessHour>
   services: Service[]
   active: boolean
