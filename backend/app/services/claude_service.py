@@ -389,7 +389,7 @@ class ClaudeService:
         try:
             # Call Claude API
             response = self.client.messages.create(
-                model=self.clinic.agent_model or "claude-3-5-sonnet-20240620",
+                model=self.clinic.agent_model or current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
                 max_tokens=1024,
                 temperature=self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7,
                 system=system_prompt,
@@ -423,7 +423,7 @@ class ClaudeService:
                 messages.append({"role": "user", "content": tool_results})
 
                 response = self.client.messages.create(
-                    model=self.clinic.agent_model or "claude-3-5-sonnet-20240620",
+                    model=self.clinic.agent_model or current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
                     max_tokens=1024,
                     temperature=self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7,
                     system=system_prompt,
