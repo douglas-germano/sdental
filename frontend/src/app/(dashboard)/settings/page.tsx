@@ -2,32 +2,44 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/providers'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { clinicsApi } from '@/lib/api'
 import { getDayName } from '@/lib/utils'
-import { Save, Wifi, Clock, Stethoscope, Trash2, Plus, CheckCircle, XCircle } from 'lucide-react'
+import {
+  Save, Wifi, Clock, Stethoscope, Trash2, Plus, CheckCircle, XCircle,
+  ChevronRight, X, Loader2
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+type Section = 'whatsapp' | 'hours' | 'services'
 
 export default function SettingsPage() {
   const { clinic, refreshClinic } = useAuth()
+  const [activeSection, setActiveSection] = useState<Section>('whatsapp')
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [editingField, setEditingField] = useState<string | null>(null)
 
   // Evolution API State
   const [evolutionStatus, setEvolutionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking')
   const [qrCode, setQrCode] = useState<string | null>(null)
 
   // Business Hours State
-  const [businessHours, setBusinessHours] = useState(
-    clinic?.business_hours || {}
-  )
+  const [businessHours, setBusinessHours] = useState(clinic?.business_hours || {})
 
   // Services State
   const [services, setServices] = useState(clinic?.services || [])
   const [newService, setNewService] = useState({ name: '', duration: 30 })
+
+  const sections = [
+    { id: 'whatsapp' as Section, label: 'WhatsApp / Evolution', icon: Wifi },
+    { id: 'hours' as Section, label: 'Horários de Funcionamento', icon: Clock },
+    { id: 'services' as Section, label: 'Serviços / Procedimentos', icon: Stethoscope },
+  ]
 
   const showMessage = (type: 'success' | 'error', message: string) => {
     if (type === 'success') {
@@ -59,8 +71,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     checkStatus()
-
-    // Poll status if QR code is shown
     let interval: NodeJS.Timeout
     if (qrCode) {
       interval = setInterval(checkStatus, 3000)
@@ -72,15 +82,11 @@ export default function SettingsPage() {
     setSaving('evolution')
     setError(null)
     try {
-      // 1. Create/Ensure instance exists
       await clinicsApi.createEvolutionInstance()
-
-      // 2. Get QR Code
       const { data } = await clinicsApi.getEvolutionQrCode()
       if (data.qrcode) {
         setQrCode(data.qrcode)
       } else {
-        // Might already be connected
         checkStatus()
       }
     } catch (err: any) {
@@ -96,9 +102,10 @@ export default function SettingsPage() {
     try {
       await clinicsApi.updateBusinessHours(businessHours)
       await refreshClinic()
-      showMessage('success', 'Horarios de funcionamento salvos!')
+      showMessage('success', 'Horários salvos!')
+      setEditingField(null)
     } catch {
-      showMessage('error', 'Erro ao salvar horarios')
+      showMessage('error', 'Erro ao salvar horários')
     } finally {
       setSaving(null)
     }
@@ -109,9 +116,10 @@ export default function SettingsPage() {
     try {
       await clinicsApi.updateServices(services)
       await refreshClinic()
-      showMessage('success', 'Servicos salvos!')
+      showMessage('success', 'Serviços salvos!')
+      setEditingField(null)
     } catch {
-      showMessage('error', 'Erro ao salvar servicos')
+      showMessage('error', 'Erro ao salvar serviços')
     } finally {
       setSaving(null)
     }
@@ -137,260 +145,334 @@ export default function SettingsPage() {
     })
   }
 
-  return (
-    <div className="space-y-6 animate-fade-in">
+  // Setting Row Component
+  const SettingRow = ({
+    label,
+    value,
+    onEdit,
+    badge,
+    badgeVariant = 'outline'
+  }: {
+    label: string
+    value: React.ReactNode
+    onEdit?: () => void
+    badge?: string
+    badgeVariant?: 'outline' | 'success' | 'destructive'
+  }) => (
+    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
       <div>
+        <p className="font-medium text-foreground">{label}</p>
+        <div className="text-sm text-muted-foreground mt-0.5">{value}</div>
+      </div>
+      <div className="flex items-center gap-2">
+        {badge && (
+          <Badge variant={badgeVariant}>{badge}</Badge>
+        )}
+        {onEdit && (
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            Editar
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="animate-fade-in">
+      <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
         <p className="text-sm text-muted-foreground">
           Gerencie as configurações da sua clínica e integrações
         </p>
       </div>
 
+      {/* Messages */}
       {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-xl border border-destructive/20 flex items-center gap-3 animate-fade-in">
+        <div className="bg-destructive/10 text-destructive p-4 rounded-xl border border-destructive/20 flex items-center gap-3 animate-fade-in mb-6">
           <XCircle className="h-5 w-5" />
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-success/10 text-success p-4 rounded-xl border border-success/20 flex items-center gap-3 animate-fade-in">
+        <div className="bg-success/10 text-success p-4 rounded-xl border border-success/20 flex items-center gap-3 animate-fade-in mb-6">
           <CheckCircle className="h-5 w-5" />
           {success}
         </div>
       )}
 
-      {/* Grid Layout for Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Layout: Sidebar + Content */}
+      <div className="flex gap-6">
+        {/* Sidebar Navigation */}
+        <div className="w-64 flex-shrink-0">
+          <nav className="space-y-1">
+            {sections.map((section) => {
+              const Icon = section.icon
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors",
+                    activeSection === section.id
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="font-medium">{section.label}</span>
+                </button>
+              )
+            })}
+          </nav>
+        </div>
 
-        {/* Evolution API Config */}
-        <Card className="border-border/50">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <Wifi className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle>Evolution API (WhatsApp)</CardTitle>
-                <CardDescription>
-                  Configure a integracao com o WhatsApp via Evolution API
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col items-center justify-center space-y-4 py-6">
-              {evolutionStatus === 'connected' ? (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="h-20 w-20 bg-success/10 rounded-2xl flex items-center justify-center">
-                    <Wifi className="h-10 w-10 text-success" />
+        {/* Content Area */}
+        <Card className="flex-1 border-border/50">
+          <CardContent className="p-6">
+            {/* WhatsApp Section */}
+            {activeSection === 'whatsapp' && (
+              <div className="space-y-2">
+                <h2 className="text-lg font-semibold mb-4">WhatsApp / Evolution API</h2>
+
+                <SettingRow
+                  label="Status da Conexão"
+                  value={evolutionStatus === 'connected'
+                    ? "WhatsApp conectado e pronto para receber mensagens"
+                    : "WhatsApp não está conectado"}
+                  badge={evolutionStatus === 'connected' ? 'Conectado' : 'Desconectado'}
+                  badgeVariant={evolutionStatus === 'connected' ? 'success' : 'outline'}
+                />
+
+                {evolutionStatus === 'disconnected' && !qrCode && (
+                  <div className="pt-4">
+                    <Button
+                      variant="gradient"
+                      onClick={handleConnect}
+                      disabled={saving === 'evolution'}
+                      className="gap-2"
+                    >
+                      <Wifi className="h-4 w-4" />
+                      {saving === 'evolution' ? 'Iniciando...' : 'Conectar WhatsApp'}
+                    </Button>
                   </div>
-                  <Badge variant="success" size="lg" className="gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Conectado
-                  </Badge>
-                  <h3 className="font-semibold text-lg">WhatsApp Conectado!</h3>
-                  <p className="text-sm text-muted-foreground text-center max-w-sm">
-                    Sua clínica está pronta para receber mensagens.
-                  </p>
-                  <Button variant="outline" size="sm" onClick={checkStatus} className="mt-2">
-                    Verificar Conexão
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-4 w-full">
-                  {!qrCode ? (
-                    <>
-                      <div className="h-20 w-20 bg-muted/50 rounded-2xl flex items-center justify-center">
-                        <Wifi className="h-10 w-10 text-muted-foreground/50" />
-                      </div>
-                      <Badge variant="outline" size="lg" className="gap-2">
-                        <XCircle className="h-4 w-4" />
-                        Desconectado
-                      </Badge>
-                      <div className="text-center">
-                        <h3 className="font-semibold text-lg">WhatsApp Desconectado</h3>
-                        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                          Conecte seu WhatsApp para que a IA possa atender seus pacientes automaticamente.
-                        </p>
-                      </div>
-                      <Button
-                        variant="gradient"
-                        onClick={handleConnect}
-                        disabled={saving === 'evolution'}
-                        size="lg"
-                        className="gap-2"
-                      >
-                        <Wifi className="h-4 w-4" />
-                        {saving === 'evolution' ? 'Iniciando...' : 'Conectar WhatsApp'}
-                      </Button>
-                    </>
+                )}
+
+                {qrCode && (
+                  <div className="pt-4 flex flex-col items-center animate-fade-in">
+                    <h3 className="font-semibold mb-4">Escaneie o QR Code</h3>
+                    <div className="bg-white p-4 rounded-2xl border border-border/50 shadow-soft">
+                      <img
+                        src={qrCode.startsWith('data:image') ? qrCode : `data:image/png;base64,${qrCode}`}
+                        alt="WhatsApp QR Code"
+                        className="w-64 h-64"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-4 text-center max-w-xs">
+                      Abra o WhatsApp no seu celular, vá em Aparelhos Conectados {'>'} Conectar Aparelho
+                    </p>
+                    <Button variant="ghost" className="mt-2" onClick={() => setQrCode(null)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                )}
+
+                {evolutionStatus === 'connected' && (
+                  <div className="pt-2">
+                    <Button variant="outline" size="sm" onClick={checkStatus}>
+                      Verificar Conexão
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Business Hours Section */}
+            {activeSection === 'hours' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Horários de Funcionamento</h2>
+                  {editingField !== 'hours' ? (
+                    <Button variant="outline" size="sm" onClick={() => setEditingField('hours')}>
+                      Editar
+                    </Button>
                   ) : (
-                    <div className="flex flex-col items-center animate-fade-in">
-                      <h3 className="font-semibold text-lg mb-4">Escaneie o QR Code</h3>
-                      <div className="bg-white p-4 rounded-2xl border border-border/50 shadow-soft">
-                        <img
-                          src={qrCode.startsWith('data:image') ? qrCode : `data:image/png;base64,${qrCode}`}
-                          alt="WhatsApp QR Code"
-                          className="w-64 h-64"
-                        />
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-4 text-center max-w-xs">
-                        Abra o WhatsApp no seu celular, vá em Aparelhos Conectados {'>'} Conectar Aparelho
-                      </p>
-                      <Button variant="ghost" className="mt-2" onClick={() => setQrCode(null)}>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)}>
+                        <X className="h-4 w-4 mr-1" />
                         Cancelar
+                      </Button>
+                      <Button size="sm" onClick={handleSaveBusinessHours} disabled={saving === 'hours'}>
+                        {saving === 'hours' ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-1" />
+                        )}
+                        Salvar
                       </Button>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Business Hours */}
-        <Card className="border-border/50">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-                <Clock className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle>Horarios de Funcionamento</CardTitle>
-                <CardDescription>
-                  Configure os dias e horarios em que a clinica atende
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              {[0, 1, 2, 3, 4, 5, 6].map((day) => (
-                <div key={day} className="flex items-center gap-4 p-4 bg-muted/30 rounded-xl border border-border/50 transition-colors hover:bg-muted/50">
-                  <label className="flex items-center gap-3 w-36 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={businessHours[day]?.active || false}
-                      onChange={(e) => updateBusinessHour(String(day), 'active', e.target.checked)}
-                      className="rounded-md h-4 w-4 border-border text-primary focus:ring-primary"
-                    />
-                    <span className={`font-medium ${businessHours[day]?.active ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {getDayName(day)}
-                    </span>
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <Input
-                      type="time"
-                      value={businessHours[day]?.start || '08:00'}
-                      onChange={(e) => updateBusinessHour(String(day), 'start', e.target.value)}
-                      disabled={!businessHours[day]?.active}
-                      className="w-32"
-                    />
-                    <span className="text-muted-foreground">até</span>
-                    <Input
-                      type="time"
-                      value={businessHours[day]?.end || '18:00'}
-                      onChange={(e) => updateBusinessHour(String(day), 'end', e.target.value)}
-                      disabled={!businessHours[day]?.active}
-                      className="w-32"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Button variant="gradient" onClick={handleSaveBusinessHours} disabled={saving === 'hours'} className="gap-2">
-              <Save className="h-4 w-4" />
-              {saving === 'hours' ? 'Salvando...' : 'Salvar Horarios'}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Services */}
-        <Card className="border-border/50">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                <Stethoscope className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle>Servicos/Procedimentos</CardTitle>
-                <CardDescription>
-                  Configure os servicos oferecidos pela clinica
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Add new service */}
-            <div className="flex gap-2 p-4 bg-muted/30 rounded-xl border border-border/50">
-              <div className="relative flex-1">
-                <Stethoscope className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Nome do servico"
-                  value={newService.name}
-                  onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                  className="pl-11"
-                />
-              </div>
-              <div className="relative w-36">
-                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="number"
-                  placeholder="Duracao"
-                  value={newService.duration}
-                  onChange={(e) => setNewService({ ...newService, duration: parseInt(e.target.value) || 30 })}
-                  className="pl-11"
-                />
-              </div>
-              <Button variant="outline" onClick={addService} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Adicionar
-              </Button>
-            </div>
-
-            {/* Services list */}
-            <div className="space-y-2">
-              {services.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                  <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
-                    <Stethoscope className="h-6 w-6 opacity-50" />
-                  </div>
-                  <p className="font-medium">Nenhum serviço cadastrado</p>
-                  <p className="text-sm">Adicione serviços para começar</p>
-                </div>
-              ) : (
-                services.map((service, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50 transition-colors hover:bg-muted/50 group">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Stethoscope className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <span className="font-medium">{service.name}</span>
-                        <Badge variant="outline" className="ml-3">{service.duration} min</Badge>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeService(index)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                <div className="space-y-1">
+                  {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+                    <div
+                      key={day}
+                      className={cn(
+                        "flex items-center justify-between py-3 border-b border-border/50 last:border-0",
+                        editingField === 'hours' && "bg-muted/30 px-3 rounded-lg my-1"
+                      )}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <div className="flex items-center gap-3 w-36">
+                        {editingField === 'hours' && (
+                          <input
+                            type="checkbox"
+                            checked={businessHours[day]?.active || false}
+                            onChange={(e) => updateBusinessHour(String(day), 'active', e.target.checked)}
+                            className="rounded-md h-4 w-4 border-border text-primary focus:ring-primary"
+                          />
+                        )}
+                        <span className={cn(
+                          "font-medium",
+                          businessHours[day]?.active ? 'text-foreground' : 'text-muted-foreground'
+                        )}>
+                          {getDayName(day)}
+                        </span>
+                      </div>
+
+                      {editingField === 'hours' ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="time"
+                            value={businessHours[day]?.start || '08:00'}
+                            onChange={(e) => updateBusinessHour(String(day), 'start', e.target.value)}
+                            disabled={!businessHours[day]?.active}
+                            className="w-28"
+                          />
+                          <span className="text-muted-foreground">até</span>
+                          <Input
+                            type="time"
+                            value={businessHours[day]?.end || '18:00'}
+                            onChange={(e) => updateBusinessHour(String(day), 'end', e.target.value)}
+                            disabled={!businessHours[day]?.active}
+                            className="w-28"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          {businessHours[day]?.active
+                            ? `${businessHours[day]?.start || '08:00'} - ${businessHours[day]?.end || '18:00'}`
+                            : 'Fechado'}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Services Section */}
+            {activeSection === 'services' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Serviços / Procedimentos</h2>
+                  {editingField !== 'services' ? (
+                    <Button variant="outline" size="sm" onClick={() => setEditingField('services')}>
+                      Editar
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)}>
+                        <X className="h-4 w-4 mr-1" />
+                        Cancelar
+                      </Button>
+                      <Button size="sm" onClick={handleSaveServices} disabled={saving === 'services'}>
+                        {saving === 'services' ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-1" />
+                        )}
+                        Salvar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Add new service (only in edit mode) */}
+                {editingField === 'services' && (
+                  <div className="flex gap-2 p-4 bg-muted/30 rounded-xl border border-border/50 mb-4">
+                    <div className="relative flex-1">
+                      <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Nome do serviço"
+                        value={newService.name}
+                        onChange={(e) => setNewService({ ...newService, name: e.target.value })}
+                        className="pl-10"
+                      />
+                    </div>
+                    <div className="relative w-32">
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        placeholder="Min"
+                        value={newService.duration}
+                        onChange={(e) => setNewService({ ...newService, duration: parseInt(e.target.value) || 30 })}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Button variant="outline" onClick={addService} className="gap-1">
+                      <Plus className="h-4 w-4" />
+                      Adicionar
                     </Button>
                   </div>
-                ))
-              )}
-            </div>
+                )}
 
-            <Button variant="gradient" onClick={handleSaveServices} disabled={saving === 'services'} className="gap-2">
-              <Save className="h-4 w-4" />
-              {saving === 'services' ? 'Salvando...' : 'Salvar Servicos'}
-            </Button>
+                {/* Services list */}
+                {services.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+                      <Stethoscope className="h-6 w-6 opacity-50" />
+                    </div>
+                    <p className="font-medium">Nenhum serviço cadastrado</p>
+                    <p className="text-sm">Clique em Editar para adicionar serviços</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {services.map((service, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex items-center justify-between py-3 border-b border-border/50 last:border-0",
+                          editingField === 'services' && "bg-muted/30 px-3 rounded-lg my-1"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Stethoscope className="h-4 w-4 text-primary" />
+                          </div>
+                          <span className="font-medium">{service.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{service.duration} min</Badge>
+                          {editingField === 'services' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeService(index)}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
   )
 }
-
