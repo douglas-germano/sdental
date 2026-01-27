@@ -20,6 +20,7 @@ class Appointment(db.Model, SoftDeleteMixin):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     clinic_id = db.Column(UUID(as_uuid=True), db.ForeignKey('clinics.id'), nullable=False)
     patient_id = db.Column(UUID(as_uuid=True), db.ForeignKey('patients.id'), nullable=False)
+    professional_id = db.Column(UUID(as_uuid=True), db.ForeignKey('professionals.id'), nullable=True)
     service_name = db.Column(db.String(255), nullable=False)
     scheduled_datetime = db.Column(db.DateTime, nullable=False)
     duration_minutes = db.Column(db.Integer, default=30)
@@ -35,6 +36,8 @@ class Appointment(db.Model, SoftDeleteMixin):
             'clinic_id': str(self.clinic_id),
             'patient_id': str(self.patient_id),
             'patient': self.patient.to_dict() if self.patient else None,
+            'professional_id': str(self.professional_id) if self.professional_id else None,
+            'professional': self.professional.to_dict() if self.professional else None,
             'service_name': self.service_name,
             'scheduled_datetime': self.scheduled_datetime.isoformat() if self.scheduled_datetime else None,
             'duration_minutes': self.duration_minutes,

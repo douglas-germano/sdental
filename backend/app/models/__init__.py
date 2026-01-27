@@ -4,6 +4,8 @@ from .appointment import Appointment, AppointmentStatus
 from .conversation import Conversation, ConversationStatus
 from .availability_slot import AvailabilitySlot
 from .bot_transfer import BotTransfer
+from .reminder import AppointmentReminder, ReminderStatus, ReminderType
+from .professional import Professional
 
 __all__ = [
     'Clinic',
@@ -13,5 +15,9 @@ __all__ = [
     'Conversation',
     'ConversationStatus',
     'AvailabilitySlot',
-    'BotTransfer'
+    'BotTransfer',
+    'AppointmentReminder',
+    'ReminderStatus',
+    'ReminderType',
+    'Professional'
 ]

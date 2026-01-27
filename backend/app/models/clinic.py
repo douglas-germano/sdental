@@ -39,6 +39,13 @@ class Clinic(db.Model):
     agent_context = db.Column(db.Text, nullable=True)
     agent_enabled = db.Column(db.Boolean, default=True)
 
+    # Reminder configuration
+    reminders_enabled = db.Column(db.Boolean, default=True)
+    reminder_24h_enabled = db.Column(db.Boolean, default=True)
+    reminder_1h_enabled = db.Column(db.Boolean, default=True)
+    reminder_24h_message = db.Column(db.Text, nullable=True)  # Custom template
+    reminder_1h_message = db.Column(db.Text, nullable=True)   # Custom template
+
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

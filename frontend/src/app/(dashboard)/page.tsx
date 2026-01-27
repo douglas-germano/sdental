@@ -15,7 +15,6 @@ import {
   Clock,
   AlertCircle,
   ArrowUpRight,
-  ArrowDownRight,
   CheckCircle2,
   XCircle,
   UserX,
@@ -23,6 +22,8 @@ import {
 } from 'lucide-react'
 import { AppointmentsChart } from '@/components/charts/appointments-chart'
 import { StatusPieChart } from '@/components/charts/status-pie-chart'
+import { StatsCard } from '@/components/dashboard/stats-card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DashboardPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null)
@@ -33,6 +34,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Set loading is already true initially, we keep it true while fetching
+        // We can add a minimum delay to prevent flickering if needed, but skeletons handle this well
         const [overviewRes, appointmentsRes, conversationsRes] = await Promise.all([
           analyticsApi.overview(),
           appointmentsApi.upcoming(),
@@ -52,17 +55,6 @@ export default function DashboardPage() {
     fetchData()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-          <p className="text-muted-foreground text-sm">Carregando dados...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -75,99 +67,64 @@ export default function DashboardPage() {
 
       {/* Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Agendamentos do Mes */}
-        <Card hover className="animate-fade-in-up" style={{ animationDelay: '0ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Agendamentos do Mes
-            </CardTitle>
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {overview?.appointments.this_month || 0}
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center text-xs text-success">
-                <ArrowUpRight className="h-3 w-3 mr-1" />
-                {overview?.appointments.completed || 0} concluidos
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Agendamentos do Mes"
+          value={overview?.appointments.this_month || 0}
+          icon={Calendar}
+          variant="primary"
+          loading={loading}
+          delay={0}
+          description={
+            <span className="flex items-center text-success">
+              <ArrowUpRight className="h-3 w-3 mr-1" />
+              {overview?.appointments.completed || 0} concluidos
+            </span>
+          }
+        />
 
-        {/* Proximos Agendamentos */}
-        <Card hover className="animate-fade-in-up" style={{ animationDelay: '50ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Proximos Agendamentos
-            </CardTitle>
-            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-accent" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {overview?.appointments.upcoming || 0}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Nos proximos 7 dias
-            </p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Proximos Agendamentos"
+          value={overview?.appointments.upcoming || 0}
+          icon={Clock}
+          variant="accent"
+          loading={loading}
+          delay={50}
+          description="Nos proximos 7 dias"
+        />
 
-        {/* Total de Pacientes */}
-        <Card hover className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Pacientes
-            </CardTitle>
-            <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-              <Users className="h-5 w-5 text-success" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {overview?.patients.total || 0}
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center text-xs text-success">
-                <ArrowUpRight className="h-3 w-3 mr-1" />
-                +{overview?.patients.new_this_month || 0} novos este mes
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total de Pacientes"
+          value={overview?.patients.total || 0}
+          icon={Users}
+          variant="success"
+          loading={loading}
+          delay={100}
+          description={
+            <span className="flex items-center text-success">
+              <ArrowUpRight className="h-3 w-3 mr-1" />
+              +{overview?.patients.new_this_month || 0} novos este mes
+            </span>
+          }
+        />
 
-        {/* Conversas Ativas */}
-        <Card hover className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Conversas Ativas
-            </CardTitle>
-            <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-warning" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {overview?.conversations.active || 0}
-            </div>
-            {(overview?.conversations.needs_attention || 0) > 0 && (
-              <div className="flex items-center text-xs text-warning mt-2">
+        <StatsCard
+          title="Conversas Ativas"
+          value={overview?.conversations.active || 0}
+          icon={MessageSquare}
+          variant="warning"
+          loading={loading}
+          delay={150}
+          description={
+            (overview?.conversations.needs_attention || 0) > 0 ? (
+              <span className="flex items-center text-warning">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 {overview?.conversations.needs_attention} precisam de atencao
-              </div>
-            )}
-            {(overview?.conversations.needs_attention || 0) === 0 && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Todas em dia
-              </p>
-            )}
-          </CardContent>
-        </Card>
+              </span>
+            ) : (
+              <span>Todas em dia</span>
+            )
+          }
+        />
       </div>
 
       {/* Charts Section */}
@@ -180,7 +137,11 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <AppointmentsChart />
+            {loading ? (
+              <Skeleton className="h-[300px] w-full" />
+            ) : (
+              <AppointmentsChart />
+            )}
           </CardContent>
         </Card>
         <Card className="lg:col-span-3 animate-fade-in-up" style={{ animationDelay: '250ms' }}>
@@ -188,7 +149,11 @@ export default function DashboardPage() {
             <CardTitle>Status dos Agendamentos</CardTitle>
           </CardHeader>
           <CardContent>
-            <StatusPieChart overview={overview} />
+            {loading ? (
+              <Skeleton className="h-[300px] w-full" />
+            ) : (
+              <StatusPieChart overview={overview} />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -205,7 +170,22 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {upcomingAppointments.length === 0 ? (
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-[120px]" />
+                        <Skeleton className="h-3 w-[80px]" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-5 w-[60px]" />
+                  </div>
+                ))}
+              </div>
+            ) : upcomingAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                 <Calendar className="h-12 w-12 mb-3 opacity-50" />
                 <p className="text-sm">Nenhum agendamento proximo</p>
@@ -262,7 +242,21 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {recentConversations.length === 0 ? (
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-[120px]" />
+                        <Skeleton className="h-3 w-[150px]" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : recentConversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                 <MessageSquare className="h-12 w-12 mb-3 opacity-50" />
                 <p className="text-sm">Nenhuma conversa aguardando atencao</p>
@@ -309,7 +303,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Resumo do Mes */}
       <Card className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -321,42 +315,49 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-5 bg-success/5 border border-success/20 rounded-xl hover:bg-success/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="h-5 w-5 text-success" />
-              </div>
-              <p className="text-2xl font-bold text-success">
-                {overview?.appointments.completed || 0}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Concluidos</p>
-            </div>
-            <div className="text-center p-5 bg-destructive/5 border border-destructive/20 rounded-xl hover:bg-destructive/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-3">
-                <XCircle className="h-5 w-5 text-destructive" />
-              </div>
-              <p className="text-2xl font-bold text-destructive">
-                {overview?.appointments.cancelled || 0}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Cancelados</p>
-            </div>
-            <div className="text-center p-5 bg-muted border border-border rounded-xl hover:bg-muted/80 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-muted-foreground/20 flex items-center justify-center mx-auto mb-3">
-                <UserX className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <p className="text-2xl font-bold">
-                {overview?.appointments.no_shows || 0}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Faltas</p>
-            </div>
-            <div className="text-center p-5 bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
-                <UserPlus className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-2xl font-bold text-primary">
-                {overview?.patients.new_this_month || 0}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Novos Pacientes</p>
-            </div>
+            {/* Using a mini-abstraction map here for consistency if desired, or verbose cards */}
+            {loading ? (
+              [1, 2, 3, 4].map(i => <Skeleton key={i} className="h-[120px] rounded-xl" />)
+            ) : (
+              <>
+                <div className="text-center p-5 bg-success/5 border border-success/20 rounded-xl hover:bg-success/10 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle2 className="h-5 w-5 text-success" />
+                  </div>
+                  <p className="text-2xl font-bold text-success">
+                    {overview?.appointments.completed || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Concluidos</p>
+                </div>
+                <div className="text-center p-5 bg-destructive/5 border border-destructive/20 rounded-xl hover:bg-destructive/10 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-3">
+                    <XCircle className="h-5 w-5 text-destructive" />
+                  </div>
+                  <p className="text-2xl font-bold text-destructive">
+                    {overview?.appointments.cancelled || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Cancelados</p>
+                </div>
+                <div className="text-center p-5 bg-muted border border-border rounded-xl hover:bg-muted/80 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-muted-foreground/20 flex items-center justify-center mx-auto mb-3">
+                    <UserX className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {overview?.appointments.no_shows || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Faltas</p>
+                </div>
+                <div className="text-center p-5 bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                    <UserPlus className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="text-2xl font-bold text-primary">
+                    {overview?.patients.new_this_month || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Novos Pacientes</p>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

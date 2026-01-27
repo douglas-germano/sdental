@@ -90,7 +90,7 @@ export default function DashboardLayout({
       {/* Sidebar - Clean white design */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 bg-white border-r border-border/60 transform transition-all duration-300 ease-out',
+          'fixed inset-y-0 left-0 z-50 bg-background border-r border-border transform transition-all duration-300 ease-out',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
           sidebarCollapsed ? 'lg:w-20' : 'lg:w-64',
@@ -100,7 +100,7 @@ export default function DashboardLayout({
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className={cn(
-            'flex items-center h-14 px-4 border-b border-border/60',
+            'flex items-center h-14 px-4 border-b border-border',
             sidebarCollapsed ? 'lg:justify-center lg:px-2' : 'justify-between'
           )}>
             <Link href="/" className="flex items-center gap-3 group">
@@ -244,7 +244,7 @@ export default function DashboardLayout({
         sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
       )}>
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border/60 bg-white/95 backdrop-blur-sm px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/95 backdrop-blur-sm px-4 lg:px-6">
           <button
             className="lg:hidden p-2 -ml-2 hover:bg-muted rounded-lg transition-colors"
             onClick={() => setSidebarOpen(true)}
