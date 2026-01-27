@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
@@ -17,7 +18,19 @@ import { useToast } from '@/components/ui/toast'
 import { appointmentsApi } from '@/lib/api'
 import { Appointment } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { User, Calendar, Clock, FileText, Phone, Mail, CheckCircle, Edit2 } from 'lucide-react'
+import {
+  User,
+  Calendar,
+  Clock,
+  FileText,
+  Phone,
+  Mail,
+  CheckCircle,
+  Edit2,
+  Save,
+  X,
+  Stethoscope
+} from 'lucide-react'
 
 interface AppointmentDetailModalProps {
   appointment: Appointment | null
@@ -92,90 +105,95 @@ export function AppointmentDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogClose onClick={() => onOpenChange(false)} />
+
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
+              <Calendar className="h-6 w-6 text-white" />
             </div>
-            <div className="flex-1">
-              <DialogTitle>Detalhes do Agendamento</DialogTitle>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <DialogTitle className="text-lg">Agendamento</DialogTitle>
+                <Badge className={getStatusColor(appointment.status)} size="sm">
+                  {getStatusLabel(appointment.status)}
+                </Badge>
+              </div>
+              <DialogDescription>
+                {formatDateTime(appointment.scheduled_datetime)}
+              </DialogDescription>
             </div>
-            <Badge className={getStatusColor(appointment.status)} size="lg">
-              {getStatusLabel(appointment.status)}
-            </Badge>
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-5">
           {/* Patient Info */}
-          <div className="bg-muted/30 p-4 rounded-xl space-y-2 border border-border/50">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <User className="h-4 w-4 text-primary" />
+          <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
+              <User className="h-4 w-4" />
               Paciente
             </div>
-            <div className="pl-6 space-y-1">
-              <p className="font-medium">{appointment.patient?.name}</p>
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
-                <Phone className="h-3 w-3" />
-                {formatPhone(appointment.patient?.phone || '')}
-              </p>
-              {appointment.patient?.email && (
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Mail className="h-3 w-3" />
-                  {appointment.patient.email}
-                </p>
-              )}
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-semibold">
+                {appointment.patient?.name?.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{appointment.patient?.name}</p>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {formatPhone(appointment.patient?.phone || '')}
+                  </span>
+                  {appointment.patient?.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      {appointment.patient.email}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Appointment Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
-              <Label className="flex items-center gap-2 text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                Servico
-              </Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Stethoscope className="h-4 w-4" />
+                <span className="text-xs">Servico</span>
+              </div>
               <p className="font-medium">{appointment.service_name}</p>
             </div>
-            <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
-              <Label className="flex items-center gap-2 text-muted-foreground">
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Clock className="h-4 w-4" />
-                Duracao
-              </Label>
+                <span className="text-xs">Duracao</span>
+              </div>
               <p className="font-medium">{appointment.duration_minutes} minutos</p>
             </div>
-          </div>
-
-          <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
-            <Label className="flex items-center gap-2 text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              Data e Hora
-            </Label>
-            <p className="font-medium">{formatDateTime(appointment.scheduled_datetime)}</p>
           </div>
 
           {/* Notes */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2">
+              <Label className="flex items-center gap-2 text-muted-foreground">
                 <FileText className="h-4 w-4" />
                 Observacoes
               </Label>
               {!isEditing && (
-                <Button variant="ghost" size="sm" onClick={startEditing} className="gap-1">
+                <Button variant="ghost" size="sm" onClick={startEditing} className="gap-1 h-7 text-xs">
                   <Edit2 className="h-3 w-3" />
                   Editar
                 </Button>
               )}
             </div>
             {isEditing ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Adicionar observacoes..."
+                  placeholder="Adicionar observacoes sobre o atendimento..."
                   rows={3}
                 />
                 <div className="flex gap-2">
@@ -183,7 +201,9 @@ export function AppointmentDetailModal({
                     size="sm"
                     onClick={handleSaveNotes}
                     loading={loading}
+                    className="gap-1"
                   >
+                    <Save className="h-3 w-3" />
                     Salvar
                   </Button>
                   <Button
@@ -191,15 +211,19 @@ export function AppointmentDetailModal({
                     variant="outline"
                     onClick={() => setIsEditing(false)}
                     disabled={loading}
+                    className="gap-1"
                   >
+                    <X className="h-3 w-3" />
                     Cancelar
                   </Button>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl border border-border/50">
-                {appointment.notes || 'Nenhuma observacao'}
-              </p>
+              <div className="bg-muted/30 p-4 rounded-xl border border-border/50 min-h-[60px]">
+                <p className="text-sm text-muted-foreground">
+                  {appointment.notes || 'Nenhuma observacao adicionada'}
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -213,7 +237,7 @@ export function AppointmentDetailModal({
               className="w-full sm:w-auto gap-2"
             >
               <CheckCircle className="h-4 w-4" />
-              Confirmar
+              Confirmar Agendamento
             </Button>
           )}
           {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
@@ -228,7 +252,7 @@ export function AppointmentDetailModal({
             </Button>
           )}
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => onOpenChange(false)}
             className="w-full sm:w-auto"
           >

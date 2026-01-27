@@ -391,3 +391,101 @@
   background: hsl(var(--primary) / 0.2);
   color: hsl(var(--primary));
 }
+
+/* Soft shadows */
+.shadow-soft {
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05),
+              0 4px 16px -4px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-soft-lg {
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.08),
+              0 8px 32px -8px rgba(0, 0, 0, 0.12);
+}
+
+/* Enhanced glow effects */
+.shadow-glow {
+  box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.4);
+}
+
+.shadow-glow-lg {
+  box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.5),
+              0 0 60px -10px hsl(var(--accent) / 0.3);
+}
+
+/* Scrollbar utilities */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thumb-muted::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 3px;
+}
+
+.scrollbar-thumb-muted::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Interactive card styles */
+.card-interactive {
+  @apply transition-all duration-200;
+}
+
+.card-interactive:hover {
+  @apply -translate-y-0.5 shadow-soft-lg;
+}
+
+/* Form field focus animation */
+.field-focus-effect {
+  @apply relative;
+}
+
+.field-focus-effect::after {
+  content: '';
+  @apply absolute inset-0 rounded-xl pointer-events-none;
+  @apply ring-2 ring-primary/0 transition-all duration-200;
+}
+
+.field-focus-effect:focus-within::after {
+  @apply ring-primary/20;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply animate-pulse bg-muted rounded;
+}
+
+/* Tooltip styles */
+[data-tooltip] {
+  @apply relative;
+}
+
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  @apply absolute bottom-full left-1/2 -translate-x-1/2 mb-2;
+  @apply px-2 py-1 text-xs rounded-lg;
+  @apply bg-foreground text-background;
+  @apply opacity-0 invisible transition-all duration-200;
+  @apply whitespace-nowrap z-50;
+}
+
+[data-tooltip]:hover::before {
+  @apply opacity-100 visible;
+}
+
+/* Badge pulse effect for notifications */
+.badge-pulse {
+  @apply relative;
+}
+
+.badge-pulse::before {
+  content: '';
+  @apply absolute inset-0 rounded-full;
+  @apply animate-ping bg-current opacity-75;
+}

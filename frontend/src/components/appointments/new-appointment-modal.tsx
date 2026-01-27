@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
@@ -18,7 +19,16 @@ import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
 import { appointmentsApi, patientsApi } from '@/lib/api'
 import { Patient, AvailabilitySlot } from '@/types'
-import { Loader2, CalendarPlus, User, Stethoscope, Calendar, Clock, FileText } from 'lucide-react'
+import {
+  Loader2,
+  CalendarPlus,
+  User,
+  Stethoscope,
+  Calendar,
+  Clock,
+  FileText,
+  AlertCircle
+} from 'lucide-react'
 
 interface NewAppointmentModalProps {
   open: boolean
@@ -144,25 +154,32 @@ export function NewAppointmentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogClose onClick={() => onOpenChange(false)} />
+
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-              <CalendarPlus className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
+              <CalendarPlus className="h-6 w-6 text-white" />
             </div>
-            <DialogTitle>Novo Agendamento</DialogTitle>
+            <div>
+              <DialogTitle className="text-lg">Novo Agendamento</DialogTitle>
+              <DialogDescription>
+                Agende uma consulta para um paciente
+              </DialogDescription>
+            </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Paciente */}
           <div className="space-y-2">
-            <Label htmlFor="patient" className="flex items-center gap-2">
+            <Label htmlFor="patient" className="flex items-center gap-2" required>
               <User className="h-4 w-4" />
-              Paciente *
+              Paciente
             </Label>
             {loadingPatients ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Carregando pacientes...
               </div>
@@ -173,7 +190,6 @@ export function NewAppointmentModal({
                 onChange={(e) =>
                   setFormData({ ...formData, patient_id: e.target.value })
                 }
-                required
               >
                 <option value="">Selecione um paciente</option>
                 {patients.map((patient) => (
@@ -185,10 +201,11 @@ export function NewAppointmentModal({
             )}
           </div>
 
+          {/* Servico */}
           <div className="space-y-2">
-            <Label htmlFor="service" className="flex items-center gap-2">
+            <Label htmlFor="service" className="flex items-center gap-2" required>
               <Stethoscope className="h-4 w-4" />
-              Servico *
+              Servico
             </Label>
             <Select
               id="service"
@@ -196,7 +213,6 @@ export function NewAppointmentModal({
               onChange={(e) =>
                 setFormData({ ...formData, service_name: e.target.value, time_slot: '' })
               }
-              required
             >
               <option value="">Selecione um servico</option>
               {services.map((service) => (
@@ -207,60 +223,64 @@ export function NewAppointmentModal({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="date" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Data *
-            </Label>
-            <Input
-              id="date"
-              type="date"
-              min={today}
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value, time_slot: '' })
-              }
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="time" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Horario *
-            </Label>
-            {loadingSlots ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Verificando disponibilidade...
-              </div>
-            ) : !formData.date || !formData.service_name ? (
-              <p className="text-sm text-muted-foreground h-11 flex items-center px-4 bg-muted/30 rounded-xl">
-                Selecione uma data e servico para ver os horarios disponiveis
-              </p>
-            ) : slots.length === 0 ? (
-              <p className="text-sm text-muted-foreground h-11 flex items-center px-4 bg-muted/30 rounded-xl">
-                Nenhum horario disponivel para esta data
-              </p>
-            ) : (
-              <Select
-                id="time"
-                value={formData.time_slot}
+          {/* Data e Horario em grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date" className="flex items-center gap-2" required>
+                <Calendar className="h-4 w-4" />
+                Data
+              </Label>
+              <Input
+                id="date"
+                type="date"
+                min={today}
+                value={formData.date}
                 onChange={(e) =>
-                  setFormData({ ...formData, time_slot: e.target.value })
+                  setFormData({ ...formData, date: e.target.value, time_slot: '' })
                 }
-                required
-              >
-                <option value="">Selecione um horario</option>
-                {slots.map((slot) => (
-                  <option key={slot.datetime} value={slot.datetime}>
-                    {slot.start_time} - {slot.end_time}
-                  </option>
-                ))}
-              </Select>
-            )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="time" className="flex items-center gap-2" required>
+                <Clock className="h-4 w-4" />
+                Horario
+              </Label>
+              {loadingSlots ? (
+                <div className="flex items-center gap-3 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Verificando...
+                </div>
+              ) : !formData.date || !formData.service_name ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
+                  <AlertCircle className="h-4 w-4" />
+                  Selecione data e servico
+                </div>
+              ) : slots.length === 0 ? (
+                <div className="flex items-center gap-2 text-sm text-amber-600 h-11 px-4 bg-amber-50 rounded-xl border border-amber-200">
+                  <AlertCircle className="h-4 w-4" />
+                  Sem horarios
+                </div>
+              ) : (
+                <Select
+                  id="time"
+                  value={formData.time_slot}
+                  onChange={(e) =>
+                    setFormData({ ...formData, time_slot: e.target.value })
+                  }
+                >
+                  <option value="">Selecione</option>
+                  {slots.map((slot) => (
+                    <option key={slot.datetime} value={slot.datetime}>
+                      {slot.start_time} - {slot.end_time}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </div>
           </div>
 
+          {/* Observacoes */}
           <div className="space-y-2">
             <Label htmlFor="notes" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -268,7 +288,7 @@ export function NewAppointmentModal({
             </Label>
             <Textarea
               id="notes"
-              placeholder="Observacoes adicionais..."
+              placeholder="Observacoes adicionais sobre o agendamento..."
               value={formData.notes}
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
@@ -287,6 +307,7 @@ export function NewAppointmentModal({
               Cancelar
             </Button>
             <Button type="submit" variant="gradient" loading={loading}>
+              <CalendarPlus className="h-4 w-4 mr-2" />
               Criar Agendamento
             </Button>
           </DialogFooter>

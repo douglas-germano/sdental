@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
@@ -18,7 +19,7 @@ import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 import { formatPhone, formatDate, formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { User, Phone, Mail, Calendar, FileText, Edit2 } from 'lucide-react'
+import { User, Phone, Mail, Calendar, FileText, Edit2, Save, X } from 'lucide-react'
 
 interface PatientDetailModalProps {
   patient: Patient | null
@@ -121,18 +122,22 @@ export function PatientDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogClose onClick={() => onOpenChange(false)} />
+
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-                <User className="h-5 w-5 text-white" />
-              </div>
-              <DialogTitle>Detalhes do Paciente</DialogTitle>
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg text-white font-semibold text-lg">
+              {patient.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1">
+              <DialogTitle className="text-lg">{patient.name}</DialogTitle>
+              <DialogDescription>
+                Cadastrado em {formatDate(patient.created_at)}
+              </DialogDescription>
             </div>
             {!isEditing && (
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="gap-1">
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="gap-2">
                 <Edit2 className="h-4 w-4" />
                 Editar
               </Button>
@@ -141,9 +146,9 @@ export function PatientDetailModal({
         </DialogHeader>
 
         {isEditing ? (
-          <div className="space-y-4 pt-2">
+          <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Nome *</Label>
+              <Label htmlFor="edit-name" required>Nome completo</Label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -156,7 +161,7 @@ export function PatientDetailModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-phone">Telefone *</Label>
+              <Label htmlFor="edit-phone" required>Telefone</Label>
               <div className="relative">
                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -191,6 +196,7 @@ export function PatientDetailModal({
                 id="edit-notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Observacoes sobre o paciente..."
                 rows={3}
               />
             </div>
@@ -201,38 +207,39 @@ export function PatientDetailModal({
                 onClick={() => setIsEditing(false)}
                 disabled={loading}
               >
+                <X className="h-4 w-4 mr-2" />
                 Cancelar
               </Button>
               <Button variant="gradient" onClick={handleSave} loading={loading}>
-                Salvar
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Alteracoes
               </Button>
             </DialogFooter>
           </div>
         ) : (
-          <div className="space-y-4 pt-2">
-            {/* Patient Info */}
-            <div className="bg-muted/30 p-4 rounded-xl space-y-3 border border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-lg">
-                  {patient.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-semibold text-lg">{patient.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Cadastrado em {formatDate(patient.created_at)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-2 pt-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-primary" />
-                  <span>{formatPhone(patient.phone)}</span>
+          <div className="space-y-5">
+            {/* Contact Info */}
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Informacoes de Contato</h4>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Phone className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Telefone</p>
+                    <p className="font-medium">{formatPhone(patient.phone)}</p>
+                  </div>
                 </div>
                 {patient.email && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <span>{patient.email}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <p className="font-medium">{patient.email}</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -241,36 +248,36 @@ export function PatientDetailModal({
             {/* Notes */}
             {patient.notes && (
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
+                <Label className="flex items-center gap-2 text-muted-foreground">
                   <FileText className="h-4 w-4" />
                   Observacoes
                 </Label>
-                <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl border border-border/50">
-                  {patient.notes}
-                </p>
+                <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+                  <p className="text-sm">{patient.notes}</p>
+                </div>
               </div>
             )}
 
             {/* Recent Appointments */}
             {patient.appointments && patient.appointments.length > 0 && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   Ultimos Agendamentos
                 </Label>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {patient.appointments.slice(0, 5).map((apt) => (
                     <div
                       key={apt.id}
-                      className="flex items-center justify-between text-sm bg-muted/30 p-3 rounded-xl border border-border/50 transition-colors hover:bg-muted/50"
+                      className="flex items-center justify-between bg-muted/30 p-3 rounded-xl border border-border/50 transition-all hover:bg-muted/50 hover:border-border"
                     >
                       <div>
-                        <p className="font-medium">{apt.service_name}</p>
+                        <p className="font-medium text-sm">{apt.service_name}</p>
                         <p className="text-muted-foreground text-xs">
                           {formatDateTime(apt.scheduled_datetime)}
                         </p>
                       </div>
-                      <Badge className={getStatusColor(apt.status)}>
+                      <Badge className={getStatusColor(apt.status)} size="sm">
                         {getStatusLabel(apt.status)}
                       </Badge>
                     </div>
@@ -280,7 +287,7 @@ export function PatientDetailModal({
             )}
 
             <DialogFooter>
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Fechar
               </Button>
             </DialogFooter>

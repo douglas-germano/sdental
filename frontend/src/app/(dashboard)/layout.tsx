@@ -243,31 +243,31 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <div className={cn(
-        'transition-all duration-300',
+        'min-h-screen flex flex-col transition-all duration-300',
         sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'
       )}>
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white/80 backdrop-blur-xl px-4 md:px-6 shadow-soft">
+        {/* Top bar - compacto */}
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border/40 bg-background/95 backdrop-blur-sm px-4 lg:px-6">
           <button
-            className="lg:hidden p-2 hover:bg-accent/50 rounded-lg transition-colors"
+            className="lg:hidden p-2 -ml-2 hover:bg-accent rounded-lg transition-colors"
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-5 w-5 text-muted-foreground" />
           </button>
 
           <div className="flex-1" />
 
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 text-sm">
-              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              <span className="text-muted-foreground">{clinic.name}</span>
-            </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="hidden sm:inline">{clinic.name}</span>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="p-4 md:p-6 lg:p-8 animate-fade-in-up">
-          {children}
+        {/* Page content - ocupa todo espaço disponível */}
+        <main className="flex-1 p-4 lg:p-6 animate-fade-in-up">
+          <div className="h-full w-full max-w-[1600px] mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

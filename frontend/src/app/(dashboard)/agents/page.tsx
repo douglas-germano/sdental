@@ -166,10 +166,8 @@ Telefone: ${clinic?.phone || 'Não informado'}`
     return (
         <div className="space-y-6 animate-fade-in">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">
-                    Agentes IA
-                </h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-2xl font-semibold tracking-tight">Agentes IA</h1>
+                <p className="text-sm text-muted-foreground">
                     Personalize o comportamento e conhecimento da sua assistente virtual
                 </p>
             </div>

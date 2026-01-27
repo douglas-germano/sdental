@@ -139,15 +139,11 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-violet-500 bg-clip-text text-transparent">
-            Configurações
-          </h1>
-          <p className="text-muted-foreground">
-            Gerencie as configurações da sua clínica e integrações
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
+        <p className="text-sm text-muted-foreground">
+          Gerencie as configurações da sua clínica e integrações
+        </p>
       </div>
 
       {/* Messages */}

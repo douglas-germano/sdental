@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
@@ -15,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
-import { User, Phone, Mail, FileText } from 'lucide-react'
+import { User, Phone, Mail, FileText, UserPlus } from 'lucide-react'
 
 interface NewPatientModalProps {
   open: boolean
@@ -110,35 +111,41 @@ export function NewPatientModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[450px]">
+      <DialogContent className="sm:max-w-[480px]">
         <DialogClose onClick={() => handleOpenChange(false)} />
+
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-              <User className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
+              <UserPlus className="h-6 w-6 text-white" />
             </div>
-            <DialogTitle>Novo Paciente</DialogTitle>
+            <div>
+              <DialogTitle className="text-lg">Novo Paciente</DialogTitle>
+              <DialogDescription>
+                Preencha os dados para cadastrar um novo paciente
+              </DialogDescription>
+            </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome *</Label>
+            <Label htmlFor="name" required>Nome completo</Label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="name"
-                placeholder="Nome completo"
+                placeholder="Digite o nome do paciente"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="pl-11"
-                required
+                autoFocus
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Telefone *</Label>
+            <Label htmlFor="phone" required>Telefone</Label>
             <div className="relative">
               <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -147,7 +154,6 @@ export function NewPatientModal({
                 value={formData.phone}
                 onChange={handlePhoneChange}
                 className="pl-11"
-                required
               />
             </div>
           </div>
@@ -174,7 +180,7 @@ export function NewPatientModal({
             </Label>
             <Textarea
               id="notes"
-              placeholder="Observacoes sobre o paciente..."
+              placeholder="Observacoes sobre o paciente (alergias, restricoes, etc.)"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
@@ -191,7 +197,8 @@ export function NewPatientModal({
               Cancelar
             </Button>
             <Button type="submit" variant="gradient" loading={loading}>
-              Cadastrar
+              <UserPlus className="h-4 w-4 mr-2" />
+              Cadastrar Paciente
             </Button>
           </DialogFooter>
         </form>
