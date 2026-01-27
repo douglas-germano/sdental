@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { conversationsApi, patientsApi } from '@/lib/api'
 import { Conversation, Message } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
@@ -68,11 +69,19 @@ export default function ConversationDetailPage() {
 
   const handleReactivate = async () => {
     if (!confirm('Reativar conversa para o bot?')) return
+    await toggleAI(true)
+  }
+
+  const toggleAI = async (active: boolean) => {
     try {
-      await conversationsApi.reactivate(params.id as string)
+      if (active) {
+        await conversationsApi.reactivate(params.id as string)
+      } else {
+        await conversationsApi.transfer(params.id as string, 'Pausado manualmente pelo usuário')
+      }
       fetchConversation()
     } catch (error) {
-      console.error('Error reactivating conversation:', error)
+      console.error('Error toggling AI:', error)
     }
   }
 
@@ -167,9 +176,22 @@ export default function ConversationDetailPage() {
             {formatPhone(conversation.phone_number)}
           </p>
         </div>
-        <Badge className={cn(getStatusColor(conversation.status))} size="lg">
-          {getStatusLabel(conversation.status)}
-        </Badge>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-full border border-border/50">
+            <Switch
+              id="ai-toggle"
+              checked={conversation.status === 'active'}
+              onCheckedChange={toggleAI}
+              className="scale-75"
+            />
+            <Label htmlFor="ai-toggle" className="text-xs font-medium cursor-pointer text-muted-foreground">
+              {conversation.status === 'active' ? 'IA Ativa' : 'IA Pausada'}
+            </Label>
+          </div>
+          <Badge className={cn(getStatusColor(conversation.status))} size="lg">
+            {getStatusLabel(conversation.status)}
+          </Badge>
+        </div>
       </div>
 
       {/* Actions */}

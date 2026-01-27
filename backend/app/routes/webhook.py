@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, request, jsonify
 
-from app.models import Clinic
+from app.models import Clinic, ConversationStatus
 from app.services.claude_service import ClaudeService
 from app.services.evolution_service import EvolutionService
 from app.services.conversation_service import ConversationService
@@ -99,6 +99,11 @@ def evolution_webhook():
         try:
             conversation_service = ConversationService(clinic)
             conversation = conversation_service.get_or_create_conversation(phone)
+
+            # Check if conversation is paused (transferred to human)
+            if conversation.status == ConversationStatus.TRANSFERRED_TO_HUMAN:
+                logger.info('Conversation %s is paused (human support), ignoring message', conversation.id)
+                return jsonify({'status': 'ignored', 'reason': 'Conversation paused'})
 
             claude_service = ClaudeService(clinic)
             response_text = claude_service.process_message(conversation, message_text)
