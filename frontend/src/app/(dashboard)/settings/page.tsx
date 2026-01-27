@@ -86,6 +86,19 @@ export default function SettingsPage() {
     return () => clearInterval(interval)
   }, [qrCode])
 
+  // Sync profile form when clinic data changes
+  useEffect(() => {
+    if (clinic) {
+      setProfileForm({
+        name: clinic.name || '',
+        phone: clinic.phone || '',
+        slug: clinic.slug || ''
+      })
+      setBusinessHours(clinic.business_hours || {})
+      setServices(clinic.services || [])
+    }
+  }, [clinic])
+
   const handleConnect = async () => {
     setSaving('evolution')
     setError(null)
