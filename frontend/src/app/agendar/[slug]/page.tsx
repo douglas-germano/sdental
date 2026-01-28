@@ -19,7 +19,8 @@ import {
     CheckCircle,
     ArrowLeft,
     ArrowRight,
-    Loader2
+    Loader2,
+    Users
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -41,11 +42,20 @@ interface CalendarDay {
     available: boolean
 }
 
+interface Professional {
+    id: string
+    name: string
+    specialty?: string
+    color?: string
+}
+
 interface ClinicInfo {
     name: string
     phone: string
     services: Service[]
     business_hours: Record<string, unknown>
+    professionals: Professional[]
+    has_professionals: boolean
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sdental.onrender.com/api'
@@ -66,6 +76,7 @@ export default function BookingPage() {
     const [loadingSlots, setLoadingSlots] = useState(false)
 
     const [selectedService, setSelectedService] = useState<Service | null>(null)
+    const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null)
     const [selectedDate, setSelectedDate] = useState<string | null>(null)
     const [selectedTime, setSelectedTime] = useState<string | null>(null)
 
@@ -122,9 +133,14 @@ export default function BookingPage() {
             setLoadingSlots(true)
             setTimeSlots([])
             try {
-                const res = await fetch(
-                    `${API_URL}/public/clinic/${slug}/availability?date=${selectedDate}`
-                )
+                let url = `${API_URL}/public/clinic/${slug}/availability?date=${selectedDate}`
+                if (selectedService) {
+                    url += `&service=${encodeURIComponent(selectedService.name)}`
+                }
+                if (selectedProfessional) {
+                    url += `&professional_id=${selectedProfessional.id}`
+                }
+                const res = await fetch(url)
                 const data = await res.json()
                 setTimeSlots(data.available_slots || [])
             } catch {
@@ -135,7 +151,7 @@ export default function BookingPage() {
         }
 
         fetchSlots()
-    }, [selectedDate, slug])
+    }, [selectedDate, selectedService, selectedProfessional, slug])
 
     const handleSubmit = async () => {
         if (!selectedService || !selectedDate || !selectedTime) return
@@ -154,7 +170,8 @@ export default function BookingPage() {
                     name: formData.name,
                     phone: formData.phone,
                     email: formData.email || undefined,
-                    notes: formData.notes || undefined
+                    notes: formData.notes || undefined,
+                    professional_id: selectedProfessional?.id || undefined
                 })
             })
 
@@ -167,7 +184,6 @@ export default function BookingPage() {
 
             setAppointment(data.appointment)
             setSuccess(true)
-            setStep(5)
         } catch {
             setError('Erro ao criar agendamento')
         } finally {
@@ -249,30 +265,35 @@ export default function BookingPage() {
                 </div>
 
                 {/* Progress Steps */}
-                <div className="flex items-center justify-center gap-2 mb-8">
-                    {[1, 2, 3, 4].map((s) => (
-                        <div key={s} className="flex items-center">
-                            <div
-                                className={cn(
-                                    'h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
-                                    step >= s
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-200 text-gray-500'
-                                )}
-                            >
-                                {s}
-                            </div>
-                            {s < 4 && (
-                                <div
-                                    className={cn(
-                                        'w-8 h-1 mx-1',
-                                        step > s ? 'bg-blue-600' : 'bg-gray-200'
+                {(() => {
+                    const totalSteps = clinic?.has_professionals ? 5 : 4
+                    return (
+                        <div className="flex items-center justify-center gap-2 mb-8">
+                            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
+                                <div key={s} className="flex items-center">
+                                    <div
+                                        className={cn(
+                                            'h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
+                                            step >= s
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-200 text-gray-500'
+                                        )}
+                                    >
+                                        {s}
+                                    </div>
+                                    {s < totalSteps && (
+                                        <div
+                                            className={cn(
+                                                'w-8 h-1 mx-1',
+                                                step > s ? 'bg-blue-600' : 'bg-gray-200'
+                                            )}
+                                        />
                                     )}
-                                />
-                            )}
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    )
+                })()}
 
                 {/* Error Message */}
                 {error && (
@@ -301,6 +322,7 @@ export default function BookingPage() {
                                         key={i}
                                         onClick={() => {
                                             setSelectedService(service)
+                                            setSelectedProfessional(null)
                                             setStep(2)
                                         }}
                                         className={cn(
@@ -330,8 +352,86 @@ export default function BookingPage() {
                     </Card>
                 )}
 
-                {/* Step 2: Select Date */}
-                {step === 2 && (
+                {/* Step 2: Select Professional (only if clinic has professionals) */}
+                {step === 2 && clinic?.has_professionals && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Users className="h-5 w-5 text-blue-600" />
+                                Escolha o Profissional
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {/* Option for any professional */}
+                            <button
+                                onClick={() => {
+                                    setSelectedProfessional(null)
+                                    setStep(3)
+                                }}
+                                className={cn(
+                                    'w-full p-4 rounded-xl border-2 text-left transition-all hover:border-blue-400 hover:bg-blue-50',
+                                    selectedProfessional === null
+                                        ? 'border-blue-600 bg-blue-50'
+                                        : 'border-gray-200'
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <Users className="h-5 w-5 text-gray-600" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-gray-900">Qualquer profissional</p>
+                                        <p className="text-sm text-gray-500">Proximo disponivel</p>
+                                    </div>
+                                </div>
+                            </button>
+
+                            {/* List professionals */}
+                            {clinic.professionals.map((professional) => (
+                                <button
+                                    key={professional.id}
+                                    onClick={() => {
+                                        setSelectedProfessional(professional)
+                                        setStep(3)
+                                    }}
+                                    className={cn(
+                                        'w-full p-4 rounded-xl border-2 text-left transition-all hover:border-blue-400 hover:bg-blue-50',
+                                        selectedProfessional?.id === professional.id
+                                            ? 'border-blue-600 bg-blue-50'
+                                            : 'border-gray-200'
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="h-10 w-10 rounded-full flex items-center justify-center text-white font-medium"
+                                            style={{ backgroundColor: professional.color || '#3B82F6' }}
+                                        >
+                                            {professional.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-gray-900">{professional.name}</p>
+                                            {professional.specialty && (
+                                                <p className="text-sm text-gray-500">{professional.specialty}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+
+                            <Button
+                                variant="ghost"
+                                className="mt-4"
+                                onClick={() => setStep(1)}
+                            >
+                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                Voltar
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Step 2: Select Date (for clinics without professionals) OR Step 3: Select Date (for clinics with professionals) */}
+                {((step === 2 && !clinic?.has_professionals) || (step === 3 && clinic?.has_professionals)) && (
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -348,7 +448,7 @@ export default function BookingPage() {
                                         onClick={() => {
                                             setSelectedDate(day.date)
                                             setSelectedTime(null)
-                                            setStep(3)
+                                            setStep(clinic?.has_professionals ? 4 : 3)
                                         }}
                                         className={cn(
                                             'p-2 rounded-lg text-center transition-all',
@@ -367,7 +467,7 @@ export default function BookingPage() {
                             <Button
                                 variant="ghost"
                                 className="mt-4"
-                                onClick={() => setStep(1)}
+                                onClick={() => setStep(clinic?.has_professionals ? 2 : 1)}
                             >
                                 <ArrowLeft className="h-4 w-4 mr-2" />
                                 Voltar
@@ -376,16 +476,17 @@ export default function BookingPage() {
                     </Card>
                 )}
 
-                {/* Step 3: Select Time */}
-                {step === 3 && (
+                {/* Step 3 or 4: Select Time */}
+                {((step === 3 && !clinic?.has_professionals) || (step === 4 && clinic?.has_professionals)) && (
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Clock className="h-5 w-5 text-blue-600" />
-                                Escolha o Horário
+                                Escolha o Horario
                             </CardTitle>
                             <p className="text-sm text-gray-500">
                                 {selectedDate && formatDate(selectedDate)}
+                                {selectedProfessional && ` - ${selectedProfessional.name}`}
                             </p>
                         </CardHeader>
                         <CardContent>
@@ -395,7 +496,7 @@ export default function BookingPage() {
                                 </div>
                             ) : timeSlots.length === 0 ? (
                                 <p className="text-gray-500 text-center py-8">
-                                    Nenhum horário disponível nesta data
+                                    Nenhum horario disponivel nesta data
                                 </p>
                             ) : (
                                 <div className="grid grid-cols-4 gap-2">
@@ -404,7 +505,7 @@ export default function BookingPage() {
                                             key={slot.time}
                                             onClick={() => {
                                                 setSelectedTime(slot.time)
-                                                setStep(4)
+                                                setStep(clinic?.has_professionals ? 5 : 4)
                                             }}
                                             className={cn(
                                                 'p-3 rounded-lg text-center transition-all font-medium',
@@ -421,7 +522,7 @@ export default function BookingPage() {
                             <Button
                                 variant="ghost"
                                 className="mt-4"
-                                onClick={() => setStep(2)}
+                                onClick={() => setStep(clinic?.has_professionals ? 3 : 2)}
                             >
                                 <ArrowLeft className="h-4 w-4 mr-2" />
                                 Voltar
@@ -430,8 +531,8 @@ export default function BookingPage() {
                     </Card>
                 )}
 
-                {/* Step 4: Patient Info */}
-                {step === 4 && (
+                {/* Step 4 or 5: Patient Info */}
+                {((step === 4 && !clinic?.has_professionals) || (step === 5 && clinic?.has_professionals)) && (
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -442,9 +543,12 @@ export default function BookingPage() {
                         <CardContent className="space-y-4">
                             {/* Summary */}
                             <div className="bg-blue-50 rounded-xl p-4 space-y-1 text-sm">
-                                <p><strong>Serviço:</strong> {selectedService?.name}</p>
+                                <p><strong>Servico:</strong> {selectedService?.name}</p>
+                                {selectedProfessional && (
+                                    <p><strong>Profissional:</strong> {selectedProfessional.name}</p>
+                                )}
                                 <p><strong>Data:</strong> {selectedDate && formatDate(selectedDate)}</p>
-                                <p><strong>Horário:</strong> {selectedTime}</p>
+                                <p><strong>Horario:</strong> {selectedTime}</p>
                             </div>
 
                             <div className="space-y-4">
@@ -507,7 +611,7 @@ export default function BookingPage() {
                             <div className="flex gap-3 pt-4">
                                 <Button
                                     variant="outline"
-                                    onClick={() => setStep(3)}
+                                    onClick={() => setStep(clinic?.has_professionals ? 4 : 3)}
                                     className="flex-1"
                                 >
                                     <ArrowLeft className="h-4 w-4 mr-2" />

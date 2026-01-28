@@ -17,7 +17,8 @@ import {
   X,
   Bot,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Stethoscope
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Agendamentos', href: '/appointments', icon: Calendar },
   { name: 'Pacientes', href: '/patients', icon: Users },
+  { name: 'Profissionais', href: '/professionals', icon: Stethoscope },
   { name: 'Conversas', href: '/conversations', icon: MessageSquare },
   { name: 'Agentes', href: '/agents', icon: Bot },
   { name: 'Configuracoes', href: '/settings', icon: Settings },

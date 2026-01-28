@@ -23,8 +23,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { appointmentsApi } from '@/lib/api'
-import { Appointment } from '@/types'
+import { appointmentsApi, professionalsApi } from '@/lib/api'
+import { Appointment, Professional } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { Calendar, Filter, X, Check, MoreVertical, Plus, FileText, Ban, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { NewAppointmentModal } from '@/components/appointments/new-appointment-modal'
@@ -38,10 +38,12 @@ export default function AppointmentsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [professionalFilter, setProfessionalFilter] = useState<string>('')
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
   const [showNewModal, setShowNewModal] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [professionals, setProfessionals] = useState<Professional[]>([])
 
   const fetchAppointments = async () => {
     setLoading(true)
@@ -51,7 +53,8 @@ export default function AppointmentsPage() {
         per_page: 20,
         status: statusFilter || undefined,
         date_from: dateFrom || undefined,
-        date_to: dateTo || undefined
+        date_to: dateTo || undefined,
+        professional_id: professionalFilter || undefined
       })
       setAppointments(response.data.appointments || [])
       setTotalPages(response.data.pages || 1)
@@ -62,9 +65,22 @@ export default function AppointmentsPage() {
     }
   }
 
+  const fetchProfessionals = async () => {
+    try {
+      const response = await professionalsApi.list()
+      setProfessionals(response.data.professionals || [])
+    } catch (error) {
+      console.error('Error fetching professionals:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchProfessionals()
+  }, [])
+
   useEffect(() => {
     fetchAppointments()
-  }, [page, statusFilter, dateFrom, dateTo])
+  }, [page, statusFilter, professionalFilter, dateFrom, dateTo])
 
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {
     try {
@@ -107,6 +123,7 @@ export default function AppointmentsPage() {
 
   const clearFilters = () => {
     setStatusFilter('')
+    setProfessionalFilter('')
     setDateFrom('')
     setDateTo('')
     setPage(1)
@@ -147,7 +164,7 @@ export default function AppointmentsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label>Status</Label>
               <Select
@@ -162,6 +179,23 @@ export default function AppointmentsPage() {
                 ))}
               </Select>
             </div>
+            {professionals.length > 0 && (
+              <div className="space-y-2">
+                <Label>Profissional</Label>
+                <Select
+                  value={professionalFilter}
+                  onChange={(e) => {
+                    setProfessionalFilter(e.target.value)
+                    setPage(1)
+                  }}
+                >
+                  <option value="">Todos</option>
+                  {professionals.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Data Inicial</Label>
               <Input
@@ -214,10 +248,11 @@ export default function AppointmentsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Paciente</TableHead>
-                  <TableHead>Serviço</TableHead>
+                  <TableHead>Servico</TableHead>
+                  {professionals.length > 0 && <TableHead>Profissional</TableHead>}
                   <TableHead>Data/Hora</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-right">Acoes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -241,6 +276,23 @@ export default function AppointmentsPage() {
                         {apt.service_name}
                       </Badge>
                     </TableCell>
+                    {professionals.length > 0 && (
+                      <TableCell>
+                        {apt.professional ? (
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-6 w-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                              style={{ backgroundColor: apt.professional.color || '#3B82F6' }}
+                            >
+                              {apt.professional.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-sm">{apt.professional.name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <span className="text-sm">{formatDateTime(apt.scheduled_datetime)}</span>
                     </TableCell>

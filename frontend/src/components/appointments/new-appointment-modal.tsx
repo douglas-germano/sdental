@@ -17,8 +17,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
-import { appointmentsApi, patientsApi } from '@/lib/api'
-import { Patient, AvailabilitySlot } from '@/types'
+import { appointmentsApi, patientsApi, professionalsApi } from '@/lib/api'
+import { Patient, AvailabilitySlot, Professional } from '@/types'
 import {
   Loader2,
   CalendarPlus,
@@ -27,7 +27,8 @@ import {
   Calendar,
   Clock,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Users
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -35,9 +36,10 @@ import * as z from 'zod'
 
 const appointmentSchema = z.object({
   patient_id: z.string().min(1, 'Selecione um paciente'),
-  service_name: z.string().min(1, 'Selecione um serviÃ§o'),
+  service_name: z.string().min(1, 'Selecione um servico'),
+  professional_id: z.string().optional(),
   date: z.string().min(1, 'Selecione uma data'),
-  time_slot: z.string().min(1, 'Selecione um horÃ¡rio'),
+  time_slot: z.string().min(1, 'Selecione um horario'),
   notes: z.string().optional(),
 })
 
@@ -58,8 +60,10 @@ export function NewAppointmentModal({
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [loadingPatients, setLoadingPatients] = useState(false)
+  const [loadingProfessionals, setLoadingProfessionals] = useState(false)
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [patients, setPatients] = useState<Patient[]>([])
+  const [professionals, setProfessionals] = useState<Professional[]>([])
   const [slots, setSlots] = useState<AvailabilitySlot[]>([])
 
   const services = clinic?.services || []
@@ -76,6 +80,7 @@ export function NewAppointmentModal({
     defaultValues: {
       patient_id: '',
       service_name: '',
+      professional_id: '',
       date: '',
       time_slot: '',
       notes: '',
@@ -85,13 +90,16 @@ export function NewAppointmentModal({
   const formValues = watch()
   const selectedDate = watch('date')
   const selectedService = watch('service_name')
+  const selectedProfessional = watch('professional_id')
 
   useEffect(() => {
     if (open) {
       fetchPatients()
+      fetchProfessionals()
       reset({
         patient_id: '',
         service_name: '',
+        professional_id: '',
         date: '',
         time_slot: '',
         notes: '',
@@ -102,10 +110,10 @@ export function NewAppointmentModal({
 
   useEffect(() => {
     if (selectedDate && selectedService) {
-      fetchAvailability(selectedDate, selectedService)
-      setValue('time_slot', '') // Reset time slot when date/service changes
+      fetchAvailability(selectedDate, selectedService, selectedProfessional || undefined)
+      setValue('time_slot', '') // Reset time slot when date/service/professional changes
     }
-  }, [selectedDate, selectedService, setValue])
+  }, [selectedDate, selectedService, selectedProfessional, setValue])
 
   const fetchPatients = async () => {
     setLoadingPatients(true)
@@ -119,10 +127,22 @@ export function NewAppointmentModal({
     }
   }
 
-  const fetchAvailability = async (date: string, serviceName: string) => {
+  const fetchProfessionals = async () => {
+    setLoadingProfessionals(true)
+    try {
+      const response = await professionalsApi.list({ active: true })
+      setProfessionals(response.data.professionals || [])
+    } catch (error) {
+      console.error('Error fetching professionals:', error)
+    } finally {
+      setLoadingProfessionals(false)
+    }
+  }
+
+  const fetchAvailability = async (date: string, serviceName: string, professionalId?: string) => {
     setLoadingSlots(true)
     try {
-      const response = await appointmentsApi.availability(date, serviceName)
+      const response = await appointmentsApi.availability(date, serviceName, professionalId)
       setSlots(response.data.slots || [])
     } catch (error) {
       console.error('Error fetching availability:', error)
@@ -142,6 +162,7 @@ export function NewAppointmentModal({
         scheduled_datetime: data.time_slot,
         duration_minutes: service?.duration || 30,
         notes: data.notes || undefined,
+        professional_id: data.professional_id || undefined,
       })
 
       toast({
@@ -156,7 +177,7 @@ export function NewAppointmentModal({
       console.error('Error creating appointment:', error)
       toast({
         title: 'Erro',
-        description: 'NÃ£o foi possÃvel criar o agendamento. Tente novamente.',
+        description: 'Nao foi possivel criar o agendamento. Tente novamente.',
         variant: 'error',
       })
     } finally {
@@ -223,14 +244,14 @@ export function NewAppointmentModal({
           <div className="space-y-2">
             <Label htmlFor="service" className="flex items-center gap-2" required>
               <Stethoscope className="h-4 w-4" />
-              ServiÃ§o
+              Servico
             </Label>
             <div className="relative">
               <Select
                 id="service"
                 {...register('service_name')}
               >
-                <option value="">Selecione um serviÃ§o</option>
+                <option value="">Selecione um servico</option>
                 {services.map((service) => (
                   <option key={service.name} value={service.name}>
                     {service.name} ({service.duration} min)
@@ -244,6 +265,34 @@ export function NewAppointmentModal({
               )}
             </div>
           </div>
+
+          {/* Profissional */}
+          {professionals.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="professional" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Profissional
+              </Label>
+              {loadingProfessionals ? (
+                <div className="flex items-center gap-3 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando profissionais...
+                </div>
+              ) : (
+                <Select
+                  id="professional"
+                  {...register('professional_id')}
+                >
+                  <option value="">Qualquer profissional disponivel</option>
+                  {professionals.map((professional) => (
+                    <option key={professional.id} value={professional.id}>
+                      {professional.name}{professional.specialty ? ` - ${professional.specialty}` : ''}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </div>
+          )}
 
           {/* Data e Horario em grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -270,7 +319,7 @@ export function NewAppointmentModal({
             <div className="space-y-2">
               <Label htmlFor="time" className="flex items-center gap-2" required>
                 <Clock className="h-4 w-4" />
-                HorÃ¡rio
+                Horario
               </Label>
               {loadingSlots ? (
                 <div className="flex items-center gap-3 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
@@ -280,12 +329,12 @@ export function NewAppointmentModal({
               ) : !selectedDate || !selectedService ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
                   <AlertCircle className="h-4 w-4" />
-                  Selecione data e serviÃ§o
+                  Selecione data e servico
                 </div>
               ) : slots.length === 0 ? (
                 <div className="flex items-center gap-2 text-sm text-amber-600 h-11 px-4 bg-amber-50 rounded-xl border border-amber-200">
                   <AlertCircle className="h-4 w-4" />
-                  Sem horÃ¡rios
+                  Sem horarios disponiveis
                 </div>
               ) : (
                 <div className="relative">
@@ -293,10 +342,11 @@ export function NewAppointmentModal({
                     id="time"
                     {...register('time_slot')}
                   >
-                    <option value="">Selecione</option>
+                    <option value="">Selecione um horario</option>
                     {slots.map((slot) => (
                       <option key={slot.datetime} value={slot.datetime}>
                         {slot.start_time} - {slot.end_time}
+                        {slot.professional_name ? ` (${slot.professional_name})` : ''}
                       </option>
                     ))}
                   </Select>
@@ -314,11 +364,11 @@ export function NewAppointmentModal({
           <div className="space-y-2">
             <Label htmlFor="notes" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              ObservaÃ§Ãµes
+              Observacoes
             </Label>
             <Textarea
               id="notes"
-              placeholder="ObservaÃ§Ãµes adicionais sobre o agendamento..."
+              placeholder="Observacoes adicionais sobre o agendamento..."
               rows={3}
               {...register('notes')}
             />

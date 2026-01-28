@@ -123,12 +123,13 @@ export const appointmentsApi = {
     date_from?: string
     date_to?: string
     service?: string
+    professional_id?: string
   }) => api.get('/appointments', { params }),
 
   upcoming: () => api.get('/appointments/upcoming'),
 
-  availability: (date: string, service?: string) =>
-    api.get('/appointments/availability', { params: { date, service } }),
+  availability: (date: string, service?: string, professional_id?: string) =>
+    api.get('/appointments/availability', { params: { date, service, professional_id } }),
 
   get: (id: string) => api.get(`/appointments/${id}`),
 
@@ -138,15 +139,50 @@ export const appointmentsApi = {
     scheduled_datetime: string
     duration_minutes?: number
     notes?: string
+    professional_id?: string
   }) => api.post('/appointments', data),
 
   update: (id: string, data: {
     status?: string
     notes?: string
     scheduled_datetime?: string
+    professional_id?: string
   }) => api.put(`/appointments/${id}`, data),
 
   delete: (id: string) => api.delete(`/appointments/${id}`)
+}
+
+// Professionals API
+export const professionalsApi = {
+  list: (params?: { active?: boolean }) =>
+    api.get('/professionals', { params }),
+
+  get: (id: string) => api.get(`/professionals/${id}`),
+
+  create: (data: {
+    name: string
+    email?: string
+    phone?: string
+    specialty?: string
+    color?: string
+    business_hours?: Record<string, unknown>
+  }) => api.post('/professionals', data),
+
+  update: (id: string, data: {
+    name?: string
+    email?: string
+    phone?: string
+    specialty?: string
+    color?: string
+    active?: boolean
+    is_default?: boolean
+    business_hours?: Record<string, unknown>
+  }) => api.put(`/professionals/${id}`, data),
+
+  delete: (id: string) => api.delete(`/professionals/${id}`),
+
+  appointments: (id: string, params?: { date_from?: string; date_to?: string; include_past?: boolean }) =>
+    api.get(`/professionals/${id}/appointments`, { params })
 }
 
 // Conversations API

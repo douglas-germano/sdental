@@ -40,11 +40,28 @@ export interface Patient {
   appointments?: Appointment[]
 }
 
+export interface Professional {
+  id: string
+  clinic_id: string
+  name: string
+  email?: string
+  phone?: string
+  specialty?: string
+  color?: string
+  active: boolean
+  is_default: boolean
+  business_hours?: Record<string, BusinessHour>
+  created_at: string
+  updated_at: string
+}
+
 export interface Appointment {
   id: string
   clinic_id: string
   patient_id: string
   patient?: Patient
+  professional_id?: string
+  professional?: Professional
   service_name: string
   scheduled_datetime: string
   duration_minutes: number
@@ -101,6 +118,9 @@ export interface AvailabilitySlot {
   start_time: string
   end_time: string
   datetime: string
+  professional_id?: string
+  professional_name?: string
+  available_professionals?: Array<{ id: string; name: string }>
 }
 
 export interface AnalyticsOverview {

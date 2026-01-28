@@ -155,6 +155,84 @@ Telefone: ${clinic?.phone || 'Não informado'}`
         setTestMessages([])
     }
 
+    const PROMPT_TEMPLATES = [
+        {
+            name: 'Padrão (Equilibrado)',
+            content: `Você é uma assistente virtual da clínica odontológica {clinic_name}.
+Seu objetivo é agendar consultas, tirar dúvidas sobre tratamentos e fornecer informações sobre a clínica.
+Seja sempre cordial, profissional e empática.
+Use emojis ocasionalmente para tornar a conversa mais leve.`
+        },
+        {
+            name: 'Amigável',
+            content: `Oi! Sou a assistente virtual da {clinic_name} 😊
+Estou aqui para te ajudar a marcar consultas e tirar dúvidas com muito carinho!
+Pode contar comigo para o que precisar.
+Use bastante emojis e uma linguagem bem acolhedora!`
+        },
+        {
+            name: 'Formal',
+            content: `Você é uma assistente virtual da {clinic_name}.
+Atue com formalidade e profissionalismo estrito.
+Foque em eficiência e clareza no agendamento.
+Não utilize emojis ou gírias.`
+        },
+        {
+            name: 'Focado em Vendas',
+            content: `Você é uma consultora de agendamentos da {clinic_name}.
+Seu objetivo principal é converter contatos em agendamentos confirmados.
+Seja persuasiva, destaque a qualidade dos nossos serviços e a importância da saúde bucal.
+Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
+        }
+    ]
+
+    const PROMPT_VARIABLES = [
+        { code: '{clinic_name}', label: 'Nome da Clínica' },
+        { code: '{services}', label: 'Lista de Serviços' },
+        { code: '{business_hours}', label: 'Horários' },
+        { code: '{current_datetime}', label: 'Data/Hora Atual' },
+        { code: '{context_info}', label: 'Contexto do Paciente' }
+    ]
+
+    const handleApplyTemplate = (content: string) => {
+        setAgentConfig(prev => ({ ...prev, systemPrompt: content }))
+        toast({
+            title: 'Modelo Aplicado',
+            description: 'O prompt do sistema foi atualizado.',
+        })
+    }
+
+    const handleInsertVariable = (variable: string) => {
+        const textarea = document.getElementById('prompt') as HTMLTextAreaElement
+        if (textarea) {
+            const start = textarea.selectionStart
+            const end = textarea.selectionEnd
+            const text = agentConfig.systemPrompt
+            const newText = text.substring(0, start) + variable + text.substring(end)
+            setAgentConfig(prev => ({ ...prev, systemPrompt: newText }))
+
+            // Restore focus and cursor position (delayed to work after render)
+            setTimeout(() => {
+                textarea.focus()
+                textarea.setSelectionRange(start + variable.length, start + variable.length)
+            }, 0)
+        } else {
+            setAgentConfig(prev => ({
+                ...prev,
+                systemPrompt: prev.systemPrompt + variable
+            }))
+        }
+    }
+
+    const handleRefreshContext = () => {
+        const newContext = getDefaultContext()
+        setAgentConfig(prev => ({ ...prev, context: newContext }))
+        toast({
+            title: 'Contexto Atualizado',
+            description: 'As informações foram recarregadas com base nas configurações atuais da clínica.',
+        })
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -246,15 +324,48 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-4">
                                 <Label htmlFor="prompt">Prompt do Sistema</Label>
-                                <Textarea
-                                    id="prompt"
-                                    rows={10}
-                                    value={agentConfig.systemPrompt}
-                                    onChange={(e) => setAgentConfig({ ...agentConfig, systemPrompt: e.target.value })}
-                                    className="font-mono text-sm"
-                                />
+
+                                {/* Templates */}
+                                <div className="flex flex-wrap gap-2">
+                                    {PROMPT_TEMPLATES.map((template) => (
+                                        <Button
+                                            key={template.name}
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleApplyTemplate(template.content)}
+                                            className="text-xs"
+                                        >
+                                            {template.name}
+                                        </Button>
+                                    ))}
+                                </div>
+
+                                <div className="relative">
+                                    <Textarea
+                                        id="prompt"
+                                        rows={12}
+                                        value={agentConfig.systemPrompt}
+                                        onChange={(e) => setAgentConfig({ ...agentConfig, systemPrompt: e.target.value })}
+                                        className="font-mono text-sm leading-relaxed"
+                                    />
+
+                                    {/* Variables Helper Bar */}
+                                    <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1 p-2 bg-muted/50 rounded-lg backdrop-blur-sm">
+                                        <span className="text-xs text-muted-foreground self-center mr-1">Variáveis:</span>
+                                        {PROMPT_VARIABLES.map((v) => (
+                                            <button
+                                                key={v.code}
+                                                onClick={() => handleInsertVariable(v.code)}
+                                                className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded-md transition-colors"
+                                                title={`Inserir ${v.label}`}
+                                            >
+                                                {v.code}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                                 <p className="text-xs text-muted-foreground">
                                     Instruções base que definem a personalidade e regras do agente.
                                 </p>
@@ -271,16 +382,27 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                 <TabsContent value="knowledge" className="space-y-4">
                     <Card className="border-border/50">
                         <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                                    <Sparkles className="h-5 w-5 text-white" />
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                                        <Sparkles className="h-5 w-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <CardTitle>Base de Conhecimento</CardTitle>
+                                        <CardDescription>
+                                            Informações específicas que o agente pode consultar
+                                        </CardDescription>
+                                    </div>
                                 </div>
-                                <div>
-                                    <CardTitle>Base de Conhecimento</CardTitle>
-                                    <CardDescription>
-                                        Informações específicas que o agente pode consultar
-                                    </CardDescription>
-                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleRefreshContext}
+                                    className="gap-2"
+                                >
+                                    <Sparkles className="h-3 w-3" />
+                                    Atualizar com Dados da Clínica
+                                </Button>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -343,16 +465,14 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                         testMessages.map((msg, index) => (
                                             <div
                                                 key={index}
-                                                className={`flex items-start gap-3 animate-fade-in ${
-                                                    msg.role === 'user' ? 'flex-row-reverse' : ''
-                                                }`}
+                                                className={`flex items-start gap-3 animate-fade-in ${msg.role === 'user' ? 'flex-row-reverse' : ''
+                                                    }`}
                                             >
                                                 <div
-                                                    className={`h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                                        msg.role === 'user'
-                                                            ? 'bg-gradient-primary text-white'
-                                                            : 'bg-muted'
-                                                    }`}
+                                                    className={`h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user'
+                                                        ? 'bg-gradient-primary text-white'
+                                                        : 'bg-muted'
+                                                        }`}
                                                 >
                                                     {msg.role === 'user' ? (
                                                         <User className="h-4 w-4" />
@@ -361,11 +481,10 @@ Telefone: ${clinic?.phone || 'Não informado'}`
                                                     )}
                                                 </div>
                                                 <div
-                                                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                                                        msg.role === 'user'
-                                                            ? 'bg-gradient-primary text-white rounded-tr-md'
-                                                            : 'bg-background border border-border/50 rounded-tl-md'
-                                                    }`}
+                                                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.role === 'user'
+                                                        ? 'bg-gradient-primary text-white rounded-tr-md'
+                                                        : 'bg-background border border-border/50 rounded-tl-md'
+                                                        }`}
                                                 >
                                                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                                                 </div>
