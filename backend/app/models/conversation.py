@@ -25,7 +25,6 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     last_message_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    patient = db.relationship('Patient', backref='conversations', lazy='joined')
     bot_transfers = db.relationship('BotTransfer', backref='conversation', lazy='dynamic')
 
     def add_message(self, role: str, content: str) -> None:

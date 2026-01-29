@@ -23,7 +23,7 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
 
     # Relationships
     appointments = db.relationship('Appointment', backref='patient', lazy='dynamic', cascade='all, delete-orphan')
-    conversations = db.relationship('Conversation', backref='patient', lazy='dynamic')
+    conversations = db.relationship('Conversation', backref=db.backref('patient', lazy='joined'), lazy='dynamic')
 
     __table_args__ = (
         db.UniqueConstraint('clinic_id', 'phone', name='uq_patient_clinic_phone'),
