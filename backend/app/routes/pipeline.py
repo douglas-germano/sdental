@@ -60,9 +60,29 @@ def get_board(current_clinic):
     ).order_by(PipelineStage.order).all()
     
     # Ensure stages exist
+    # Ensure stages exist
     if not stages:
-        # Call list_stages to create defaults logic (hacky but works)
-        list_stages(current_clinic)
+        defaults = [
+            {'name': 'Novos Leads', 'order': 0, 'color': '#6366f1', 'is_default': True},
+            {'name': 'Contatado', 'order': 1, 'color': '#3b82f6', 'is_default': False},
+            {'name': 'Agendado', 'order': 2, 'color': '#eab308', 'is_default': False},
+            {'name': 'Compareceu', 'order': 3, 'color': '#22c55e', 'is_default': False},
+            {'name': 'Não Compareceu', 'order': 4, 'color': '#ef4444', 'is_default': False},
+        ]
+        
+        stages = []
+        for d in defaults:
+            stage = PipelineStage(
+                clinic_id=current_clinic.id,
+                name=d['name'],
+                order=d['order'],
+                color=d['color'],
+                is_default=d['is_default']
+            )
+            db.session.add(stage)
+        
+        db.session.commit()
+
         stages = PipelineStage.query.filter_by(
             clinic_id=current_clinic.id
         ).order_by(PipelineStage.order).all()
