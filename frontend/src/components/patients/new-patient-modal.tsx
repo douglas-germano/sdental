@@ -64,7 +64,7 @@ export function NewPatientModal({
     if (!formData.name.trim() || !formData.phone.trim()) {
       toast({
         title: 'Erro',
-        description: 'Nome e telefone sao obrigatorios.',
+        description: 'Nome e telefone são obrigatórios.',
         variant: 'error',
       })
       return
@@ -74,7 +74,7 @@ export function NewPatientModal({
     if (phoneDigits.length < 10) {
       toast({
         title: 'Erro',
-        description: 'Telefone invalido.',
+        description: 'Telefone inválido.',
         variant: 'error',
       })
       return
@@ -101,7 +101,7 @@ export function NewPatientModal({
       console.error('Error creating patient:', error)
       toast({
         title: 'Erro',
-        description: 'Nao foi possivel cadastrar o paciente. Tente novamente.',
+        description: 'Não foi possível cadastrar o paciente. Tente novamente.',
         variant: 'error',
       })
     } finally {
@@ -176,11 +176,11 @@ export function NewPatientModal({
           <div className="space-y-2">
             <Label htmlFor="notes" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Observacoes
+              Observações
             </Label>
             <Textarea
               id="notes"
-              placeholder="Observacoes sobre o paciente (alergias, restricoes, etc.)"
+              placeholder="Observações sobre o paciente (alergias, restrições, etc.)"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}

@@ -26,24 +26,42 @@ import {
 import { appointmentsApi, professionalsApi } from '@/lib/api'
 import { Appointment, Professional } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Calendar, Filter, X, Check, MoreVertical, Plus, FileText, Ban, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, Filter, X, Check, MoreVertical, Plus, FileText, Ban, Eye, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react'
 import { NewAppointmentModal } from '@/components/appointments/new-appointment-modal'
 import { AppointmentDetailModal } from '@/components/appointments/appointment-detail-modal'
 import { useToast } from '@/components/ui/toast'
+import { useConfirm } from '@/hooks/useConfirm'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useDebounce } from '@/hooks/useDebounce'
+import { cn } from '@/lib/utils'
+import { exportToCSV } from '@/lib/export'
+import { getErrorMessage } from '@/lib/error-messages'
+import { Download } from 'lucide-react'
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
+  const { confirm, ConfirmDialogComponent } = useConfirm()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<string>('')
-  const [professionalFilter, setProfessionalFilter] = useState<string>('')
-  const [dateFrom, setDateFrom] = useState<string>('')
-  const [dateTo, setDateTo] = useState<string>('')
+
+  // Separate input states for debouncing
+  const [statusFilterInput, setStatusFilterInput] = useState<string>('')
+  const [professionalFilterInput, setProfessionalFilterInput] = useState<string>('')
+  const [dateFromInput, setDateFromInput] = useState<string>('')
+  const [dateToInput, setDateToInput] = useState<string>('')
+
+  // Debounced values
+  const statusFilter = useDebounce(statusFilterInput, 500)
+  const professionalFilter = useDebounce(professionalFilterInput, 500)
+  const dateFrom = useDebounce(dateFromInput, 500)
+  const dateTo = useDebounce(dateToInput, 500)
+
   const [showNewModal, setShowNewModal] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [professionals, setProfessionals] = useState<Professional[]>([])
+  const [filtersExpanded, setFiltersExpanded] = useState(false)
 
   const fetchAppointments = async () => {
     setLoading(true)
@@ -95,14 +113,23 @@ export default function AppointmentsPage() {
       console.error('Error updating appointment:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar o status.',
+        description: getErrorMessage(error),
         variant: 'error',
       })
     }
   }
 
   const handleCancel = async (appointmentId: string) => {
-    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return
+    const confirmed = await confirm({
+      title: 'Cancelar Agendamento',
+      description: 'Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.',
+      confirmText: 'Sim, cancelar',
+      cancelText: 'Não, manter',
+      variant: 'destructive'
+    })
+
+    if (!confirmed) return
+
     try {
       await appointmentsApi.delete(appointmentId)
       toast({
@@ -115,25 +142,53 @@ export default function AppointmentsPage() {
       console.error('Error cancelling appointment:', error)
       toast({
         title: 'Erro',
-        description: 'Não foi possível cancelar o agendamento.',
+        description: getErrorMessage(error),
         variant: 'error',
       })
     }
   }
 
   const clearFilters = () => {
-    setStatusFilter('')
-    setProfessionalFilter('')
-    setDateFrom('')
-    setDateTo('')
+    setStatusFilterInput('')
+    setProfessionalFilterInput('')
+    setDateFromInput('')
+    setDateToInput('')
     setPage(1)
+  }
+
+  const handleExport = () => {
+    if (appointments.length === 0) {
+      toast({
+        title: 'Aviso',
+        description: 'Não há agendamentos para exportar',
+        variant: 'warning',
+      })
+      return
+    }
+
+    const exportData = appointments.map(apt => ({
+      'Paciente': apt.patient?.name || '-',
+      'Telefone': apt.patient?.phone ? formatPhone(apt.patient.phone) : '-',
+      'Serviço': apt.service_name || '-',
+      'Profissional': apt.professional?.name || '-',
+      'Data/Hora': formatDateTime(apt.scheduled_datetime),
+      'Status': getStatusLabel(apt.status),
+    }))
+
+    exportToCSV(exportData, 'agendamentos')
+
+    toast({
+      title: 'Sucesso',
+      description: 'Agendamentos exportados com sucesso!',
+      variant: 'success',
+    })
   }
 
   const statuses = [
     { value: '', label: 'Todos' },
     { value: 'pending', label: 'Pendente' },
     { value: 'confirmed', label: 'Confirmado' },
-    { value: 'completed', label: 'Concluido' },
+    { value: 'completed', label: 'Concluído' },
     { value: 'cancelled', label: 'Cancelado' },
     { value: 'no_show', label: 'Falta' }
   ]
@@ -147,30 +202,64 @@ export default function AppointmentsPage() {
             Gerencie os agendamentos da clínica
           </p>
         </div>
-        <Button variant="gradient" onClick={() => setShowNewModal(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Novo Agendamento
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            className="gap-2"
+            disabled={loading || appointments.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Exportar</span>
+          </Button>
+          <Button variant="gradient" onClick={() => setShowNewModal(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Novo Agendamento
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <Card className="border-border/50">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Filter className="h-4 w-4 text-white" />
+        <CardHeader
+          className="pb-3 cursor-pointer md:cursor-default"
+          onClick={() => setFiltersExpanded(!filtersExpanded)}
+        >
+          <CardTitle className="text-lg flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+                <Filter className="h-4 w-4 text-white" />
+              </div>
+              Filtros
             </div>
-            Filtros
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="md:hidden"
+              onClick={(e) => {
+                e.stopPropagation()
+                setFiltersExpanded(!filtersExpanded)
+              }}
+            >
+              {filtersExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className={cn(
+          'transition-all duration-300',
+          !filtersExpanded && 'hidden md:block'
+        )}>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label>Status</Label>
               <Select
-                value={statusFilter}
+                value={statusFilterInput}
                 onChange={(e) => {
-                  setStatusFilter(e.target.value)
+                  setStatusFilterInput(e.target.value)
                   setPage(1)
                 }}
               >
@@ -183,9 +272,9 @@ export default function AppointmentsPage() {
               <div className="space-y-2">
                 <Label>Profissional</Label>
                 <Select
-                  value={professionalFilter}
+                  value={professionalFilterInput}
                   onChange={(e) => {
-                    setProfessionalFilter(e.target.value)
+                    setProfessionalFilterInput(e.target.value)
                     setPage(1)
                   }}
                 >
@@ -200,9 +289,9 @@ export default function AppointmentsPage() {
               <Label>Data Inicial</Label>
               <Input
                 type="date"
-                value={dateFrom}
+                value={dateFromInput}
                 onChange={(e) => {
-                  setDateFrom(e.target.value)
+                  setDateFromInput(e.target.value)
                   setPage(1)
                 }}
               />
@@ -211,9 +300,9 @@ export default function AppointmentsPage() {
               <Label>Data Final</Label>
               <Input
                 type="date"
-                value={dateTo}
+                value={dateToInput}
                 onChange={(e) => {
-                  setDateTo(e.target.value)
+                  setDateToInput(e.target.value)
                   setPage(1)
                 }}
               />
@@ -236,23 +325,26 @@ export default function AppointmentsPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : appointments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-              <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-                <Calendar className="h-8 w-8 opacity-50" />
-              </div>
-              <p className="font-medium">Nenhum agendamento encontrado</p>
-              <p className="text-sm">Crie um novo agendamento ou ajuste os filtros</p>
-            </div>
+            <EmptyState
+              icon={Calendar}
+              title="Nenhum agendamento encontrado"
+              description="Crie um novo agendamento ou ajuste os filtros"
+              action={{
+                label: "Novo Agendamento",
+                onClick: () => setShowNewModal(true),
+                icon: Plus
+              }}
+            />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Paciente</TableHead>
-                  <TableHead>Servico</TableHead>
+                  <TableHead>Serviço</TableHead>
                   {professionals.length > 0 && <TableHead>Profissional</TableHead>}
                   <TableHead>Data/Hora</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Acoes</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -355,10 +447,13 @@ export default function AppointmentsPage() {
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
             className="h-9 w-9"
+            aria-label="Página anterior"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-1">
+
+          {/* Desktop: Full pagination */}
+          <div className="hidden md:flex items-center gap-1">
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               const pageNum = i + 1
               return (
@@ -368,18 +463,29 @@ export default function AppointmentsPage() {
                   size="icon"
                   onClick={() => setPage(pageNum)}
                   className="h-9 w-9"
+                  aria-label={`Página ${pageNum}`}
+                  aria-current={page === pageNum ? 'page' : undefined}
                 >
                   {pageNum}
                 </Button>
               )
             })}
           </div>
+
+          {/* Mobile: Simple page indicator */}
+          <div className="flex md:hidden items-center">
+            <span className="text-sm text-muted-foreground">
+              Página {page} de {totalPages}
+            </span>
+          </div>
+
           <Button
             variant="outline"
             size="icon"
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
             className="h-9 w-9"
+            aria-label="Próxima página"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -399,6 +505,9 @@ export default function AppointmentsPage() {
         onOpenChange={(open: boolean) => !open && setSelectedAppointment(null)}
         onUpdate={fetchAppointments}
       />
+
+      {/* Confirm Dialog */}
+      {ConfirmDialogComponent}
     </div>
   )
 }

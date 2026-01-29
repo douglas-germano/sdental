@@ -29,7 +29,7 @@ def list_conversations(current_clinic):
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     return jsonify({
-        'conversations': [c.to_dict(include_messages=False) for c in pagination.items],
+        'conversations': [c.to_dict(include_messages=False, include_last_message_only=True) for c in pagination.items],
         'total': pagination.total,
         'pages': pagination.pages,
         'current_page': page,

@@ -15,19 +15,25 @@ import {
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 import { formatPhone, formatDate } from '@/lib/utils'
-import { Users, Search, Eye, Trash2, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, Search, Eye, Trash2, Plus, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { NewPatientModal } from '@/components/patients/new-patient-modal'
 import { PatientDetailModal } from '@/components/patients/patient-detail-modal'
 import { useToast } from '@/components/ui/toast'
+import { useConfirm } from '@/hooks/useConfirm'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useDebounce } from '@/hooks/useDebounce'
+import { exportToCSV } from '@/lib/export'
+import { getErrorMessage } from '@/lib/error-messages'
 
 export default function PatientsPage() {
   const { toast } = useToast()
+  const { confirm, ConfirmDialogComponent } = useConfirm()
   const [patients, setPatients] = useState<Patient[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const search = useDebounce(searchInput, 500)
   const [showNewModal, setShowNewModal] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
 
@@ -54,17 +60,26 @@ export default function PatientsPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setSearch(searchInput)
+    // Search is debounced automatically via useDebounce hook
     setPage(1)
   }
 
   const handleDelete = async (patientId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este paciente? Esta acao nao pode ser desfeita.')) return
+    const confirmed = await confirm({
+      title: 'Excluir Paciente',
+      description: 'Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita.',
+      confirmText: 'Sim, excluir',
+      cancelText: 'Cancelar',
+      variant: 'destructive'
+    })
+
+    if (!confirmed) return
+
     try {
       await patientsApi.delete(patientId)
       toast({
         title: 'Sucesso',
-        description: 'Paciente excluido com sucesso!',
+        description: 'Paciente excluído com sucesso!',
         variant: 'success',
       })
       fetchPatients()
@@ -72,10 +87,36 @@ export default function PatientsPage() {
       console.error('Error deleting patient:', error)
       toast({
         title: 'Erro',
-        description: 'Nao foi possivel excluir o paciente.',
+        description: getErrorMessage(error),
         variant: 'error',
       })
     }
+  }
+
+  const handleExport = () => {
+    if (patients.length === 0) {
+      toast({
+        title: 'Aviso',
+        description: 'Não há pacientes para exportar',
+        variant: 'warning',
+      })
+      return
+    }
+
+    const exportData = patients.map(patient => ({
+      'Nome': patient.name,
+      'Telefone': patient.phone ? formatPhone(patient.phone) : '-',
+      'Email': patient.email || '-',
+      'Cadastro': formatDate(patient.created_at),
+    }))
+
+    exportToCSV(exportData, 'pacientes')
+
+    toast({
+      title: 'Sucesso',
+      description: 'Pacientes exportados com sucesso!',
+      variant: 'success',
+    })
   }
 
   return (
@@ -85,13 +126,23 @@ export default function PatientsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
           <p className="text-sm text-muted-foreground">
-            Gerencie os pacientes da clinica
+            Gerencie os pacientes da clínica
           </p>
         </div>
-        <Button onClick={() => setShowNewModal(true)} variant="gradient">
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Paciente
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={loading || patients.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Exportar</span>
+          </Button>
+          <Button onClick={() => setShowNewModal(true)} variant="gradient">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Paciente
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -119,13 +170,16 @@ export default function PatientsPage() {
               <p className="text-muted-foreground text-sm">Carregando pacientes...</p>
             </div>
           ) : patients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Users className="h-8 w-8 opacity-50" />
-              </div>
-              <p className="font-medium">Nenhum paciente encontrado</p>
-              <p className="text-sm mt-1">Adicione um novo paciente para comecar</p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="Nenhum paciente encontrado"
+              description="Adicione um novo paciente para começar"
+              action={{
+                label: "Novo Paciente",
+                onClick: () => setShowNewModal(true),
+                icon: Plus
+              }}
+            />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -135,7 +189,7 @@ export default function PatientsPage() {
                     <TableHead className="font-semibold">Telefone</TableHead>
                     <TableHead className="font-semibold">Email</TableHead>
                     <TableHead className="font-semibold">Cadastro</TableHead>
-                    <TableHead className="text-right font-semibold">Acoes</TableHead>
+                    <TableHead className="text-right font-semibold">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -194,11 +248,14 @@ export default function PatientsPage() {
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
             className="gap-1"
+            aria-label="Página anterior"
           >
             <ChevronLeft className="h-4 w-4" />
-            Anterior
+            <span className="hidden sm:inline">Anterior</span>
           </Button>
-          <div className="flex items-center gap-1 px-4">
+
+          {/* Desktop: Full pagination */}
+          <div className="hidden md:flex items-center gap-1 px-4">
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let pageNum: number
               if (totalPages <= 5) {
@@ -217,20 +274,31 @@ export default function PatientsPage() {
                   size="sm"
                   onClick={() => setPage(pageNum)}
                   className={page === pageNum ? 'pointer-events-none' : ''}
+                  aria-label={`Página ${pageNum}`}
+                  aria-current={page === pageNum ? 'page' : undefined}
                 >
                   {pageNum}
                 </Button>
               )
             })}
           </div>
+
+          {/* Mobile: Simple page indicator */}
+          <div className="flex md:hidden items-center px-4">
+            <span className="text-sm text-muted-foreground">
+              Página {page} de {totalPages}
+            </span>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
             className="gap-1"
+            aria-label="Próxima página"
           >
-            Proxima
+            <span className="hidden sm:inline">Próxima</span>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -249,6 +317,9 @@ export default function PatientsPage() {
         onOpenChange={(open: boolean) => !open && setSelectedPatient(null)}
         onUpdate={fetchPatients}
       />
+
+      {/* Confirm Dialog */}
+      {ConfirmDialogComponent}
     </div>
   )
 }

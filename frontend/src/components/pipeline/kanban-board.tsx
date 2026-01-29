@@ -97,10 +97,6 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
         }
     }
 
-    const findStage = (id: string) => {
-        return stages.find((stage) => stage.items?.some((item: any) => item.id === id) || stage.id === id)
-    }
-
     // Find which stage a patient belongs to
     const findPatientStage = (patientId: string) => {
         return stages.find(stage => stage.patients.some(p => p.id === patientId))

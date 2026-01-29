@@ -31,7 +31,7 @@ const navigation = [
   { name: 'Pipeline', href: '/pipeline', icon: Columns },
   { name: 'Conversas', href: '/conversations', icon: MessageSquare },
   { name: 'Agentes', href: '/agents', icon: Bot },
-  { name: 'Configuracoes', href: '/settings', icon: Settings },
+  { name: 'Configurações', href: '/settings', icon: Settings },
 ]
 
 export default function DashboardLayout({

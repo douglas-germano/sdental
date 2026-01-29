@@ -37,7 +37,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
         }]
         self.last_message_at = datetime.utcnow()
 
-    def to_dict(self, include_messages: bool = True) -> dict:
+    def to_dict(self, include_messages: bool = True, include_last_message_only: bool = False) -> dict:
         data = {
             'id': str(self.id),
             'clinic_id': str(self.clinic_id),
@@ -53,6 +53,9 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
         if include_messages:
             data['messages'] = self.messages
             data['context'] = self.context
+        elif include_last_message_only and self.messages:
+            # Include only the last message for list views
+            data['messages'] = [self.messages[-1]] if self.messages else []
         return data
 
     def __repr__(self) -> str:

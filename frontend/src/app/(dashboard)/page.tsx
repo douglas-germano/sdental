@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { analyticsApi, appointmentsApi, conversationsApi } from '@/lib/api'
 import { AnalyticsOverview, Appointment, Conversation } from '@/types'
-import { formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils'
+import { formatDateTime, formatRelativeTime, getStatusColor, getStatusLabel } from '@/lib/utils'
 import {
   Calendar,
   Users,
@@ -24,6 +24,8 @@ import { AppointmentsChart } from '@/components/charts/appointments-chart'
 import { StatusPieChart } from '@/components/charts/status-pie-chart'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 export default function DashboardPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null)
@@ -61,14 +63,14 @@ export default function DashboardPage() {
       <div className="animate-fade-in">
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
-          Visao geral da sua clinica
+          Visão geral da sua clínica
         </p>
       </div>
 
       {/* Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Agendamentos do Mes"
+          title="Agendamentos do Mês"
           value={overview?.appointments.this_month || 0}
           icon={Calendar}
           variant="primary"
@@ -77,19 +79,19 @@ export default function DashboardPage() {
           description={
             <span className="flex items-center text-success">
               <ArrowUpRight className="h-3 w-3 mr-1" />
-              {overview?.appointments.completed || 0} concluidos
+              {overview?.appointments.completed || 0} concluídos
             </span>
           }
         />
 
         <StatsCard
-          title="Proximos Agendamentos"
+          title="Próximos Agendamentos"
           value={overview?.appointments.upcoming || 0}
           icon={Clock}
           variant="accent"
           loading={loading}
           delay={50}
-          description="Nos proximos 7 dias"
+          description="Nos próximos 7 dias"
         />
 
         <StatsCard
@@ -102,7 +104,7 @@ export default function DashboardPage() {
           description={
             <span className="flex items-center text-success">
               <ArrowUpRight className="h-3 w-3 mr-1" />
-              +{overview?.patients.new_this_month || 0} novos este mes
+              +{overview?.patients.new_this_month || 0} novos este mês
             </span>
           }
         />
@@ -118,7 +120,7 @@ export default function DashboardPage() {
             (overview?.conversations.needs_attention || 0) > 0 ? (
               <span className="flex items-center text-warning">
                 <AlertCircle className="h-3 w-3 mr-1" />
-                {overview?.conversations.needs_attention} precisam de atencao
+                {overview?.conversations.needs_attention} precisam de atenção
               </span>
             ) : (
               <span>Todas em dia</span>
@@ -133,7 +135,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Visao Geral de Agendamentos
+              Visão Geral de Agendamentos
             </CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
@@ -166,7 +168,7 @@ export default function DashboardPage() {
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Calendar className="h-4 w-4 text-primary" />
               </div>
-              Proximos Agendamentos
+              Próximos Agendamentos
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -186,16 +188,17 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : upcomingAppointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Calendar className="h-12 w-12 mb-3 opacity-50" />
-                <p className="text-sm">Nenhum agendamento proximo</p>
-              </div>
+              <EmptyState
+                icon={Calendar}
+                title="Nenhum agendamento próximo"
+                description="Não há agendamentos nos próximos 7 dias"
+              />
             ) : (
               <div className="space-y-3">
                 {upcomingAppointments.slice(0, 5).map((apt, index) => (
                   <div
                     key={apt.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors animate-fade-in"
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted hover:shadow-lg hover:scale-[1.01] transition-all duration-200 cursor-pointer animate-fade-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-center gap-3">
@@ -210,9 +213,16 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        {formatDateTime(apt.scheduled_datetime)}
-                      </p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-xs text-muted-foreground mb-1 cursor-help">
+                            {formatRelativeTime(apt.scheduled_datetime)}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {formatDateTime(apt.scheduled_datetime)}
+                        </TooltipContent>
+                      </Tooltip>
                       <Badge className={getStatusColor(apt.status)} variant="secondary">
                         {getStatusLabel(apt.status)}
                       </Badge>
@@ -238,7 +248,7 @@ export default function DashboardPage() {
               <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
                 <MessageSquare className="h-4 w-4 text-warning" />
               </div>
-              Conversas Aguardando Atencao
+              Conversas Aguardando Atenção
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -257,17 +267,18 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : recentConversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <MessageSquare className="h-12 w-12 mb-3 opacity-50" />
-                <p className="text-sm">Nenhuma conversa aguardando atencao</p>
-              </div>
+              <EmptyState
+                icon={MessageSquare}
+                title="Nenhuma conversa aguardando atenção"
+                description="Todas as conversas estão em dia"
+              />
             ) : (
               <div className="space-y-3">
                 {recentConversations.map((conv, index) => (
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors block animate-fade-in"
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted hover:shadow-lg hover:scale-[1.01] transition-all duration-200 block animate-fade-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-center gap-3">
@@ -310,7 +321,7 @@ export default function DashboardPage() {
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <TrendingUp className="h-4 w-4 text-primary" />
             </div>
-            Resumo do Mes
+            Resumo do Mês
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -327,7 +338,7 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold text-success">
                     {overview?.appointments.completed || 0}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">Concluidos</p>
+                  <p className="text-xs text-muted-foreground mt-1">Concluídos</p>
                 </div>
                 <div className="text-center p-5 bg-destructive/5 border border-destructive/20 rounded-xl hover:bg-destructive/10 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-3">

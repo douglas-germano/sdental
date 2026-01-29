@@ -9,6 +9,7 @@ export interface Toast {
   title?: string
   description?: string
   variant?: 'default' | 'success' | 'error' | 'warning'
+  duration?: number // Duration in milliseconds
 }
 
 interface ToastContextValue {
@@ -26,10 +27,26 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const id = Math.random().toString(36).slice(2)
     setToasts((prev) => [...prev, { ...toast, id }])
 
-    // Auto remove after 5 seconds
+    // Determine duration based on variant if not specified
+    const getDefaultDuration = (variant?: Toast['variant']) => {
+      switch (variant) {
+        case 'success':
+          return 3000
+        case 'error':
+          return 5000
+        case 'warning':
+          return 4000
+        default:
+          return 5000
+      }
+    }
+
+    const duration = toast.duration ?? getDefaultDuration(toast.variant)
+
+    // Auto remove after specified duration
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
-    }, 5000)
+    }, duration)
   }, [])
 
   const removeToast = React.useCallback((id: string) => {
