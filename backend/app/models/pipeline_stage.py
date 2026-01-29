@@ -1,6 +1,9 @@
 import uuid
+import re
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import event
+from sqlalchemy.orm import validates
 
 from app import db
 
@@ -20,6 +23,21 @@ class PipelineStage(db.Model):
 
     # Relationships
     patients = db.relationship('Patient', backref='pipeline_stage', lazy='dynamic')
+
+    @validates('color')
+    def validate_color(self, key, color):
+        """Validate that color is a valid hex color code."""
+        if not color:
+            return '#3b82f6'  # Default blue
+
+        # Check if it's a valid hex color (#RGB or #RRGGBB)
+        pattern = r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+        if not re.match(pattern, color):
+            raise ValueError(
+                f"Invalid color format: {color}. Must be a valid hex color (e.g., #3b82f6 or #fff)"
+            )
+
+        return color
 
     def to_dict(self) -> dict:
         return {

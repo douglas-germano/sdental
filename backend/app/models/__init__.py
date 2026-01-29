@@ -3,6 +3,7 @@ from .patient import Patient
 from .appointment import Appointment
 from .appointment import Appointment, AppointmentStatus
 from .pipeline_stage import PipelineStage
+from .pipeline_stage_history import PipelineStageHistory
 from .conversation import Conversation, ConversationStatus
 from .availability_slot import AvailabilitySlot
 from .bot_transfer import BotTransfer
@@ -22,5 +23,6 @@ __all__ = [
     'ReminderStatus',
     'ReminderType',
     'PipelineStage',
+    'PipelineStageHistory',
     'Professional'
 ]

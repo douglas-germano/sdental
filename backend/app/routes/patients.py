@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from sqlalchemy import or_
 
 from app import db
-from app.models import Patient
+from app.models import Patient, PipelineStage
 from app.utils.auth import clinic_required
 from app.utils.validators import normalize_phone
 
@@ -90,12 +90,25 @@ def create_patient(current_clinic):
     if existing:
         return jsonify({'error': 'Patient with this phone already exists'}), 409
 
+    # Find default pipeline stage
+    default_stage = PipelineStage.query.filter_by(
+        clinic_id=current_clinic.id,
+        is_default=True
+    ).first()
+    
+    # If no default set, get the first one by order
+    if not default_stage:
+        default_stage = PipelineStage.query.filter_by(
+            clinic_id=current_clinic.id
+        ).order_by(PipelineStage.order).first()
+
     patient = Patient(
         clinic_id=current_clinic.id,
         name=data['name'],
         phone=phone,
         email=data.get('email'),
-        notes=data.get('notes')
+        notes=data.get('notes'),
+        pipeline_stage_id=default_stage.id if default_stage else None
     )
 
     db.session.add(patient)
@@ -137,6 +150,9 @@ def update_patient(patient_id, current_clinic):
         if existing and existing.id != patient.id:
             return jsonify({'error': 'Phone number already in use'}), 409
         patient.phone = new_phone
+
+    if 'pipeline_stage_id' in data:
+        patient.pipeline_stage_id = data['pipeline_stage_id']
 
     db.session.commit()
 
