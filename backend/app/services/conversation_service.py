@@ -28,10 +28,13 @@ class ConversationService:
         phone = normalize_phone(phone_number)
 
         # Look for active conversation
-        conversation = Conversation.query.filter_by(
-            clinic_id=self.clinic.id,
-            phone_number=phone,
-            status=ConversationStatus.ACTIVE
+        conversation = Conversation.query.filter(
+            Conversation.clinic_id == self.clinic.id,
+            Conversation.phone_number == phone,
+            Conversation.status.in_([
+                ConversationStatus.ACTIVE,
+                ConversationStatus.TRANSFERRED_TO_HUMAN
+            ])
         ).first()
 
         if conversation:

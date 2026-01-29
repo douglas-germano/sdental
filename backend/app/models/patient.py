@@ -17,6 +17,9 @@ class Patient(db.Model, SoftDeleteMixin):
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # CRM / Pipeline
+    pipeline_stage_id = db.Column(UUID(as_uuid=True), db.ForeignKey('pipeline_stages.id'), nullable=True)
 
     # Relationships
     appointments = db.relationship('Appointment', backref='patient', lazy='dynamic', cascade='all, delete-orphan')
@@ -36,7 +39,9 @@ class Patient(db.Model, SoftDeleteMixin):
             'notes': self.notes,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
+            'pipeline_stage_id': str(self.pipeline_stage_id) if self.pipeline_stage_id else None,
+            'pipeline_stage': self.pipeline_stage.to_dict() if self.pipeline_stage else None
         }
 
     def __repr__(self) -> str:
