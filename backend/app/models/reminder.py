@@ -4,8 +4,10 @@ Appointment reminder model for tracking scheduled notifications.
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import validates
 
 from app import db
+from .mixins import TimestampMixin
 
 
 class ReminderStatus:
@@ -21,7 +23,7 @@ class ReminderType:
     CONFIRMATION = 'confirmation'
 
 
-class AppointmentReminder(db.Model):
+class AppointmentReminder(db.Model, TimestampMixin):
     """Model for tracking appointment reminders."""
     __tablename__ = 'appointment_reminders'
 
@@ -37,11 +39,48 @@ class AppointmentReminder(db.Model):
     status = db.Column(db.String(20), default=ReminderStatus.PENDING)
     error_message = db.Column(db.Text, nullable=True)
     attempts = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.CheckConstraint('attempts >= 0 AND attempts <= 10', name='check_attempts_range'),
+    )
 
     # Relationship
     appointment = db.relationship('Appointment', backref=db.backref('reminders', lazy='dynamic'))
+
+    @validates('attempts')
+    def validate_attempts(self, key, attempts):
+        """Validate attempts is non-negative and reasonable."""
+        if attempts is not None:
+            if attempts < 0:
+                raise ValueError("Attempts cannot be negative")
+            if attempts > 10:  # Reasonable limit
+                raise ValueError("Attempts cannot exceed 10")
+        return attempts
+
+    @validates('reminder_type')
+    def validate_reminder_type(self, key, reminder_type):
+        """Validate reminder type is one of the allowed values."""
+        allowed_types = [
+            ReminderType.REMINDER_24H,
+            ReminderType.REMINDER_1H,
+            ReminderType.CONFIRMATION
+        ]
+        if reminder_type not in allowed_types:
+            raise ValueError(f"Invalid reminder type: {reminder_type}. Must be one of {allowed_types}")
+        return reminder_type
+
+    @validates('status')
+    def validate_status(self, key, status):
+        """Validate status is one of the allowed values."""
+        allowed_statuses = [
+            ReminderStatus.PENDING,
+            ReminderStatus.SENT,
+            ReminderStatus.FAILED,
+            ReminderStatus.CANCELLED
+        ]
+        if status not in allowed_statuses:
+            raise ValueError(f"Invalid status: {status}. Must be one of {allowed_statuses}")
+        return status
 
     def to_dict(self) -> dict:
         return {

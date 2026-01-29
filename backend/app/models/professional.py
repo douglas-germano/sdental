@@ -2,13 +2,16 @@
 Professional model for managing dentists/doctors in a clinic.
 """
 import uuid
+import re
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import validates
 
 from app import db
+from .mixins import TimestampMixin
 
 
-class Professional(db.Model):
+class Professional(db.Model, TimestampMixin):
     """Model for professionals (dentists, doctors) in a clinic."""
     __tablename__ = 'professionals'
 
@@ -29,11 +32,42 @@ class Professional(db.Model):
     # Optional: Professional-specific business hours (overrides clinic hours)
     business_hours = db.Column(JSONB, nullable=True)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
     # Relationships
     appointments = db.relationship('Appointment', backref='professional', lazy='dynamic')
+
+    @validates('phone')
+    def validate_phone(self, key, phone):
+        """Validate phone number format (Brazilian format: 5511999999999)."""
+        if phone:  # Phone is optional for professionals
+            # Remove common separators
+            phone = re.sub(r'[\s\-\(\)]', '', phone)
+
+            # Check if it matches Brazilian format (country code + DDD + number)
+            if not re.match(r'^\d{12,13}$', phone):
+                raise ValueError(
+                    "Invalid phone format. Expected format: 5511999999999 (country code + area code + number)"
+                )
+
+        return phone
+
+    @validates('email')
+    def validate_email(self, key, email):
+        """Validate email format."""
+        if email:  # Email is optional for professionals
+            pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(pattern, email):
+                raise ValueError(f"Invalid email format: {email}")
+            return email.lower()  # Normalize to lowercase
+        return email
+
+    @validates('color')
+    def validate_color(self, key, color):
+        """Validate hex color format."""
+        if color:
+            pattern = r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+            if not re.match(pattern, color):
+                raise ValueError(f"Invalid color format: {color}. Must be a valid hex color (e.g., #3B82F6)")
+        return color
 
     def to_dict(self) -> dict:
         return {

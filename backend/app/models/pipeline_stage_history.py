@@ -3,9 +3,10 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 
 from app import db
+from .mixins import SoftDeleteMixin
 
 
-class PipelineStageHistory(db.Model):
+class PipelineStageHistory(db.Model, SoftDeleteMixin):
     """Tracks patient movements through pipeline stages for audit trail."""
     __tablename__ = 'pipeline_stage_history'
 
@@ -51,6 +52,7 @@ class PipelineStageHistory(db.Model):
             },
             'changed_by': str(self.changed_by) if self.changed_by else None,
             'changed_at': self.changed_at.isoformat() if self.changed_at else None,
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
         }
 
     def __repr__(self) -> str:
@@ -63,3 +65,5 @@ class PipelineStageHistory(db.Model):
 db.Index('ix_pipeline_stage_history_patient_id', PipelineStageHistory.patient_id)
 db.Index('ix_pipeline_stage_history_clinic_id', PipelineStageHistory.clinic_id)
 db.Index('ix_pipeline_stage_history_changed_at', PipelineStageHistory.changed_at)
+# Composite index for common queries
+db.Index('ix_pipeline_stage_history_patient_changed', PipelineStageHistory.patient_id, PipelineStageHistory.changed_at)

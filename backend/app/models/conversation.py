@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from app import db
+from .mixins import SoftDeleteMixin, TimestampMixin
 
 
 class ConversationStatus:
@@ -11,7 +12,7 @@ class ConversationStatus:
     COMPLETED = 'completed'
 
 
-class Conversation(db.Model):
+class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     __tablename__ = 'conversations'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -22,8 +23,6 @@ class Conversation(db.Model):
     context = db.Column(JSONB, default=dict)  # Context for Claude
     status = db.Column(db.String(30), default=ConversationStatus.ACTIVE)
     last_message_at = db.Column(db.DateTime, default=datetime.utcnow)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     bot_transfers = db.relationship('BotTransfer', backref='conversation', lazy='dynamic')
@@ -48,7 +47,8 @@ class Conversation(db.Model):
             'status': self.status,
             'last_message_at': self.last_message_at.isoformat() if self.last_message_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None
         }
         if include_messages:
             data['messages'] = self.messages
@@ -63,3 +63,5 @@ class Conversation(db.Model):
 db.Index('ix_conversations_clinic_id', Conversation.clinic_id)
 db.Index('ix_conversations_last_message_at', Conversation.last_message_at)
 db.Index('ix_conversations_phone_number', Conversation.phone_number)
+# Composite index for common queries
+db.Index('ix_conversations_clinic_patient', Conversation.clinic_id, Conversation.patient_id)

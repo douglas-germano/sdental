@@ -6,8 +6,9 @@ from sqlalchemy import event
 from sqlalchemy.orm import validates
 
 from app import db
+from .mixins import TimestampMixin
 
-class PipelineStage(db.Model):
+class PipelineStage(db.Model, TimestampMixin):
     __tablename__ = 'pipeline_stages'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -17,9 +18,6 @@ class PipelineStage(db.Model):
     order = db.Column(db.Integer, default=0)
     color = db.Column(db.String(20), default='#3b82f6') # Default blue
     is_default = db.Column(db.Boolean, default=False)
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     patients = db.relationship('Patient', backref='pipeline_stage', lazy='dynamic')

@@ -1,12 +1,14 @@
 import uuid
+import re
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import validates
 
 from app import db
-from .mixins import SoftDeleteMixin
+from .mixins import SoftDeleteMixin, TimestampMixin
 
 
-class Patient(db.Model, SoftDeleteMixin):
+class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
     __tablename__ = 'patients'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -15,9 +17,7 @@ class Patient(db.Model, SoftDeleteMixin):
     phone = db.Column(db.String(20), nullable=False)  # Format: 5511999999999
     email = db.Column(db.String(255), nullable=True)
     notes = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # CRM / Pipeline
     pipeline_stage_id = db.Column(UUID(as_uuid=True), db.ForeignKey('pipeline_stages.id'), nullable=True)
 
@@ -28,6 +28,32 @@ class Patient(db.Model, SoftDeleteMixin):
     __table_args__ = (
         db.UniqueConstraint('clinic_id', 'phone', name='uq_patient_clinic_phone'),
     )
+
+    @validates('phone')
+    def validate_phone(self, key, phone):
+        """Validate phone number format (Brazilian format: 5511999999999)."""
+        if not phone:
+            raise ValueError("Phone number is required")
+
+        # Remove common separators
+        phone = re.sub(r'[\s\-\(\)]', '', phone)
+
+        # Check if it matches Brazilian format (country code + DDD + number)
+        if not re.match(r'^\d{12,13}$', phone):
+            raise ValueError(
+                "Invalid phone format. Expected format: 5511999999999 (country code + area code + number)"
+            )
+
+        return phone
+
+    @validates('email')
+    def validate_email(self, key, email):
+        """Validate email format."""
+        if email:  # Email is optional
+            pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(pattern, email):
+                raise ValueError(f"Invalid email format: {email}")
+        return email
 
     def to_dict(self) -> dict:
         return {

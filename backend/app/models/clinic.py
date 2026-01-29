@@ -1,12 +1,15 @@
 import uuid
+import re
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import validates
 
 from app import db
+from .mixins import TimestampMixin
 
 
-class Clinic(db.Model):
+class Clinic(db.Model, TimestampMixin):
     __tablename__ = 'clinics'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -47,14 +50,65 @@ class Clinic(db.Model):
     reminder_1h_message = db.Column(db.Text, nullable=True)   # Custom template
 
     active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.CheckConstraint('agent_temperature >= 0 AND agent_temperature <= 1', name='check_temperature_range'),
+    )
 
     # Relationships
     patients = db.relationship('Patient', backref='clinic', lazy='dynamic', cascade='all, delete-orphan')
     appointments = db.relationship('Appointment', backref='clinic', lazy='dynamic', cascade='all, delete-orphan')
     conversations = db.relationship('Conversation', backref='clinic', lazy='dynamic', cascade='all, delete-orphan')
     availability_slots = db.relationship('AvailabilitySlot', backref='clinic', lazy='dynamic', cascade='all, delete-orphan')
+    professionals = db.relationship('Professional', backref='clinic', lazy='dynamic', cascade='all, delete-orphan')
+
+    @validates('phone')
+    def validate_phone(self, key, phone):
+        """Validate phone number format (Brazilian format: 5511999999999)."""
+        if not phone:
+            raise ValueError("Phone number is required")
+
+        # Remove common separators
+        phone = re.sub(r'[\s\-\(\)]', '', phone)
+
+        # Check if it matches Brazilian format (country code + DDD + number)
+        if not re.match(r'^\d{12,13}$', phone):
+            raise ValueError(
+                "Invalid phone format. Expected format: 5511999999999 (country code + area code + number)"
+            )
+
+        return phone
+
+    @validates('email')
+    def validate_email(self, key, email):
+        """Validate email format."""
+        if not email:
+            raise ValueError("Email is required")
+
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(pattern, email):
+            raise ValueError(f"Invalid email format: {email}")
+
+        return email.lower()  # Normalize to lowercase
+
+    @validates('slug')
+    def validate_slug(self, key, slug):
+        """Validate slug format (URL-friendly)."""
+        if slug:
+            pattern = r'^[a-z0-9\-]+$'
+            if not re.match(pattern, slug):
+                raise ValueError(
+                    "Invalid slug format. Must contain only lowercase letters, numbers, and hyphens"
+                )
+        return slug
+
+    @validates('agent_temperature')
+    def validate_temperature(self, key, temperature):
+        """Validate temperature is between 0 and 1."""
+        if temperature is not None:
+            if not (0 <= temperature <= 1):
+                raise ValueError("Temperature must be between 0 and 1")
+        return temperature
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
