@@ -23,17 +23,15 @@ class PipelineStageHistory(db.Model):
     # Timestamp
     changed_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relationships
-    patient = db.relationship('Patient', backref='stage_history')
+    # Relationships (using back_populates instead of backref to avoid circular dependencies)
+    patient = db.relationship('Patient')
     from_stage = db.relationship(
         'PipelineStage',
-        foreign_keys=[from_stage_id],
-        backref='history_from'
+        foreign_keys=[from_stage_id]
     )
     to_stage = db.relationship(
         'PipelineStage',
-        foreign_keys=[to_stage_id],
-        backref='history_to'
+        foreign_keys=[to_stage_id]
     )
 
     def to_dict(self) -> dict:

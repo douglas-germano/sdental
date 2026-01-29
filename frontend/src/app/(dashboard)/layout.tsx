@@ -18,7 +18,8 @@ import {
   Bot,
   PanelLeftClose,
   PanelLeft,
-  Stethoscope
+  Stethoscope,
+  Columns
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Agendamentos', href: '/appointments', icon: Calendar },
   { name: 'Pacientes', href: '/patients', icon: Users },
   { name: 'Profissionais', href: '/professionals', icon: Stethoscope },
+  { name: 'Pipeline', href: '/pipeline', icon: Columns },
   { name: 'Conversas', href: '/conversations', icon: MessageSquare },
   { name: 'Agentes', href: '/agents', icon: Bot },
   { name: 'Configuracoes', href: '/settings', icon: Settings },
@@ -102,7 +104,7 @@ export default function DashboardLayout({
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className={cn(
-            'flex items-center h-14 px-4 border-b border-border',
+            'flex items-center h-16 px-4 border-b border-border',
             sidebarCollapsed ? 'lg:justify-center lg:px-2' : 'justify-between'
           )}>
             <Link href="/" className="flex items-center gap-3 group">
@@ -130,6 +132,17 @@ export default function DashboardLayout({
             >
               <X className="h-5 w-5 text-muted-foreground" />
             </button>
+          </div>
+
+          {/* Clinic status - visible when expanded */}
+          <div className={cn(
+            'px-4 py-3 border-b border-border/50 transition-all duration-300',
+            sidebarCollapsed ? 'lg:hidden' : 'block'
+          )}>
+            <div className="flex items-center gap-2 text-sm">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-muted-foreground font-medium">{clinic.name}</span>
+            </div>
           </div>
 
           {/* Toggle collapse button - Desktop only */}
@@ -245,22 +258,13 @@ export default function DashboardLayout({
         'min-h-screen flex flex-col transition-all duration-300',
         sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
       )}>
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/95 backdrop-blur-sm px-4 lg:px-6">
-          <button
-            className="lg:hidden p-2 -ml-2 hover:bg-muted rounded-lg transition-colors"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-5 w-5 text-muted-foreground" />
-          </button>
-
-          <div className="flex-1" />
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span className="hidden sm:inline">{clinic.name}</span>
-          </div>
-        </header>
+        {/* Mobile menu button - floating */}
+        <button
+          className="lg:hidden fixed top-4 left-4 z-40 p-3 bg-background border border-border rounded-lg shadow-lg hover:bg-muted transition-colors"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="h-5 w-5 text-foreground" />
+        </button>
 
         {/* Page content */}
         <main className="flex-1 p-4 lg:p-6 animate-fade-in-up">

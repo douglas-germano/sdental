@@ -149,7 +149,14 @@ class PipelineService:
                         f"Please move the patients to another stage first."
                     )
 
-                db.session.delete(stage)
+                try:
+                    db.session.delete(stage)
+                except Exception as e:
+                    # If deletion fails due to foreign key constraints (e.g., history table not created yet)
+                    logger.warning(f"Could not delete stage {stage.id}: {str(e)}")
+                    # Re-raise if it's not a foreign key issue
+                    if "pipeline_stage_history" not in str(e):
+                        raise
 
         db.session.commit()
 

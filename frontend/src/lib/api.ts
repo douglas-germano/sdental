@@ -232,4 +232,20 @@ export const agentsApi = {
     api.post('/agents/test', { message })
 }
 
+// Pipeline API
+export const pipelineApi = {
+  getBoard: (params?: { limit?: number; offset?: number }) =>
+    api.get('/pipeline/board', { params }),
+
+  getStages: () => api.get('/pipeline/stages'),
+
+  updateStages: (stages: any[]) => api.post('/pipeline/stages', stages),
+
+  movePatient: (patientId: string, stageId: string) =>
+    api.put('/pipeline/move', { patient_id: patientId, stage_id: stageId }),
+
+  getPatientHistory: (patientId: string) =>
+    api.get(`/pipeline/patients/${patientId}/history`)
+}
+
 export default api
