@@ -232,7 +232,7 @@ export default function DashboardLayout({
       )}>
         {/* Mobile menu button - floating */}
         <button
-          className="lg:hidden fixed top-4 left-4 z-40 p-3 bg-background border border-border rounded-lg shadow-lg hover:bg-muted transition-colors"
+          className="lg:hidden fixed bottom-4 left-4 z-40 p-3 bg-background border border-border rounded-lg shadow-lg hover:bg-muted transition-colors"
           onClick={() => setSidebarOpen(true)}
         >
           <Menu className="h-5 w-5 text-foreground" />
