@@ -18,7 +18,16 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
-import { formatPhone, formatDate, formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils'
+import {
+  formatPhone,
+  formatPhoneInput,
+  normalizePhoneForApi,
+  validatePhoneForApi,
+  formatDate,
+  formatDateTime,
+  getStatusColor,
+  getStatusLabel,
+} from '@/lib/utils'
 import { User, Phone, Mail, Calendar, FileText, Edit2, Save, X } from 'lucide-react'
 
 interface PatientDetailModalProps {
@@ -58,14 +67,6 @@ export function PatientDetailModal({
 
   if (!patient) return null
 
-  const formatPhoneInput = (value: string) => {
-    const digits = value.replace(/\D/g, '')
-    if (digits.length <= 2) return digits
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-    if (digits.length <= 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
-  }
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneInput(e.target.value)
     setFormData({ ...formData, phone: formatted })
@@ -75,17 +76,17 @@ export function PatientDetailModal({
     if (!formData.name.trim() || !formData.phone.trim()) {
       toast({
         title: 'Erro',
-        description: 'Nome e telefone sao obrigatorios.',
+        description: 'Nome e telefone são obrigatórios.',
         variant: 'error',
       })
       return
     }
 
-    const phoneDigits = formData.phone.replace(/\D/g, '')
-    if (phoneDigits.length < 10) {
+    const phoneValidation = validatePhoneForApi(formData.phone)
+    if (!phoneValidation.valid) {
       toast({
         title: 'Erro',
-        description: 'Telefone invalido.',
+        description: 'Telefone inválido. Digite um número com DDD.',
         variant: 'error',
       })
       return
@@ -95,7 +96,7 @@ export function PatientDetailModal({
     try {
       await patientsApi.update(patient.id, {
         name: formData.name.trim(),
-        phone: `55${phoneDigits}`,
+        phone: normalizePhoneForApi(formData.phone),
         email: formData.email.trim() || undefined,
         notes: formData.notes.trim() || undefined,
       })
@@ -112,7 +113,7 @@ export function PatientDetailModal({
       console.error('Error updating patient:', error)
       toast({
         title: 'Erro',
-        description: 'Nao foi possivel atualizar o paciente.',
+        description: 'Não foi possível atualizar o paciente.',
         variant: 'error',
       })
     } finally {
@@ -190,13 +191,13 @@ export function PatientDetailModal({
             <div className="space-y-2">
               <Label htmlFor="edit-notes" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Observacoes
+                Observações
               </Label>
               <Textarea
                 id="edit-notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Observacoes sobre o paciente..."
+                placeholder="Observações sobre o paciente..."
                 rows={3}
               />
             </div>
@@ -212,7 +213,7 @@ export function PatientDetailModal({
               </Button>
               <Button variant="gradient" onClick={handleSave} loading={loading}>
                 <Save className="h-4 w-4 mr-2" />
-                Salvar Alteracoes
+                Salvar Alterações
               </Button>
             </DialogFooter>
           </div>
@@ -220,7 +221,7 @@ export function PatientDetailModal({
           <div className="space-y-5">
             {/* Contact Info */}
             <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
-              <h4 className="text-sm font-medium text-muted-foreground mb-3">Informacoes de Contato</h4>
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Informações de Contato</h4>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -250,7 +251,7 @@ export function PatientDetailModal({
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-muted-foreground">
                   <FileText className="h-4 w-4" />
-                  Observacoes
+                  Observações
                 </Label>
                 <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
                   <p className="text-sm">{patient.notes}</p>
@@ -263,7 +264,7 @@ export function PatientDetailModal({
               <div className="space-y-3">
                 <Label className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  Ultimos Agendamentos
+                  Últimos Agendamentos
                 </Label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {patient.appointments.slice(0, 5).map((apt) => (

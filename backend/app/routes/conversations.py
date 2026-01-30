@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
 
 from app import db
-from app.models import Conversation, BotTransfer, ConversationStatus, Patient
+from app.models import Conversation, BotTransfer, ConversationStatus, Patient, PipelineStage
 from app.utils.auth import clinic_required
+from app.utils.validators import normalize_phone
 
 bp = Blueprint('conversations', __name__, url_prefix='/api/conversations')
 
@@ -163,21 +164,21 @@ def link_patient(conversation_id, current_clinic):
         return jsonify({'error': 'Conversation not found'}), 404
 
     data = request.get_json()
-    
+
     name = data.get('name')
-    phone = data.get('phone') or conversation.phone_number
+    phone = normalize_phone(data.get('phone') or conversation.phone_number)
     email = data.get('email')
     notes = data.get('notes')
-    
+
     if not name:
         return jsonify({'error': 'Nome é obrigatório'}), 400
-    
-    # Try to find existing patient with this phone
+
+    # Try to find existing patient with this phone (exclude soft deleted)
     patient = Patient.query.filter_by(
         clinic_id=current_clinic.id,
         phone=phone
-    ).first()
-    
+    ).filter(Patient.deleted_at.is_(None)).first()
+
     if patient:
         # Update existing patient
         patient.name = name
@@ -186,17 +187,30 @@ def link_patient(conversation_id, current_clinic):
         if notes:
             patient.notes = notes
     else:
-        # Create new patient
+        # Find default pipeline stage for new patients
+        default_stage = PipelineStage.query.filter_by(
+            clinic_id=current_clinic.id,
+            is_default=True
+        ).first()
+
+        # If no default set, get the first one by order
+        if not default_stage:
+            default_stage = PipelineStage.query.filter_by(
+                clinic_id=current_clinic.id
+            ).order_by(PipelineStage.order).first()
+
+        # Create new patient with pipeline stage
         patient = Patient(
             clinic_id=current_clinic.id,
             name=name,
             phone=phone,
             email=email,
-            notes=notes
+            notes=notes,
+            pipeline_stage_id=default_stage.id if default_stage else None
         )
         db.session.add(patient)
         db.session.flush()
-    
+
     # Link patient to conversation
     conversation.patient_id = patient.id
     db.session.commit()
