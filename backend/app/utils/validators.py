@@ -16,8 +16,11 @@ def validate_phone(phone: str) -> bool:
     return len(cleaned) >= 10 and len(cleaned) <= 13
 
 
-def normalize_phone(phone: str) -> str:
+def normalize_phone(phone: Optional[str]) -> str:
     """Normalize phone number to standard format."""
+    if not phone:
+        return ''
+
     # Remove non-numeric characters
     cleaned = re.sub(r'\D', '', phone)
 

@@ -173,19 +173,39 @@ def link_patient(conversation_id, current_clinic):
     if not name:
         return jsonify({'error': 'Nome é obrigatório'}), 400
 
-    # Try to find existing patient with this phone (exclude soft deleted)
+    if not phone:
+        return jsonify({'error': 'Telefone é obrigatório'}), 400
+
+    # Try to find existing patient with this phone (including soft deleted)
     patient = Patient.query.filter_by(
         clinic_id=current_clinic.id,
         phone=phone
-    ).filter(Patient.deleted_at.is_(None)).first()
+    ).first()
 
     if patient:
+        # Restore if soft deleted
+        if patient.deleted_at is not None:
+            patient.restore()
+
         # Update existing patient
         patient.name = name
         if email:
             patient.email = email
         if notes:
             patient.notes = notes
+
+        # Ensure patient has a pipeline stage
+        if not patient.pipeline_stage_id:
+            default_stage = PipelineStage.query.filter_by(
+                clinic_id=current_clinic.id,
+                is_default=True
+            ).first()
+            if not default_stage:
+                default_stage = PipelineStage.query.filter_by(
+                    clinic_id=current_clinic.id
+                ).order_by(PipelineStage.order).first()
+            if default_stage:
+                patient.pipeline_stage_id = default_stage.id
     else:
         # Find default pipeline stage for new patients
         default_stage = PipelineStage.query.filter_by(

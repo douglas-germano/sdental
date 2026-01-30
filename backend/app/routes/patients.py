@@ -81,14 +81,49 @@ def create_patient(current_clinic):
 
     phone = normalize_phone(data['phone'])
 
-    # Check if patient already exists (exclude soft deleted)
+    # Check if patient already exists (including soft deleted)
     existing = Patient.query.filter_by(
         clinic_id=current_clinic.id,
         phone=phone
-    ).filter(Patient.deleted_at.is_(None)).first()
+    ).first()
 
     if existing:
-        return jsonify({'error': 'Patient with this phone already exists'}), 409
+        # If soft deleted, restore and update
+        if existing.deleted_at is not None:
+            existing.restore()
+            existing.name = data['name']
+            if data.get('email'):
+                existing.email = data['email']
+            if data.get('notes'):
+                existing.notes = data['notes']
+
+            # Update pipeline stage if provided
+            pipeline_stage_id = data.get('pipeline_stage_id')
+            if pipeline_stage_id:
+                stage = PipelineStage.query.filter_by(
+                    id=pipeline_stage_id,
+                    clinic_id=current_clinic.id
+                ).first()
+                if stage:
+                    existing.pipeline_stage_id = pipeline_stage_id
+            elif not existing.pipeline_stage_id:
+                # Assign default stage if none
+                default_stage = PipelineStage.query.filter_by(
+                    clinic_id=current_clinic.id,
+                    is_default=True
+                ).first() or PipelineStage.query.filter_by(
+                    clinic_id=current_clinic.id
+                ).order_by(PipelineStage.order).first()
+                if default_stage:
+                    existing.pipeline_stage_id = default_stage.id
+
+            db.session.commit()
+            return jsonify({
+                'message': 'Patient restored successfully',
+                'patient': existing.to_dict()
+            }), 201
+        else:
+            return jsonify({'error': 'Patient with this phone already exists'}), 409
 
     # Use provided pipeline_stage_id or find default
     pipeline_stage_id = data.get('pipeline_stage_id')
@@ -156,12 +191,14 @@ def update_patient(patient_id, current_clinic):
         patient.notes = data['notes']
     if 'phone' in data:
         new_phone = normalize_phone(data['phone'])
-        # Check if phone is already used by another patient (exclude soft deleted)
+        # Check if phone is already used by another patient (including soft deleted due to unique constraint)
         existing = Patient.query.filter_by(
             clinic_id=current_clinic.id,
             phone=new_phone
-        ).filter(Patient.deleted_at.is_(None)).first()
+        ).first()
         if existing and existing.id != patient.id:
+            # If the existing patient is soft deleted, we can't use this phone
+            # because of the unique constraint on (clinic_id, phone)
             return jsonify({'error': 'Phone number already in use'}), 409
         patient.phone = new_phone
 
