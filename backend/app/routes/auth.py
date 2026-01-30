@@ -3,7 +3,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token, jwt_re
 
 from app import db
 from app.models import Clinic
-from app.utils.validators import validate_email, validate_phone, validate_password
+from app.utils.validators import validate_email, validate_phone, validate_password, normalize_phone
 from app.utils.rate_limiter import limiter
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -38,11 +38,14 @@ def register():
     if Clinic.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Email already registered'}), 409
 
+    # Normalize phone number to expected format
+    normalized_phone = normalize_phone(data['phone'])
+
     # Create new clinic
     clinic = Clinic(
         name=data['name'],
         email=data['email'],
-        phone=data['phone']
+        phone=normalized_phone
     )
     clinic.set_password(data['password'])
 
