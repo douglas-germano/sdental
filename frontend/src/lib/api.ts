@@ -105,7 +105,7 @@ export const patientsApi = {
 
   get: (id: string) => api.get(`/patients/${id}`),
 
-  create: (data: { name: string; phone: string; email?: string; notes?: string }) =>
+  create: (data: { name: string; phone: string; email?: string; notes?: string; pipeline_stage_id?: string }) =>
     api.post('/patients', data),
 
   update: (id: string, data: { name?: string; phone?: string; email?: string; notes?: string }) =>

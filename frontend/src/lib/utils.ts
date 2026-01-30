@@ -52,6 +52,49 @@ export function formatPhone(phone: string): string {
   return phone
 }
 
+/**
+ * Formata input de telefone enquanto o usuário digita
+ * Ex: "11999999999" -> "(11) 99999-9999"
+ */
+export function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, '')
+  if (digits.length <= 2) return digits
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
+}
+
+/**
+ * Normaliza telefone para envio à API
+ * Remove caracteres não numéricos e adiciona código do Brasil (55) se necessário
+ * Ex: "(11) 99999-9999" -> "5511999999999"
+ */
+export function normalizePhoneForApi(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+
+  // Se já tem 12-13 dígitos (com código do país), retorna como está
+  if (digits.length >= 12 && digits.length <= 13) {
+    return digits
+  }
+
+  // Se tem 10-11 dígitos (sem código do país), adiciona 55
+  if (digits.length >= 10 && digits.length <= 11) {
+    return `55${digits}`
+  }
+
+  return digits
+}
+
+/**
+ * Valida se o telefone tem o formato correto para envio à API
+ * Aceita 10-11 dígitos (sem código) ou 12-13 dígitos (com código 55)
+ */
+export function validatePhoneForApi(phone: string): { valid: boolean; digits: number } {
+  const digits = phone.replace(/\D/g, '')
+  const valid = digits.length >= 10 && digits.length <= 13
+  return { valid, digits: digits.length }
+}
+
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     pending: 'bg-warning/10 text-warning border-warning/20',

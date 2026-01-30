@@ -355,11 +355,35 @@
 }
 
 /* Stagger animation delays */
-.stagger-1 { animation-delay: 0.1s; }
-.stagger-2 { animation-delay: 0.2s; }
-.stagger-3 { animation-delay: 0.3s; }
-.stagger-4 { animation-delay: 0.4s; }
-.stagger-5 { animation-delay: 0.5s; }
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-700 { animation-delay: 700ms; }
+.delay-1000 { animation-delay: 1000ms; }
+
+/* Stagger List Utility */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.45s; }
+.stagger-children > *:nth-child(9) { animation-delay: 0.5s; }
+.stagger-children > *:nth-child(10) { animation-delay: 0.55s; }
+
+/* Page Transition Standard */
+.page-enter {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -434,11 +458,11 @@
 
 /* Interactive card styles */
 .card-interactive {
-  @apply transition-all duration-200;
+  @apply transition-all duration-300 transform;
 }
 
 .card-interactive:hover {
-  @apply -translate-y-0.5 shadow-soft-lg;
+  @apply -translate-y-1 shadow-soft-lg;
 }
 
 /* Form field focus animation */

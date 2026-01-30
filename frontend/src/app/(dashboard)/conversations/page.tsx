@@ -49,7 +49,7 @@ export default function ConversationsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 page-enter">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Conversas</h1>
@@ -60,7 +60,7 @@ export default function ConversationsPage() {
         {needsAttentionCount > 0 && (
           <Badge variant="warning" size="lg" className="gap-2">
             <AlertCircle className="h-4 w-4" />
-            {needsAttentionCount} aguardando atencao
+            {needsAttentionCount} aguardando a atenção
           </Badge>
         )}
       </div>
@@ -86,7 +86,7 @@ export default function ConversationsPage() {
           className="rounded-lg gap-2"
         >
           <AlertCircle className="h-4 w-4" />
-          Aguardando Atencao
+          Aguardando Atenção
           {needsAttentionCount > 0 && (
             <span className="bg-white/20 rounded-full px-2 py-0.5 text-xs font-medium">
               {needsAttentionCount}
@@ -111,10 +111,10 @@ export default function ConversationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-children">
           {conversations.map((conv) => (
             <Link key={conv.id} href={`/conversations/${conv.id}`}>
-              <Card className="hover:shadow-medium transition-all duration-200 cursor-pointer border-border/50 group">
+              <Card className="card-interactive cursor-pointer border-border/50 group">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">

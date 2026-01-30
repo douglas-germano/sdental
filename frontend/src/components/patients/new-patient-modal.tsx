@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
+import { formatPhoneInput, normalizePhoneForApi, validatePhoneForApi } from '@/lib/utils'
 import { User, Phone, Mail, FileText, UserPlus } from 'lucide-react'
 
 interface NewPatientModalProps {
@@ -45,14 +46,6 @@ export function NewPatientModal({
     onOpenChange(newOpen)
   }
 
-  const formatPhoneInput = (value: string) => {
-    const digits = value.replace(/\D/g, '')
-    if (digits.length <= 2) return digits
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-    if (digits.length <= 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
-  }
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneInput(e.target.value)
     setFormData({ ...formData, phone: formatted })
@@ -70,11 +63,11 @@ export function NewPatientModal({
       return
     }
 
-    const phoneDigits = formData.phone.replace(/\D/g, '')
-    if (phoneDigits.length < 10) {
+    const phoneValidation = validatePhoneForApi(formData.phone)
+    if (!phoneValidation.valid) {
       toast({
         title: 'Erro',
-        description: 'Telefone inválido.',
+        description: 'Telefone inválido. Digite um número com DDD.',
         variant: 'error',
       })
       return
@@ -84,7 +77,7 @@ export function NewPatientModal({
     try {
       await patientsApi.create({
         name: formData.name.trim(),
-        phone: `55${phoneDigits}`,
+        phone: normalizePhoneForApi(formData.phone),
         email: formData.email.trim() || undefined,
         notes: formData.notes.trim() || undefined,
       })

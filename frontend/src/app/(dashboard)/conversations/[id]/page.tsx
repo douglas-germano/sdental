@@ -39,13 +39,34 @@ export default function ConversationDetailPage() {
     try {
       const response = await conversationsApi.get(params.id as string)
       setConversation(response.data)
+
       // Initialize form with patient data
       if (response.data.patient) {
+        // Verify if patient data is complete
+        if (!response.data.patient.id || !response.data.patient.name) {
+          console.warn('Patient data is incomplete or patient may have been deleted')
+          // Initialize with phone from conversation
+          setPatientForm({
+            name: '',
+            phone: response.data.phone_number || '',
+            email: '',
+            notes: ''
+          })
+        } else {
+          setPatientForm({
+            name: response.data.patient.name || '',
+            phone: response.data.patient.phone || '',
+            email: response.data.patient.email || '',
+            notes: response.data.patient.notes || ''
+          })
+        }
+      } else if (response.data.phone_number) {
+        // No patient linked, initialize with conversation phone
         setPatientForm({
-          name: response.data.patient.name || '',
-          phone: response.data.patient.phone || '',
-          email: response.data.patient.email || '',
-          notes: response.data.patient.notes || ''
+          name: '',
+          phone: response.data.phone_number,
+          email: '',
+          notes: ''
         })
       }
     } catch (error) {
@@ -100,8 +121,21 @@ export default function ConversationDetailPage() {
       })
       setIsEditing(false)
       fetchConversation()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving patient:', error)
+
+      // If patient not found (404), offer to create a new one
+      if (error?.response?.status === 404) {
+        const shouldCreate = confirm(
+          'O paciente vinculado a esta conversa não foi encontrado. Deseja criar um novo paciente com estes dados?'
+        )
+
+        if (shouldCreate) {
+          handleCreatePatient()
+          return
+        }
+      }
+
       alert('Erro ao salvar dados do paciente')
     } finally {
       setSaving(false)

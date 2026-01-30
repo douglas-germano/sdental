@@ -194,12 +194,11 @@ export default function DashboardPage() {
                 description="Não há agendamentos nos próximos 7 dias"
               />
             ) : (
-              <div className="space-y-3">
-                {upcomingAppointments.slice(0, 5).map((apt, index) => (
+              <div className="space-y-3 stagger-children">
+                {upcomingAppointments.slice(0, 5).map((apt) => (
                   <div
                     key={apt.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted hover:shadow-lg hover:scale-[1.01] transition-all duration-200 cursor-pointer animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted hover:shadow-lg hover:scale-[1.01] transition-all duration-200 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
@@ -242,7 +241,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Conversations Needing Attention */}
-        <Card className="animate-fade-in-up" style={{ animationDelay: '350ms' }}>
+        <Card className="animate-fade-in-up delay-300">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
@@ -273,13 +272,12 @@ export default function DashboardPage() {
                 description="Todas as conversas estão em dia"
               />
             ) : (
-              <div className="space-y-3">
-                {recentConversations.map((conv, index) => (
+              <div className="space-y-3 stagger-children">
+                {recentConversations.map((conv) => (
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted hover:shadow-lg hover:scale-[1.01] transition-all duration-200 block animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted hover:shadow-lg hover:scale-[1.01] transition-all duration-200 block"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
@@ -372,6 +370,6 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </div >
   )
 }
