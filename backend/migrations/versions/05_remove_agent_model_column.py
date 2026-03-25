@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision = '05_remove_agent_model'
-down_revision = '04_add_conversations_soft_delete'
+down_revision = '45994c0c72a4'
 branch_labels = None
 depends_on = None
 
