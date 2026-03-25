@@ -11,7 +11,6 @@ interface DialogProps {
 }
 
 const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
-  // Bloquear scroll do body quando o modal está aberto
   React.useEffect(() => {
     if (open) {
       const originalOverflow = document.body.style.overflow
@@ -22,7 +21,6 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
     }
   }, [open])
 
-  // Fechar com ESC
   React.useEffect(() => {
     if (!open) return
 
@@ -46,11 +44,11 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={() => onOpenChange?.(false)}
         aria-hidden="true"
       />
-      {/* Content wrapper - garante centralização */}
+      {/* Content wrapper */}
       <div className="relative z-50 w-full flex items-center justify-center">
         {children}
       </div>
@@ -77,17 +75,11 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      // Layout e dimensões
       'relative w-full max-w-lg mx-auto',
-      // Visual
-      'bg-background border border-border/50 shadow-2xl rounded-2xl',
-      // Spacing interno
+      'bg-card border border-border/60 shadow-soft-xl rounded-2xl',
       'p-6',
-      // Scroll interno com altura máxima
       'max-h-[85vh] overflow-y-auto',
-      // Animação de entrada
       'animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300',
-      // Scrollbar customizada
       'scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
       className
     )}
@@ -119,7 +111,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 mt-2 border-t border-border/50',
+      'flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-5 mt-2 border-t border-border/50',
       className
     )}
     {...props}
@@ -134,7 +126,7 @@ const DialogTitle = React.forwardRef<
   <h2
     ref={ref}
     className={cn(
-      'text-xl font-semibold leading-none tracking-tight text-foreground',
+      'text-lg font-semibold leading-none tracking-tight text-foreground',
       className
     )}
     {...props}
@@ -162,10 +154,10 @@ const DialogClose = React.forwardRef<
     ref={ref}
     className={cn(
       'absolute right-4 top-4 z-10',
-      'rounded-lg p-2',
+      'rounded-lg p-1.5',
       'text-muted-foreground hover:text-foreground',
-      'bg-muted/50 hover:bg-muted',
-      'transition-all duration-200',
+      'hover:bg-muted',
+      'transition-all duration-150',
       'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
       'disabled:pointer-events-none',
       className

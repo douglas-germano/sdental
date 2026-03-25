@@ -36,8 +36,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Set loading is already true initially, we keep it true while fetching
-        // We can add a minimum delay to prevent flickering if needed, but skeletons handle this well
         const [overviewRes, appointmentsRes, conversationsRes] = await Promise.all([
           analyticsApi.overview(),
           appointmentsApi.upcoming(),
@@ -58,19 +56,19 @@ export default function DashboardPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="animate-fade-in">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Visão geral da sua clínica
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Visao geral da sua clinica
         </p>
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Agendamentos do Mês"
+          title="Agendamentos do Mes"
           value={overview?.appointments.this_month || 0}
           icon={Calendar}
           variant="primary"
@@ -79,19 +77,19 @@ export default function DashboardPage() {
           description={
             <span className="flex items-center text-success">
               <ArrowUpRight className="h-3 w-3 mr-1" />
-              {overview?.appointments.completed || 0} concluídos
+              {overview?.appointments.completed || 0} concluidos
             </span>
           }
         />
 
         <StatsCard
-          title="Próximos Agendamentos"
+          title="Proximos Agendamentos"
           value={overview?.appointments.upcoming || 0}
           icon={Clock}
           variant="accent"
           loading={loading}
           delay={50}
-          description="Nos próximos 7 dias"
+          description="Nos proximos 7 dias"
         />
 
         <StatsCard
@@ -104,7 +102,7 @@ export default function DashboardPage() {
           description={
             <span className="flex items-center text-success">
               <ArrowUpRight className="h-3 w-3 mr-1" />
-              +{overview?.patients.new_this_month || 0} novos este mês
+              +{overview?.patients.new_this_month || 0} novos este mes
             </span>
           }
         />
@@ -120,7 +118,7 @@ export default function DashboardPage() {
             (overview?.conversations.needs_attention || 0) > 0 ? (
               <span className="flex items-center text-warning">
                 <AlertCircle className="h-3 w-3 mr-1" />
-                {overview?.conversations.needs_attention} precisam de atenção
+                {overview?.conversations.needs_attention} precisam de atencao
               </span>
             ) : (
               <span>Todas em dia</span>
@@ -130,17 +128,19 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 lg:grid-cols-7">
         <Card className="lg:col-span-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Visão Geral de Agendamentos
+              <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </div>
+              Visao Geral de Agendamentos
             </CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             {loading ? (
-              <Skeleton className="h-[300px] w-full" />
+              <Skeleton className="h-[300px] w-full rounded-xl" />
             ) : (
               <AppointmentsChart />
             )}
@@ -152,7 +152,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="h-[300px] w-full" />
+              <Skeleton className="h-[300px] w-full rounded-xl" />
             ) : (
               <StatusPieChart overview={overview} />
             )}
@@ -160,15 +160,15 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming Appointments */}
         <Card className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center">
                 <Calendar className="h-4 w-4 text-primary" />
               </div>
-              Próximos Agendamentos
+              Proximos Agendamentos
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -178,7 +178,7 @@ export default function DashboardPage() {
                   <div key={i} className="flex items-center justify-between p-3">
                     <div className="flex items-center gap-3">
                       <Skeleton className="w-10 h-10 rounded-full" />
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <Skeleton className="h-4 w-[120px]" />
                         <Skeleton className="h-3 w-[80px]" />
                       </div>
@@ -190,22 +190,23 @@ export default function DashboardPage() {
             ) : upcomingAppointments.length === 0 ? (
               <EmptyState
                 icon={Calendar}
-                title="Nenhum agendamento próximo"
-                description="Não há agendamentos nos próximos 7 dias"
+                title="Nenhum agendamento proximo"
+                description="Nao ha agendamentos nos proximos 7 dias"
               />
             ) : (
-              <div className="space-y-3 stagger-children">
-                {upcomingAppointments.slice(0, 5).map((apt) => (
+              <div className="space-y-2">
+                {upcomingAppointments.slice(0, 5).map((apt, index) => (
                   <div
                     key={apt.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted hover:shadow-lg hover:scale-[1.01] transition-all duration-200 cursor-pointer"
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 cursor-pointer animate-fade-in-up"
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
                         {apt.patient?.name?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div>
-                        <p className="font-medium text-sm">{apt.patient?.name}</p>
+                        <p className="font-medium text-sm text-foreground">{apt.patient?.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {apt.service_name}
                         </p>
@@ -222,7 +223,7 @@ export default function DashboardPage() {
                           {formatDateTime(apt.scheduled_datetime)}
                         </TooltipContent>
                       </Tooltip>
-                      <Badge className={getStatusColor(apt.status)} variant="secondary">
+                      <Badge className={getStatusColor(apt.status)} variant="secondary" size="sm">
                         {getStatusLabel(apt.status)}
                       </Badge>
                     </div>
@@ -232,22 +233,22 @@ export default function DashboardPage() {
             )}
             <Link
               href="/appointments"
-              className="flex items-center justify-center gap-1 mt-4 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex items-center justify-center gap-1.5 mt-5 pt-4 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todos os agendamentos
-              <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </CardContent>
         </Card>
 
         {/* Conversations Needing Attention */}
-        <Card className="animate-fade-in-up delay-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
+        <Card className="animate-fade-in-up" style={{ animationDelay: '350ms' }}>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-warning/8 flex items-center justify-center">
                 <MessageSquare className="h-4 w-4 text-warning" />
               </div>
-              Conversas Aguardando Atenção
+              Conversas Aguardando Atencao
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -257,7 +258,7 @@ export default function DashboardPage() {
                   <div key={i} className="flex items-center justify-between p-3">
                     <div className="flex items-center gap-3">
                       <Skeleton className="w-10 h-10 rounded-full" />
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <Skeleton className="h-4 w-[120px]" />
                         <Skeleton className="h-3 w-[150px]" />
                       </div>
@@ -268,23 +269,24 @@ export default function DashboardPage() {
             ) : recentConversations.length === 0 ? (
               <EmptyState
                 icon={MessageSquare}
-                title="Nenhuma conversa aguardando atenção"
-                description="Todas as conversas estão em dia"
+                title="Nenhuma conversa aguardando atencao"
+                description="Todas as conversas estao em dia"
               />
             ) : (
-              <div className="space-y-3 stagger-children">
-                {recentConversations.map((conv) => (
+              <div className="space-y-2">
+                {recentConversations.map((conv, index) => (
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted hover:shadow-lg hover:scale-[1.01] transition-all duration-200 block"
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block animate-fade-in-up"
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
                         {conv.patient?.name?.charAt(0).toUpperCase() || conv.phone_number?.charAt(0) || '?'}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-sm">
+                        <p className="font-medium text-sm text-foreground">
                           {conv.patient?.name || conv.phone_number}
                         </p>
                         <p className="text-xs text-muted-foreground truncate max-w-[180px]">
@@ -294,7 +296,7 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge className={getStatusColor(conv.status)} variant="secondary">
+                    <Badge className={getStatusColor(conv.status)} variant="secondary" size="sm">
                       {getStatusLabel(conv.status)}
                     </Badge>
                   </Link>
@@ -303,43 +305,42 @@ export default function DashboardPage() {
             )}
             <Link
               href="/conversations"
-              className="flex items-center justify-center gap-1 mt-4 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex items-center justify-center gap-1.5 mt-5 pt-4 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todas as conversas
-              <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Stats - Resumo do Mes */}
+      {/* Monthly Summary */}
       <Card className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <CardTitle className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center">
               <TrendingUp className="h-4 w-4 text-primary" />
             </div>
-            Resumo do Mês
+            Resumo do Mes
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Using a mini-abstraction map here for consistency if desired, or verbose cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {loading ? (
               [1, 2, 3, 4].map(i => <Skeleton key={i} className="h-[120px] rounded-xl" />)
             ) : (
               <>
-                <div className="text-center p-5 bg-success/5 border border-success/20 rounded-xl hover:bg-success/10 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-3">
+                <div className="text-center p-5 bg-success/5 border border-success/10 rounded-xl hover:bg-success/8 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-3">
                     <CheckCircle2 className="h-5 w-5 text-success" />
                   </div>
                   <p className="text-2xl font-bold text-success">
                     {overview?.appointments.completed || 0}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">Concluídos</p>
+                  <p className="text-xs text-muted-foreground mt-1">Concluidos</p>
                 </div>
-                <div className="text-center p-5 bg-destructive/5 border border-destructive/20 rounded-xl hover:bg-destructive/10 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-3">
+                <div className="text-center p-5 bg-destructive/5 border border-destructive/10 rounded-xl hover:bg-destructive/8 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center mx-auto mb-3">
                     <XCircle className="h-5 w-5 text-destructive" />
                   </div>
                   <p className="text-2xl font-bold text-destructive">
@@ -347,17 +348,17 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Cancelados</p>
                 </div>
-                <div className="text-center p-5 bg-muted border border-border rounded-xl hover:bg-muted/80 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-muted-foreground/20 flex items-center justify-center mx-auto mb-3">
+                <div className="text-center p-5 bg-muted/50 border border-border/40 rounded-xl hover:bg-muted/70 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
                     <UserX className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-foreground">
                     {overview?.appointments.no_shows || 0}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Faltas</p>
                 </div>
-                <div className="text-center p-5 bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                <div className="text-center p-5 bg-primary/5 border border-primary/10 rounded-xl hover:bg-primary/8 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <UserPlus className="h-5 w-5 text-primary" />
                   </div>
                   <p className="text-2xl font-bold text-primary">
@@ -370,6 +371,6 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
-    </div >
+    </div>
   )
 }

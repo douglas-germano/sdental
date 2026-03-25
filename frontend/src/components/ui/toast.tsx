@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react'
+import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface Toast {
@@ -9,7 +9,7 @@ export interface Toast {
   title?: string
   description?: string
   variant?: 'default' | 'success' | 'error' | 'warning'
-  duration?: number // Duration in milliseconds
+  duration?: number
 }
 
 interface ToastContextValue {
@@ -27,23 +27,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const id = Math.random().toString(36).slice(2)
     setToasts((prev) => [...prev, { ...toast, id }])
 
-    // Determine duration based on variant if not specified
     const getDefaultDuration = (variant?: Toast['variant']) => {
       switch (variant) {
-        case 'success':
-          return 3000
-        case 'error':
-          return 5000
-        case 'warning':
-          return 4000
-        default:
-          return 5000
+        case 'success': return 3000
+        case 'error': return 5000
+        case 'warning': return 4000
+        default: return 5000
       }
     }
 
     const duration = toast.duration ?? getDefaultDuration(toast.variant)
 
-    // Auto remove after specified duration
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
     }, duration)
@@ -80,7 +74,7 @@ function Toaster() {
   const { toasts, removeToast } = context
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-3">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2.5 max-w-[420px]">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
@@ -96,59 +90,53 @@ function ToastItem({
   onClose: () => void
 }) {
   const Icon = {
-    success: CheckCircle,
+    success: CheckCircle2,
     error: AlertCircle,
     warning: AlertCircle,
     default: Info,
   }[toast.variant || 'default']
 
+  const variantStyles = {
+    success: 'border-success/20 bg-card',
+    error: 'border-destructive/20 bg-card',
+    warning: 'border-warning/20 bg-card',
+    default: 'border-border/60 bg-card',
+  }[toast.variant || 'default']
+
+  const iconColor = {
+    success: 'text-success',
+    error: 'text-destructive',
+    warning: 'text-warning',
+    default: 'text-primary',
+  }[toast.variant || 'default']
+
   return (
     <div
       className={cn(
-        'pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border p-4 shadow-lg transition-all duration-300 animate-slide-in-right',
-        'bg-background/95 backdrop-blur-sm',
-        toast.variant === 'success' && 'border-success/30 bg-success/5',
-        toast.variant === 'error' && 'border-destructive/30 bg-destructive/5',
-        toast.variant === 'warning' && 'border-warning/30 bg-warning/5',
-        (!toast.variant || toast.variant === 'default') && 'border-border'
+        'pointer-events-auto flex w-full items-start gap-3 rounded-xl border p-4 shadow-soft-lg animate-slide-in-right',
+        variantStyles
       )}
     >
-      <div
-        className={cn(
-          'flex-shrink-0 mt-0.5',
-          toast.variant === 'success' && 'text-success',
-          toast.variant === 'error' && 'text-destructive',
-          toast.variant === 'warning' && 'text-warning',
-          (!toast.variant || toast.variant === 'default') && 'text-primary'
-        )}
-      >
+      <div className={cn('shrink-0 mt-0.5', iconColor)}>
         <Icon className="h-5 w-5" />
       </div>
       <div className="flex-1 min-w-0">
         {toast.title && (
-          <p
-            className={cn(
-              'font-semibold text-sm',
-              toast.variant === 'success' && 'text-success',
-              toast.variant === 'error' && 'text-destructive',
-              toast.variant === 'warning' && 'text-warning',
-              (!toast.variant || toast.variant === 'default') && 'text-foreground'
-            )}
-          >
+          <p className="font-medium text-sm text-foreground">
             {toast.title}
           </p>
         )}
         {toast.description && (
-          <p className={cn('text-sm text-muted-foreground', toast.title && 'mt-1')}>
+          <p className={cn('text-sm text-muted-foreground', toast.title && 'mt-0.5')}>
             {toast.description}
           </p>
         )}
       </div>
       <button
         onClick={onClose}
-        className="flex-shrink-0 rounded-lg p-1 opacity-70 transition-all duration-200 hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
+        className="shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors hover:text-foreground hover:bg-muted focus:outline-none"
       >
-        <X className="h-4 w-4" />
+        <X className="h-3.5 w-3.5" />
       </button>
     </div>
   )

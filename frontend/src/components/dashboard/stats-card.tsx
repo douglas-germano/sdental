@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { LucideIcon } from 'lucide-react'
@@ -24,27 +24,27 @@ export function StatsCard({
     className,
     delay = 0,
 }: StatsCardProps) {
-    const variants = {
-        default: 'bg-primary/5 text-primary',
-        success: 'bg-success/10 text-success',
-        warning: 'bg-warning/10 text-warning',
-        destructive: 'bg-destructive/10 text-destructive',
-        accent: 'bg-accent/10 text-accent',
-        primary: 'bg-primary/10 text-primary',
+    const iconStyles = {
+        default: 'bg-primary/8 text-primary',
+        success: 'bg-success/8 text-success',
+        warning: 'bg-warning/8 text-warning',
+        destructive: 'bg-destructive/8 text-destructive',
+        accent: 'bg-accent/8 text-accent',
+        primary: 'bg-primary/8 text-primary',
     }
 
-    const iconColor = variants[variant] || variants.default
+    const iconColor = iconStyles[variant] || iconStyles.default
 
     if (loading) {
         return (
             <Card className={cn('overflow-hidden', className)}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <Skeleton className="h-4 w-[100px]" />
-                    <Skeleton className="h-10 w-10 rounded-xl" />
-                </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-8 w-[60px] mb-2" />
-                    <Skeleton className="h-3 w-[120px]" />
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-10 w-10 rounded-xl" />
+                    </div>
+                    <Skeleton className="h-9 w-16 mb-2" />
+                    <Skeleton className="h-3.5 w-28" />
                 </CardContent>
             </Card>
         )
@@ -53,19 +53,22 @@ export function StatsCard({
     return (
         <Card
             hover
-            className={cn("animate-fade-in-up transition-all duration-300", className)}
+            className={cn("animate-fade-in-up overflow-hidden", className)}
             style={{ animationDelay: `${delay}ms` }}
         >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {title}
-                </CardTitle>
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors", iconColor)}>
-                    <Icon className="h-5 w-5" />
+            <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm font-medium text-muted-foreground">
+                        {title}
+                    </p>
+                    <div className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center transition-colors",
+                        iconColor
+                    )}>
+                        <Icon className="h-5 w-5" />
+                    </div>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <div className="text-3xl font-bold tracking-tight">
+                <div className="text-3xl font-bold tracking-tight text-foreground">
                     {value}
                 </div>
                 {description && (

@@ -16,21 +16,14 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <div className="relative group">
         <select
           className={cn(
-            // Base styles
             'flex h-11 w-full items-center justify-between rounded-xl border bg-background px-4 py-2 pr-10 text-sm ring-offset-background transition-all duration-200',
-            // Placeholder
             'text-foreground',
             '[&>option[value=""]]:text-muted-foreground',
-            // Hover
-            'hover:border-primary/50',
-            // Focus
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:border-primary',
-            // Disabled
+            'hover:border-border/80 hover:bg-muted/30',
+            'focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:bg-background',
             'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-input',
-            // Appearance
             'appearance-none cursor-pointer',
-            // Border based on error state
-            error ? 'border-destructive focus:ring-destructive/30' : 'border-input',
+            error ? 'border-destructive focus:ring-destructive/20' : 'border-input',
             className
           )}
           ref={ref}
@@ -39,7 +32,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           {children}
         </select>
         <ChevronDown className={cn(
-          'absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-all duration-200',
+          'absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-all duration-200',
           'text-muted-foreground group-hover:text-foreground',
           'group-focus-within:text-primary group-focus-within:rotate-180'
         )} />
