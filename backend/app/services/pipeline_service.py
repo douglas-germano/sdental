@@ -136,27 +136,26 @@ class PipelineService:
                 result_stages.append(stage)
 
         # Delete stages that weren't in the update
-        for stage_id, stage in existing_stages.items():
-            if stage_id not in updated_ids:
-                # Check if stage has patients
-                patient_count = Patient.query.filter_by(
-                    pipeline_stage_id=stage.id
-                ).count()
+        stages_to_delete = {sid: s for sid, s in existing_stages.items() if sid not in updated_ids}
+        if stages_to_delete:
+            # Batch count patients across all stages to delete (avoids N+1)
+            from sqlalchemy import func
+            patient_counts = db.session.query(
+                Patient.pipeline_stage_id, func.count(Patient.id)
+            ).filter(
+                Patient.pipeline_stage_id.in_([s.id for s in stages_to_delete.values()])
+            ).group_by(Patient.pipeline_stage_id).all()
 
+            count_map = {str(stage_id): count for stage_id, count in patient_counts}
+
+            for stage_id, stage in stages_to_delete.items():
+                patient_count = count_map.get(stage_id, 0)
                 if patient_count > 0:
                     raise ValueError(
                         f"Cannot delete stage '{stage.name}' because it has {patient_count} patients. "
                         f"Please move the patients to another stage first."
                     )
-
-                try:
-                    db.session.delete(stage)
-                except Exception as e:
-                    # If deletion fails due to foreign key constraints (e.g., history table not created yet)
-                    logger.warning(f"Could not delete stage {stage.id}: {str(e)}")
-                    # Re-raise if it's not a foreign key issue
-                    if "pipeline_stage_history" not in str(e):
-                        raise
+                db.session.delete(stage)
 
         db.session.commit()
 

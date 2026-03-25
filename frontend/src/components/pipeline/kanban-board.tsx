@@ -27,22 +27,9 @@ import { KanbanCard } from './kanban-card'
 import { useToast } from '@/components/ui/toast'
 import { Loader2 } from 'lucide-react'
 
-export interface Patient {
-    id: string
-    name: string
-    phone: string
-    email?: string
-    updated_at: string
-}
+import { Patient, PipelineStage } from '@/types'
 
-export interface Stage {
-    id: string
-    name: string
-    color: string
-    patients: Patient[]
-    total_patients?: number
-    has_more?: boolean
-}
+export type Stage = PipelineStage & { patients: Patient[] }
 
 export interface KanbanBoardRef {
     refresh: () => void
@@ -80,7 +67,7 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
     const fetchBoard = async () => {
         try {
             const response = await pipelineApi.getBoard()
-            setStages(response.data.map((stage: any) => ({
+            setStages(response.data.map((stage: Stage) => ({
                 ...stage,
                 // Ensure patients array exists
                 patients: stage.patients || []
@@ -151,7 +138,7 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
         const patient = sourceStage.patients[patientIndex]
 
         // Store previous state for potential rollback
-        const previousStages = stages
+        const previousStages = stages.map(s => ({ ...s, patients: [...s.patients] }))
 
         // Remove from source
         const newSourcePatients = [...sourceStage.patients]
@@ -219,8 +206,8 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center h-48">
+                <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
             </div>
         )
     }

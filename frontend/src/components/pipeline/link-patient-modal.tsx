@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi, pipelineApi, conversationsApi } from '@/lib/api'
 import { Loader2, Link2, Search, User, MessageSquare } from 'lucide-react'
@@ -175,7 +176,7 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
         try {
           // Create patient with pipeline stage in a single call
           const patientResponse = await patientsApi.create({
-            name: selectedResult.phone, // Use phone as name initially
+            name: `Paciente ${selectedResult.phone.slice(-4)}`,
             phone: normalizedPhone,
             pipeline_stage_id: selectedStageId,
           })
@@ -355,11 +356,10 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
             <Label htmlFor="stageId">
               Estágio <span className="text-red-500">*</span>
             </Label>
-            <select
+            <Select
               id="stageId"
               value={selectedStageId}
               onChange={(e) => setSelectedStageId(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={loading}
             >
               {stages.map((stage) => (
@@ -367,7 +367,7 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
                   {stage.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-border/60">

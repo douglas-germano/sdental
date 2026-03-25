@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
@@ -182,11 +183,10 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
             <Label htmlFor="stageId">
               Estágio Inicial <span className="text-red-500">*</span>
             </Label>
-            <select
+            <Select
               id="stageId"
               value={formData.stageId}
               onChange={(e) => setFormData({ ...formData, stageId: e.target.value })}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={loading}
             >
               {stages.map((stage) => (
@@ -194,7 +194,7 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
                   {stage.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="space-y-2">

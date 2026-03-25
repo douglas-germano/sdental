@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
 import { pipelineApi } from '@/lib/api'
-import { Plus, Trash2, GripVertical, Save } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Save, Loader2 } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -171,10 +171,10 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
     if (over && active.id !== over.id) {
       setStages((items) => {
         const oldIndex = items.findIndex(
-          (item) => (item.id || `new-${items.indexOf(item)}`) === active.id
+          (item, idx) => (item.id || `new-${idx}`) === active.id
         )
         const newIndex = items.findIndex(
-          (item) => (item.id || `new-${items.indexOf(item)}`) === over.id
+          (item, idx) => (item.id || `new-${idx}`) === over.id
         )
 
         const newItems = arrayMove(items, oldIndex, newIndex)
@@ -221,14 +221,7 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
       return
     }
 
-    // Warn if stage has an ID (exists in backend)
-    if (stage.id) {
-      const confirm = window.confirm(
-        `Tem certeza que deseja excluir o estágio "${stage.name}"? ` +
-        `Pacientes neste estágio precisarão ser movidos antes de excluir.`
-      )
-      if (!confirm) return
-    }
+    // Warn if stage has an ID (exists in backend) - confirmed on save via backend validation
 
     const newStages = stages.filter((_, i) => i !== index)
     // Reorder
@@ -365,7 +358,7 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Salvando...
                   </>
                 ) : (

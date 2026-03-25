@@ -9,17 +9,13 @@ import { Button } from '@/components/ui/button'
 import { Columns, Settings, UserPlus, Link2 } from 'lucide-react'
 import { pipelineApi } from '@/lib/api'
 
-interface Stage {
-    id: string
-    name: string
-    color: string
-}
+import { PipelineStage } from '@/types'
 
 export default function PipelinePage() {
     const [manageModalOpen, setManageModalOpen] = useState(false)
     const [addPatientModalOpen, setAddPatientModalOpen] = useState(false)
     const [linkPatientModalOpen, setLinkPatientModalOpen] = useState(false)
-    const [stages, setStages] = useState<Stage[]>([])
+    const [stages, setStages] = useState<PipelineStage[]>([])
     const boardRef = useRef<KanbanBoardRef>(null)
 
     useEffect(() => {
@@ -51,7 +47,7 @@ export default function PipelinePage() {
     }
 
     return (
-        <div className="h-[calc(100vh-3rem)] flex flex-col gap-6 animate-fade-in">
+        <div className="h-[calc(100vh-7rem)] flex flex-col gap-6 animate-fade-in">
             <div className="flex items-start justify-between flex-shrink-0">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">

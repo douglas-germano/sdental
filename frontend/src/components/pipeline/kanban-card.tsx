@@ -4,10 +4,9 @@ import React from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card, CardContent } from '@/components/ui/card'
-import { Patient } from './kanban-board'
-import { User, Phone, Calendar } from 'lucide-react'
-import { formatPhone, formatDateTime } from '@/lib/utils'
-import Link from 'next/link'
+import { Patient } from '@/types'
+import { Phone, Clock } from 'lucide-react'
+import { formatPhone, formatRelativeTime } from '@/lib/utils'
 
 interface Props {
     patient: Patient
@@ -46,7 +45,7 @@ export function KanbanCard({ patient }: Props) {
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <Card className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 border-border/60 bg-white group">
+            <Card className="cursor-grab active:cursor-grabbing hover:shadow-soft-md transition-all duration-200 border-border/60 group">
                 <CardContent className="p-3.5 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                         <span className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
@@ -62,8 +61,8 @@ export function KanbanCard({ patient }: Props) {
 
                         {patient.updated_at && (
                             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
-                                <Calendar className="h-3 w-3" />
-                                <span>{formatDateTime(patient.updated_at)}</span>
+                                <Clock className="h-3 w-3" />
+                                <span>{formatRelativeTime(patient.updated_at)}</span>
                             </div>
                         )}
                     </div>

@@ -37,7 +37,20 @@ export interface Patient {
   notes?: string
   created_at: string
   updated_at: string
+  pipeline_stage_id?: string
   appointments?: Appointment[]
+}
+
+export interface PipelineStage {
+  id: string
+  name: string
+  color: string
+  order: number
+  description?: string
+  is_default?: boolean
+  patients?: Patient[]
+  total_patients?: number
+  has_more?: boolean
 }
 
 export interface Professional {

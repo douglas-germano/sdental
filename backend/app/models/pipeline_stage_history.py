@@ -37,19 +37,25 @@ class PipelineStageHistory(db.Model, SoftDeleteMixin):
 
     def to_dict(self) -> dict:
         """Convert history record to dictionary."""
+        from_stage_data = None
+        if self.from_stage_id:
+            from_stage_data = {
+                'id': str(self.from_stage_id),
+                'name': self.from_stage.name if self.from_stage else 'Removido',
+                'color': self.from_stage.color if self.from_stage else '#999999',
+            }
+
+        to_stage_data = {
+            'id': str(self.to_stage_id),
+            'name': self.to_stage.name if self.to_stage else 'Removido',
+            'color': self.to_stage.color if self.to_stage else '#999999',
+        }
+
         return {
             'id': str(self.id),
             'patient_id': str(self.patient_id),
-            'from_stage': {
-                'id': str(self.from_stage_id),
-                'name': self.from_stage.name if self.from_stage else None,
-                'color': self.from_stage.color if self.from_stage else None,
-            } if self.from_stage_id else None,
-            'to_stage': {
-                'id': str(self.to_stage_id),
-                'name': self.to_stage.name,
-                'color': self.to_stage.color,
-            },
+            'from_stage': from_stage_data,
+            'to_stage': to_stage_data,
             'changed_by': str(self.changed_by) if self.changed_by else None,
             'changed_at': self.changed_at.isoformat() if self.changed_at else None,
             'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
@@ -57,8 +63,8 @@ class PipelineStageHistory(db.Model, SoftDeleteMixin):
 
     def __repr__(self) -> str:
         from_name = self.from_stage.name if self.from_stage else 'None'
-        to_name = self.to_stage.name if self.to_stage else 'Unknown'
-        return f'<PipelineStageHistory {from_name} → {to_name}>'
+        to_name = self.to_stage.name if self.to_stage else 'Removido'
+        return f'<PipelineStageHistory {from_name} -> {to_name}>'
 
 
 # Create indexes for better query performance
