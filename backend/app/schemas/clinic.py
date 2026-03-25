@@ -56,13 +56,6 @@ class ClinicUpdateSchema(BaseSchema):
 class AgentConfigSchema(BaseSchema):
     """Schema for agent configuration."""
     agent_name = fields.Str(validate=validate.Length(max=100))
-    agent_model = fields.Str(
-        validate=validate.OneOf([
-            'claude-3-5-sonnet-20240620',
-            'claude-3-haiku-20240307',
-            'claude-3-opus-20240229'
-        ])
-    )
     agent_temperature = fields.Float(validate=validate.Range(min=0.0, max=1.0))
     agent_system_prompt = fields.Str(validate=validate.Length(max=10000))
     agent_context = fields.Str(validate=validate.Length(max=5000))

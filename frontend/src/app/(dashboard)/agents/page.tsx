@@ -108,7 +108,6 @@ export default function AgentsPage() {
 
     const [agentConfig, setAgentConfig] = useState({
         name: 'Assistente SDental',
-        model: 'claude-3-haiku-20240307',
         temperature: 0.7,
         systemPrompt: '',
         context: ''
@@ -186,7 +185,6 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
             const config = response.data
             const newConfig = {
                 name: config.name || 'Assistente SDental',
-                model: config.model || 'claude-3-haiku-20240307',
                 temperature: config.temperature || 0.7,
                 systemPrompt: config.system_prompt || getDefaultSystemPrompt(),
                 context: config.context || getDefaultContext()

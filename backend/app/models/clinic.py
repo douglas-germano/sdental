@@ -36,7 +36,6 @@ class Clinic(db.Model, TimestampMixin):
 
     # AI Agent configuration
     agent_name = db.Column(db.String(100), default='Assistente IA')
-    agent_model = db.Column(db.String(100), default='claude-3-5-sonnet-20240620')
     agent_temperature = db.Column(db.Float, default=0.7)
     agent_system_prompt = db.Column(db.Text, nullable=True)
     agent_context = db.Column(db.Text, nullable=True)
