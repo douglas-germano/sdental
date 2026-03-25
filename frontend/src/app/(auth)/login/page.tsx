@@ -42,41 +42,49 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-primary relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-black/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/[0.02] rounded-full" />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ background: 'linear-gradient(160deg, hsl(238 76% 55%) 0%, hsl(262 83% 50%) 50%, hsl(280 70% 45%) 100%)' }}>
+        {/* Layered decorative elements */}
+        <div className="absolute inset-0">
+          <div className="absolute -top-1/3 -left-1/4 w-2/3 h-2/3 bg-white/[0.07] rounded-full blur-[100px]" />
+          <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-black/15 rounded-full blur-[80px]" />
+          {/* Grid pattern overlay */}
+          <div className="absolute inset-0 opacity-[0.04]" style={{
+            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+            backgroundSize: '32px 32px'
+          }} />
+          {/* Floating geometric shapes */}
+          <div className="absolute top-[15%] right-[10%] w-24 h-24 border border-white/10 rounded-2xl rotate-12 animate-float" />
+          <div className="absolute bottom-[20%] left-[8%] w-16 h-16 border border-white/[0.08] rounded-xl -rotate-6 animate-float" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-[60%] right-[25%] w-10 h-10 border border-white/[0.06] rounded-lg rotate-45 animate-float" style={{ animationDelay: '2s' }} />
         </div>
 
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
           <div className="flex items-center gap-3 mb-10 animate-fade-in">
-            <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
+            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg shadow-black/10">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-semibold text-white">SDental</span>
+            <span className="text-xl font-bold text-white tracking-tight">SDental</span>
           </div>
 
-          <h1 className="text-3xl xl:text-4xl font-semibold text-white mb-4 animate-fade-in-up leading-tight">
+          <h1 className="text-3xl xl:text-[2.5rem] font-bold text-white mb-5 animate-fade-in-up leading-[1.15] tracking-tight">
             Gerencie sua clinica<br />de forma inteligente
           </h1>
 
-          <p className="text-base text-white/70 mb-10 animate-fade-in-up max-w-sm" style={{ animationDelay: '0.1s' }}>
+          <p className="text-base text-white/60 mb-10 animate-fade-in-up max-w-sm leading-relaxed" style={{ animationDelay: '0.1s' }}>
             Automatize agendamentos, gerencie pacientes e otimize o atendimento com inteligencia artificial.
           </p>
 
-          <div className="space-y-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="space-y-3.5 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             {[
               'Agendamento automatico via WhatsApp',
               'Gestao completa de pacientes',
               'Relatorios e analises detalhadas'
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 text-white/80">
-                <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
-                  <CheckCircle2 className="w-3 h-3 text-white/80" />
+              <div key={i} className="flex items-center gap-3 text-white/75">
+                <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
+                  <CheckCircle2 className="w-3 h-3 text-white/70" />
                 </div>
-                <span className="text-sm">{item}</span>
+                <span className="text-sm font-medium">{item}</span>
               </div>
             ))}
           </div>

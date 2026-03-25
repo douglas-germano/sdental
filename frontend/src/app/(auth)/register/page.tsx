@@ -47,27 +47,32 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-primary relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-black/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/[0.02] rounded-full" />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ background: 'linear-gradient(160deg, hsl(238 76% 55%) 0%, hsl(262 83% 50%) 50%, hsl(280 70% 45%) 100%)' }}>
+        {/* Layered decorative elements */}
+        <div className="absolute inset-0">
+          <div className="absolute -top-1/3 -right-1/4 w-2/3 h-2/3 bg-white/[0.07] rounded-full blur-[100px]" />
+          <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-black/15 rounded-full blur-[80px]" />
+          <div className="absolute inset-0 opacity-[0.04]" style={{
+            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+            backgroundSize: '32px 32px'
+          }} />
+          <div className="absolute top-[12%] left-[8%] w-20 h-20 border border-white/10 rounded-2xl rotate-12 animate-float" />
+          <div className="absolute bottom-[15%] right-[10%] w-14 h-14 border border-white/[0.08] rounded-xl -rotate-6 animate-float" style={{ animationDelay: '1.5s' }} />
         </div>
 
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
           <div className="flex items-center gap-3 mb-10 animate-fade-in">
-            <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
+            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg shadow-black/10">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-semibold text-white">SDental</span>
+            <span className="text-xl font-bold text-white tracking-tight">SDental</span>
           </div>
 
-          <h1 className="text-3xl xl:text-4xl font-semibold text-white mb-4 animate-fade-in-up leading-tight">
+          <h1 className="text-3xl xl:text-[2.5rem] font-bold text-white mb-5 animate-fade-in-up leading-[1.15] tracking-tight">
             Comece sua jornada<br />digital
           </h1>
 
-          <p className="text-base text-white/70 mb-10 animate-fade-in-up max-w-sm" style={{ animationDelay: '0.1s' }}>
+          <p className="text-base text-white/60 mb-10 animate-fade-in-up max-w-sm leading-relaxed" style={{ animationDelay: '0.1s' }}>
             Cadastre sua clinica e tenha acesso a todas as ferramentas para modernizar seu atendimento.
           </p>
 
@@ -78,9 +83,9 @@ export default function RegisterPage() {
               { value: '98%', label: 'Satisfacao' },
               { value: '24/7', label: 'Atendimento IA' }
             ].map((stat, i) => (
-              <div key={i} className="p-4 rounded-xl bg-white/8 border border-white/10 backdrop-blur-sm">
-                <div className="text-2xl font-semibold text-white mb-0.5">{stat.value}</div>
-                <div className="text-xs text-white/60">{stat.label}</div>
+              <div key={i} className="p-4 rounded-xl bg-white/[0.08] border border-white/10 backdrop-blur-sm hover:bg-white/[0.12] transition-colors">
+                <div className="text-2xl font-bold text-white mb-0.5 tracking-tight">{stat.value}</div>
+                <div className="text-xs text-white/50 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>

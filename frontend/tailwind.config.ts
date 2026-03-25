@@ -8,6 +8,9 @@ const config: Config = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    fontFamily: {
+      sans: ['var(--font-sans)', 'system-ui', '-apple-system', 'sans-serif'],
+    },
     extend: {
       colors: {
         border: 'hsl(var(--border))',

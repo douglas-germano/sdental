@@ -1,15 +1,20 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from './providers'
 import { ToastProvider } from '@/components/ui/toast'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
-const inter = Inter({ subsets: ['latin'] })
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+})
 
 export const metadata: Metadata = {
   title: 'SDental - Sistema de Agendamento',
-  description: 'Plataforma de chatbot para clínicas com agendamento automatizado via WhatsApp',
+  description: 'Plataforma de chatbot para clinicas com agendamento automatizado via WhatsApp',
   icons: {
     icon: '/icon.png',
     apple: '/apple-icon.png',
@@ -23,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${plusJakarta.variable} font-sans`} suppressHydrationWarning>
         <AuthProvider>
           <ToastProvider>
             <TooltipProvider>
