@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/toast'
 import { agentsApi } from '@/lib/api'
 import { Bot, Save, Sparkles, MessageSquare, Send, Loader2, User } from 'lucide-react'
+import { PageLoader } from '@/components/ui/page-loader'
 
 interface TestMessage {
     role: 'user' | 'assistant'
@@ -234,11 +235,7 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
     }
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center h-48">
-                <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
-            </div>
-        )
+        return <PageLoader />
     }
 
     return (

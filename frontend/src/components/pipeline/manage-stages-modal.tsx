@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
 import { pipelineApi } from '@/lib/api'
 import { Plus, Trash2, GripVertical, Save, Loader2 } from 'lucide-react'
+import { PageLoader } from '@/components/ui/page-loader'
 import {
   DndContext,
   closestCenter,
@@ -309,9 +310,7 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
+          <PageLoader size="sm" />
         ) : (
           <div className="space-y-4">
             <DndContext

@@ -17,6 +17,7 @@ import {
 import { EmptyState } from '@/components/ui/empty-state'
 import { useDebounce } from '@/hooks/useDebounce'
 import { cn } from '@/lib/utils'
+import { PageLoader } from '@/components/ui/page-loader'
 
 type FilterStatus = 'all' | 'needs_attention' | 'active' | 'completed' | 'transferred_to_human'
 
@@ -113,7 +114,7 @@ export default function ConversationsPage() {
   ]
 
   return (
-    <div className="space-y-8 page-enter">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -188,9 +189,7 @@ export default function ConversationsPage() {
 
       {/* Conversations List */}
       {loading ? (
-        <div className="flex items-center justify-center h-48">
-          <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
-        </div>
+        <PageLoader />
       ) : conversations.length === 0 ? (
         <EmptyState
           icon={MessageSquare}

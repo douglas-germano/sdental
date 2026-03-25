@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils'
 import { exportToCSV } from '@/lib/export'
 import { getErrorMessage } from '@/lib/error-messages'
 import { Download } from 'lucide-react'
+import { PageLoader } from '@/components/ui/page-loader'
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
@@ -321,9 +322,7 @@ export default function AppointmentsPage() {
       <Card className="border-border/60">
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center h-48">
-              <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
-            </div>
+            <PageLoader />
           ) : appointments.length === 0 ? (
             <EmptyState
               icon={Calendar}

@@ -56,9 +56,9 @@ export default function DashboardPage() {
   }, [])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="animate-fade-in">
+      <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Visao geral da sua clinica

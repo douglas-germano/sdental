@@ -26,6 +26,7 @@ import { KanbanColumn } from './kanban-column'
 import { KanbanCard } from './kanban-card'
 import { useToast } from '@/components/ui/toast'
 import { Loader2 } from 'lucide-react'
+import { PageLoader } from '@/components/ui/page-loader'
 
 import { Patient, PipelineStage } from '@/types'
 
@@ -205,11 +206,7 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
     }
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center h-48">
-                <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
-            </div>
-        )
+        return <PageLoader />
     }
 
     return (

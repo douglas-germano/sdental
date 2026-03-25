@@ -19,6 +19,7 @@ import { Users, Eye, Trash2, Plus, Stethoscope, Star } from 'lucide-react'
 import { NewProfessionalModal } from '@/components/professionals/new-professional-modal'
 import { ProfessionalDetailModal } from '@/components/professionals/professional-detail-modal'
 import { useToast } from '@/components/ui/toast'
+import { PageLoader } from '@/components/ui/page-loader'
 
 export default function ProfessionalsPage() {
   const { toast } = useToast()
@@ -69,9 +70,9 @@ export default function ProfessionalsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Profissionais</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -85,13 +86,10 @@ export default function ProfessionalsPage() {
       </div>
 
       {/* Professionals Table */}
-      <Card className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+      <Card className="animate-fade-in" style={{ animationDelay: '100ms' }}>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-48 gap-3">
-              <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
-              <p className="text-muted-foreground text-sm">Carregando profissionais...</p>
-            </div>
+            <PageLoader message="Carregando profissionais..." />
           ) : professionals.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">

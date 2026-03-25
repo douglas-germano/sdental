@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
 import { useConfirm } from '@/hooks/useConfirm'
+import { PageLoader } from '@/components/ui/page-loader'
 
 export default function ConversationDetailPage() {
   const params = useParams()
@@ -264,11 +265,7 @@ export default function ConversationDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-48">
-        <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
-      </div>
-    )
+    return <PageLoader />
   }
 
   if (!conversation) {

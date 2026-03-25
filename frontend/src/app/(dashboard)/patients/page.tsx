@@ -24,6 +24,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { useDebounce } from '@/hooks/useDebounce'
 import { exportToCSV } from '@/lib/export'
 import { getErrorMessage } from '@/lib/error-messages'
+import { PageLoader } from '@/components/ui/page-loader'
 
 export default function PatientsPage() {
   const { toast } = useToast()
@@ -123,9 +124,9 @@ export default function PatientsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -150,7 +151,7 @@ export default function PatientsPage() {
       </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-3 max-w-lg animate-fade-in-up">
+      <form onSubmit={handleSearch} className="flex gap-3 max-w-lg animate-fade-in">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -166,13 +167,10 @@ export default function PatientsPage() {
       </form>
 
       {/* Patients Table */}
-      <Card className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+      <Card className="animate-fade-in" style={{ animationDelay: '100ms' }}>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-48 gap-3">
-              <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
-              <p className="text-muted-foreground text-sm">Carregando pacientes...</p>
-            </div>
+            <PageLoader message="Carregando pacientes..." />
           ) : patients.length === 0 ? (
             <EmptyState
               icon={Users}
@@ -245,7 +243,7 @@ export default function PatientsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        <div className="flex items-center justify-center gap-3 animate-fade-in" style={{ animationDelay: '150ms' }}>
           <Button
             variant="outline"
             size="sm"
