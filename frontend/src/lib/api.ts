@@ -75,7 +75,9 @@ export const authApi = {
 
   me: () => api.get('/auth/me'),
 
-  refresh: () => api.post('/auth/refresh')
+  refresh: () => api.post('/auth/refresh'),
+
+  logout: () => api.post('/auth/logout')
 }
 
 // Clinics API
@@ -187,7 +189,7 @@ export const professionalsApi = {
 
 // Conversations API
 export const conversationsApi = {
-  list: (params?: { page?: number; per_page?: number; status?: string; needs_attention?: boolean }) =>
+  list: (params?: { page?: number; per_page?: number; status?: string; needs_attention?: boolean; search?: string }) =>
     api.get('/conversations', { params }),
 
   get: (id: string) => api.get(`/conversations/${id}`),
@@ -200,7 +202,10 @@ export const conversationsApi = {
   reactivate: (id: string) => api.put(`/conversations/${id}/reactivate`),
 
   linkPatient: (id: string, data: { name: string; phone?: string; email?: string; notes?: string }) =>
-    api.post(`/conversations/${id}/link-patient`, data)
+    api.post(`/conversations/${id}/link-patient`, data),
+
+  sendMessage: (id: string, message: string) =>
+    api.post(`/conversations/${id}/send-message`, { message })
 }
 
 // Analytics API

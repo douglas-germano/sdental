@@ -16,6 +16,7 @@ def list_conversations(current_clinic):
     per_page = request.args.get('per_page', 20, type=int)
     status = request.args.get('status')
     needs_attention = request.args.get('needs_attention', type=bool)
+    search = request.args.get('search')
 
     query = Conversation.query.filter_by(clinic_id=current_clinic.id)
 
@@ -24,6 +25,15 @@ def list_conversations(current_clinic):
 
     if needs_attention:
         query = query.filter_by(status=ConversationStatus.TRANSFERRED_TO_HUMAN)
+
+    if search:
+        search_term = f'%{search}%'
+        query = query.join(Patient, Conversation.patient_id == Patient.id, isouter=True).filter(
+            db.or_(
+                Patient.name.ilike(search_term),
+                Conversation.phone_number.ilike(search_term)
+            )
+        )
 
     query = query.order_by(Conversation.last_message_at.desc())
 
@@ -238,5 +248,42 @@ def link_patient(conversation_id, current_clinic):
     return jsonify({
         'message': 'Paciente vinculado com sucesso',
         'patient': patient.to_dict()
+    })
+
+
+@bp.route('/<conversation_id>/send-message', methods=['POST'])
+@clinic_required
+def send_manual_message(conversation_id, current_clinic):
+    """Send a manual message to the patient via WhatsApp."""
+    conversation = Conversation.query.filter_by(
+        id=conversation_id,
+        clinic_id=current_clinic.id
+    ).first()
+
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    data = request.get_json()
+    message = data.get('message', '').strip()
+
+    if not message:
+        return jsonify({'error': 'Message is required'}), 400
+
+    # Send via Evolution API
+    from app.services.evolution_service import EvolutionService
+    evolution = EvolutionService(current_clinic)
+
+    try:
+        evolution.send_message(conversation.phone_number, message)
+    except Exception as e:
+        return jsonify({'error': f'Failed to send message: {str(e)}'}), 500
+
+    # Add message to conversation history
+    conversation.add_message('assistant', message)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Message sent successfully',
+        'conversation': conversation.to_dict(include_messages=False)
     })
 
