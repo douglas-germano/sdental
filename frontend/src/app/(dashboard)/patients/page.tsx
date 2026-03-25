@@ -25,6 +25,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { exportToCSV } from '@/lib/export'
 import { getErrorMessage } from '@/lib/error-messages'
 import { PageLoader } from '@/components/ui/page-loader'
+import { PageHeader } from '@/components/ui/page-header'
 
 export default function PatientsPage() {
   const { toast } = useToast()
@@ -125,30 +126,21 @@ export default function PatientsPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie os pacientes da clínica
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            disabled={loading || patients.length === 0}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar</span>
-          </Button>
-          <Button onClick={() => setShowNewModal(true)} variant="gradient" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Paciente
-          </Button>
-        </div>
-      </div>
+      <PageHeader title="Pacientes" description="Gerencie os pacientes da clinica">
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          disabled={loading || patients.length === 0}
+          className="gap-2"
+        >
+          <Download className="h-4 w-4" />
+          <span className="hidden sm:inline">Exportar</span>
+        </Button>
+        <Button onClick={() => setShowNewModal(true)} variant="gradient" className="gap-2">
+          <Plus className="h-4 w-4" />
+          Novo Paciente
+        </Button>
+      </PageHeader>
 
       {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-3 max-w-lg animate-fade-in">

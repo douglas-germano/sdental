@@ -6,6 +6,7 @@ import { ManageStagesModal } from '@/components/pipeline/manage-stages-modal'
 import { AddPatientModal } from '@/components/pipeline/add-patient-modal'
 import { LinkPatientModal } from '@/components/pipeline/link-patient-modal'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import { Columns, Settings, UserPlus, Link2 } from 'lucide-react'
 import { pipelineApi } from '@/lib/api'
 
@@ -48,47 +49,35 @@ export default function PipelinePage() {
 
     return (
         <div className="h-[calc(100vh-7rem)] flex flex-col gap-6 animate-fade-in">
-            <div className="flex items-start justify-between flex-shrink-0">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-                        <Columns className="h-6 w-6 text-primary" />
-                        CRM & Pipeline
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Gerencie o fluxo de atendimento dos seus pacientes
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Button
-                        onClick={() => setAddPatientModalOpen(true)}
-                        variant="default"
-                        size="sm"
-                        className="gap-2"
-                    >
-                        <UserPlus className="w-4 h-4" />
-                        Novo Paciente
-                    </Button>
-                    <Button
-                        onClick={() => setLinkPatientModalOpen(true)}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                    >
-                        <Link2 className="w-4 h-4" />
-                        Vincular Paciente
-                    </Button>
-                    <Button
-                        onClick={() => setManageModalOpen(true)}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                    >
-                        <Settings className="w-4 h-4" />
-                        Gerenciar Estágios
-                    </Button>
-                </div>
-            </div>
+            <PageHeader title="CRM & Pipeline" description="Gerencie o fluxo de atendimento dos seus pacientes" className="flex-shrink-0">
+                <Button
+                    onClick={() => setAddPatientModalOpen(true)}
+                    variant="default"
+                    size="sm"
+                    className="gap-2"
+                >
+                    <UserPlus className="w-4 h-4" />
+                    Novo Paciente
+                </Button>
+                <Button
+                    onClick={() => setLinkPatientModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                >
+                    <Link2 className="w-4 h-4" />
+                    Vincular Paciente
+                </Button>
+                <Button
+                    onClick={() => setManageModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                >
+                    <Settings className="w-4 h-4" />
+                    Gerenciar Estagios
+                </Button>
+            </PageHeader>
 
             <div className="flex-1 overflow-hidden rounded-xl border border-border/60 bg-muted/10 p-4">
                 <KanbanBoard ref={boardRef} />

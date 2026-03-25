@@ -25,6 +25,7 @@ import { StatusPieChart } from '@/components/charts/status-pie-chart'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/ui/page-header'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 export default function DashboardPage() {
@@ -57,13 +58,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Visao geral da sua clinica
-        </p>
-      </div>
+      <PageHeader title="Dashboard" description="Visao geral da sua clinica" />
 
       {/* Metrics Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -330,42 +325,35 @@ export default function DashboardPage() {
               [1, 2, 3, 4].map(i => <Skeleton key={i} className="h-[120px] rounded-xl" />)
             ) : (
               <>
-                <div className="text-center p-5 bg-success/5 border border-success/10 rounded-xl hover:bg-success/8 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle2 className="h-5 w-5 text-success" />
-                  </div>
-                  <p className="text-2xl font-bold text-success">
-                    {overview?.appointments.completed || 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Concluidos</p>
-                </div>
-                <div className="text-center p-5 bg-destructive/5 border border-destructive/10 rounded-xl hover:bg-destructive/8 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center mx-auto mb-3">
-                    <XCircle className="h-5 w-5 text-destructive" />
-                  </div>
-                  <p className="text-2xl font-bold text-destructive">
-                    {overview?.appointments.cancelled || 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Cancelados</p>
-                </div>
-                <div className="text-center p-5 bg-muted/50 border border-border/40 rounded-xl hover:bg-muted/70 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
-                    <UserX className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <p className="text-2xl font-bold text-foreground">
-                    {overview?.appointments.no_shows || 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Faltas</p>
-                </div>
-                <div className="text-center p-5 bg-primary/5 border border-primary/10 rounded-xl hover:bg-primary/8 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <UserPlus className="h-5 w-5 text-primary" />
-                  </div>
-                  <p className="text-2xl font-bold text-primary">
-                    {overview?.patients.new_this_month || 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Novos Pacientes</p>
-                </div>
+                {[
+                  { icon: CheckCircle2, value: overview?.appointments.completed || 0, label: 'Concluidos', color: 'success' as const },
+                  { icon: XCircle, value: overview?.appointments.cancelled || 0, label: 'Cancelados', color: 'destructive' as const },
+                  { icon: UserX, value: overview?.appointments.no_shows || 0, label: 'Faltas', color: 'muted' as const },
+                  { icon: UserPlus, value: overview?.patients.new_this_month || 0, label: 'Novos Pacientes', color: 'primary' as const },
+                ].map((item, i) => {
+                  const colorMap = {
+                    success: { bg: 'bg-success/[0.06]', border: 'border-success/15', iconBg: 'bg-success/[0.12]', iconText: 'text-success', valueText: 'text-success', hover: 'hover:bg-success/[0.1]' },
+                    destructive: { bg: 'bg-destructive/[0.06]', border: 'border-destructive/15', iconBg: 'bg-destructive/[0.12]', iconText: 'text-destructive', valueText: 'text-destructive', hover: 'hover:bg-destructive/[0.1]' },
+                    muted: { bg: 'bg-muted/60', border: 'border-border/50', iconBg: 'bg-muted', iconText: 'text-muted-foreground', valueText: 'text-foreground', hover: 'hover:bg-muted/80' },
+                    primary: { bg: 'bg-primary/[0.06]', border: 'border-primary/15', iconBg: 'bg-primary/[0.12]', iconText: 'text-primary', valueText: 'text-primary', hover: 'hover:bg-primary/[0.1]' },
+                  }
+                  const c = colorMap[item.color]
+                  return (
+                    <div
+                      key={item.label}
+                      className={`text-center p-5 ${c.bg} border ${c.border} rounded-xl ${c.hover} transition-all duration-200 animate-fade-in-up`}
+                      style={{ animationDelay: `${450 + i * 50}ms` }}
+                    >
+                      <div className={`w-10 h-10 rounded-xl ${c.iconBg} flex items-center justify-center mx-auto mb-3`}>
+                        <item.icon className={`h-5 w-5 ${c.iconText}`} />
+                      </div>
+                      <p className={`text-2xl font-bold ${c.valueText} tabular-nums`}>
+                        {item.value}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 font-medium">{item.label}</p>
+                    </div>
+                  )
+                })}
               </>
             )}
           </div>

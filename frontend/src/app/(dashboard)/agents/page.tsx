@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/toast'
 import { agentsApi } from '@/lib/api'
 import { Bot, Save, Sparkles, MessageSquare, Send, Loader2, User } from 'lucide-react'
 import { PageLoader } from '@/components/ui/page-loader'
+import { PageHeader } from '@/components/ui/page-header'
 
 interface TestMessage {
     role: 'user' | 'assistant'
@@ -240,12 +241,7 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
 
     return (
         <div className="space-y-8 animate-fade-in">
-            <div>
-                <h1 className="text-2xl font-semibold tracking-tight">Agentes IA</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Personalize o comportamento e conhecimento da sua assistente virtual
-                </p>
-            </div>
+            <PageHeader title="Agentes IA" description="Personalize o comportamento e conhecimento da sua assistente virtual" />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid w-full max-w-md grid-cols-3">

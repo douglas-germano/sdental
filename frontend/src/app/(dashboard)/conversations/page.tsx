@@ -15,6 +15,7 @@ import {
   Search, RefreshCw, Clock
 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/ui/page-header'
 import { useDebounce } from '@/hooks/useDebounce'
 import { cn } from '@/lib/utils'
 import { PageLoader } from '@/components/ui/page-loader'
@@ -115,35 +116,26 @@ export default function ConversationsPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Conversas</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Acompanhe as conversas do chatbot
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {needsAttentionCount > 0 && (
-            <Badge variant="warning" size="lg" dot className="gap-1.5">
-              {needsAttentionCount} aguardando atencao
-            </Badge>
-          )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => fetchConversations(true)}
-                disabled={refreshing}
-              >
-                <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Atualizar conversas</TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
+      <PageHeader title="Conversas" description="Acompanhe as conversas do chatbot">
+        {needsAttentionCount > 0 && (
+          <Badge variant="warning" size="lg" dot className="gap-1.5">
+            {needsAttentionCount} aguardando atencao
+          </Badge>
+        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => fetchConversations(true)}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Atualizar conversas</TooltipContent>
+        </Tooltip>
+      </PageHeader>
 
       {/* Search + Filters */}
       <div className="space-y-4">
@@ -197,17 +189,19 @@ export default function ConversationsPage() {
           description={search ? "Tente buscar com outros termos" : "As conversas do WhatsApp aparecerao aqui"}
         />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {conversations.map((conv, index) => (
             <Link key={conv.id} href={`/conversations/${conv.id}`}>
               <Card
                 className={cn(
-                  "cursor-pointer border-border/60 group transition-all duration-150 hover:shadow-soft-md hover:border-border",
+                  "cursor-pointer border-border/60 group transition-all duration-200 hover:shadow-soft-md hover:border-border hover:-translate-y-px",
                   isUrgent(conv) && "border-l-[3px] border-l-warning",
-                  isRecent(conv) && !isUrgent(conv) && "border-l-[3px] border-l-primary"
+                  isRecent(conv) && !isUrgent(conv) && "border-l-[3px] border-l-primary",
+                  "animate-fade-in-up"
                 )}
+                style={{ animationDelay: `${index * 30}ms` }}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-4 sm:p-5">
                   <div className="flex items-center gap-4">
                     {/* Avatar */}
                     <div className="relative shrink-0">

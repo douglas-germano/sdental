@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -14,6 +17,41 @@ interface StatsCardProps {
     delay?: number
 }
 
+function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: number }) {
+    const [display, setDisplay] = useState(0)
+    const startTime = useRef<number | null>(null)
+    const rafId = useRef<number | null>(null)
+
+    useEffect(() => {
+        if (value === 0) {
+            setDisplay(0)
+            return
+        }
+
+        const animate = (timestamp: number) => {
+            if (!startTime.current) startTime.current = timestamp
+            const progress = Math.min((timestamp - startTime.current) / duration, 1)
+
+            // Ease-out cubic
+            const eased = 1 - Math.pow(1 - progress, 3)
+            setDisplay(Math.round(eased * value))
+
+            if (progress < 1) {
+                rafId.current = requestAnimationFrame(animate)
+            }
+        }
+
+        startTime.current = null
+        rafId.current = requestAnimationFrame(animate)
+
+        return () => {
+            if (rafId.current) cancelAnimationFrame(rafId.current)
+        }
+    }, [value, duration])
+
+    return <>{display.toLocaleString('pt-BR')}</>
+}
+
 export function StatsCard({
     title,
     value,
@@ -25,12 +63,12 @@ export function StatsCard({
     delay = 0,
 }: StatsCardProps) {
     const iconStyles = {
-        default: 'bg-primary/8 text-primary',
-        success: 'bg-success/8 text-success',
-        warning: 'bg-warning/8 text-warning',
-        destructive: 'bg-destructive/8 text-destructive',
-        accent: 'bg-accent/8 text-accent',
-        primary: 'bg-primary/8 text-primary',
+        default: 'bg-primary/[0.08] text-primary',
+        success: 'bg-success/[0.08] text-success',
+        warning: 'bg-warning/[0.08] text-warning',
+        destructive: 'bg-destructive/[0.08] text-destructive',
+        accent: 'bg-accent/[0.08] text-accent',
+        primary: 'bg-primary/[0.08] text-primary',
     }
 
     const iconColor = iconStyles[variant] || iconStyles.default
@@ -50,6 +88,8 @@ export function StatsCard({
         )
     }
 
+    const isNumeric = typeof value === 'number'
+
     return (
         <Card
             hover
@@ -68,8 +108,8 @@ export function StatsCard({
                         <Icon className="h-5 w-5" />
                     </div>
                 </div>
-                <div className="text-3xl font-bold tracking-tight text-foreground">
-                    {value}
+                <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+                    {isNumeric ? <AnimatedCounter value={value} /> : value}
                 </div>
                 {description && (
                     <div className="text-xs text-muted-foreground mt-2">

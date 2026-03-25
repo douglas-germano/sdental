@@ -38,6 +38,7 @@ import { exportToCSV } from '@/lib/export'
 import { getErrorMessage } from '@/lib/error-messages'
 import { Download } from 'lucide-react'
 import { PageLoader } from '@/components/ui/page-loader'
+import { PageHeader } from '@/components/ui/page-header'
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
@@ -196,29 +197,21 @@ export default function AppointmentsPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Agendamentos</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie os agendamentos da clínica
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            className="gap-2"
-            disabled={loading || appointments.length === 0}
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar</span>
-          </Button>
-          <Button variant="gradient" onClick={() => setShowNewModal(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Agendamento
-          </Button>
-        </div>
-      </div>
+      <PageHeader title="Agendamentos" description="Gerencie os agendamentos da clinica">
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          className="gap-2"
+          disabled={loading || appointments.length === 0}
+        >
+          <Download className="h-4 w-4" />
+          <span className="hidden sm:inline">Exportar</span>
+        </Button>
+        <Button variant="gradient" onClick={() => setShowNewModal(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Novo Agendamento
+        </Button>
+      </PageHeader>
 
       {/* Filters */}
       <Card className="border-border/60">

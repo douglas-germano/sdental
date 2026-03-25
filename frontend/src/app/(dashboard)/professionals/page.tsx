@@ -20,6 +20,7 @@ import { NewProfessionalModal } from '@/components/professionals/new-professiona
 import { ProfessionalDetailModal } from '@/components/professionals/professional-detail-modal'
 import { useToast } from '@/components/ui/toast'
 import { PageLoader } from '@/components/ui/page-loader'
+import { PageHeader } from '@/components/ui/page-header'
 
 export default function ProfessionalsPage() {
   const { toast } = useToast()
@@ -71,19 +72,12 @@ export default function ProfessionalsPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Profissionais</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie os profissionais da clinica
-          </p>
-        </div>
+      <PageHeader title="Profissionais" description="Gerencie os profissionais da clinica">
         <Button onClick={() => setShowNewModal(true)} variant="gradient" className="gap-2">
           <Plus className="h-4 w-4" />
           Novo Profissional
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Professionals Table */}
       <Card className="animate-fade-in" style={{ animationDelay: '100ms' }}>

@@ -15,6 +15,7 @@ import {
   ChevronRight, X, Loader2, User, Building2, Mail, Phone, Link, Copy
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/page-header'
 
 type Section = 'profile' | 'whatsapp' | 'hours' | 'services'
 
@@ -235,12 +236,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gerencie as configurações da sua clínica e integrações
-        </p>
-      </div>
+      <PageHeader title="Configuracoes" description="Gerencie as configuracoes da sua clinica e integracoes" />
 
       {/* Messages */}
       {error && (
