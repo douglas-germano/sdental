@@ -235,22 +235,22 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center h-48">
+                <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
             </div>
         )
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-8 animate-fade-in">
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight">Agentes IA</h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mt-1">
                     Personalize o comportamento e conhecimento da sua assistente virtual
                 </p>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid w-full max-w-md grid-cols-3">
                     <TabsTrigger value="general" className="gap-2">
                         <Bot className="h-4 w-4" />
@@ -266,8 +266,8 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="general" className="space-y-4">
-                    <Card className="border-border/50">
+                <TabsContent value="general" className="space-y-6">
+                    <Card className="border-border/60">
                         <CardHeader>
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center">
@@ -307,7 +307,7 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
                                 </div>
                             </div>
 
-                            <div className="space-y-3 bg-muted/30 p-4 rounded-xl border border-border/50">
+                            <div className="space-y-3 bg-muted/30 p-4 rounded-xl border border-border/60">
                                 <Label htmlFor="temperature">Criatividade (Temperatura): <span className="text-primary font-semibold">{agentConfig.temperature}</span></Label>
                                 <input
                                     type="range"
@@ -379,8 +379,8 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="knowledge" className="space-y-4">
-                    <Card className="border-border/50">
+                <TabsContent value="knowledge" className="space-y-6">
+                    <Card className="border-border/60">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -428,7 +428,7 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
                 </TabsContent>
 
                 <TabsContent value="test">
-                    <Card className="border-border/50">
+                    <Card className="border-border/60">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -450,7 +450,7 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="border border-border/50 rounded-2xl h-[400px] flex flex-col bg-muted/20 overflow-hidden">
+                            <div className="border border-border/60 rounded-2xl h-[400px] flex flex-col bg-muted/20 overflow-hidden">
                                 {/* Messages */}
                                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                     {testMessages.length === 0 ? (
@@ -483,7 +483,7 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
                                                 <div
                                                     className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.role === 'user'
                                                         ? 'bg-gradient-primary text-white rounded-tr-md'
-                                                        : 'bg-background border border-border/50 rounded-tl-md'
+                                                        : 'bg-background border border-border/60 rounded-tl-md'
                                                         }`}
                                                 >
                                                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -496,7 +496,7 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
                                             <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
                                                 <Bot className="h-4 w-4" />
                                             </div>
-                                            <div className="bg-background border border-border/50 rounded-2xl rounded-tl-md px-4 py-3">
+                                            <div className="bg-background border border-border/60 rounded-2xl rounded-tl-md px-4 py-3">
                                                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                                             </div>
                                         </div>
@@ -505,7 +505,7 @@ Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
                                 </div>
 
                                 {/* Input */}
-                                <form onSubmit={handleSendTestMessage} className="border-t border-border/50 p-4 flex gap-2 bg-background">
+                                <form onSubmit={handleSendTestMessage} className="border-t border-border/60 p-4 flex gap-3 bg-background">
                                     <Input
                                         value={testInput}
                                         onChange={(e) => setTestInput(e.target.value)}

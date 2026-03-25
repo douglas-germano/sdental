@@ -69,17 +69,17 @@ export default function ProfessionalsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Profissionais</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-1">
             Gerencie os profissionais da clinica
           </p>
         </div>
-        <Button onClick={() => setShowNewModal(true)} variant="gradient">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowNewModal(true)} variant="gradient" className="gap-2">
+          <Plus className="h-4 w-4" />
           Novo Profissional
         </Button>
       </div>
@@ -88,8 +88,8 @@ export default function ProfessionalsPage() {
       <Card className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-4">
-              <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <div className="flex flex-col items-center justify-center h-48 gap-3">
+              <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
               <p className="text-muted-foreground text-sm">Carregando profissionais...</p>
             </div>
           ) : professionals.length === 0 ? (
@@ -104,12 +104,12 @@ export default function ProfessionalsPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="font-semibold">Nome</TableHead>
-                    <TableHead className="font-semibold">Especialidade</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="font-semibold">Cadastro</TableHead>
-                    <TableHead className="text-right font-semibold">Acoes</TableHead>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Especialidade</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Cadastro</TableHead>
+                    <TableHead className="text-right">Acoes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

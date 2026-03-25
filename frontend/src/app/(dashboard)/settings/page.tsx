@@ -215,7 +215,7 @@ export default function SettingsPage() {
     badge?: string
     badgeVariant?: 'outline' | 'success' | 'destructive'
   }) => (
-    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
+    <div className="flex items-center justify-between py-4 border-b border-border/60 last:border-0">
       <div>
         <p className="font-medium text-foreground">{label}</p>
         <div className="text-sm text-muted-foreground mt-0.5">{value}</div>
@@ -234,10 +234,10 @@ export default function SettingsPage() {
   )
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-6">
+    <div className="space-y-8 animate-fade-in">
+      <div>
         <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-1">
           Gerencie as configurações da sua clínica e integrações
         </p>
       </div>
@@ -283,7 +283,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Content Area */}
-        <Card className="flex-1 border-border/50">
+        <Card className="flex-1 border-border/60">
           <CardContent className="p-6">
             {/* Profile Section */}
             {activeSection === 'profile' && (
@@ -295,16 +295,16 @@ export default function SettingsPage() {
                       Editar
                     </Button>
                   ) : (
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)}>
-                        <X className="h-4 w-4 mr-1" />
+                    <div className="flex gap-3">
+                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)} className="gap-2">
+                        <X className="h-4 w-4" />
                         Cancelar
                       </Button>
-                      <Button size="sm" onClick={handleSaveProfile} disabled={saving === 'profile'}>
+                      <Button size="sm" onClick={handleSaveProfile} disabled={saving === 'profile'} className="gap-2">
                         {saving === 'profile' ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Save className="h-4 w-4 mr-1" />
+                          <Save className="h-4 w-4" />
                         )}
                         Salvar
                       </Button>
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                 <div className="space-y-1">
                   {/* Clinic Name */}
                   <div className={cn(
-                    "flex items-center justify-between py-3 border-b border-border/50",
+                    "flex items-center justify-between py-3 border-b border-border/60",
                     editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
                   )}>
                     <div className="flex items-center gap-3">
@@ -335,7 +335,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Email (read-only) */}
-                  <div className="flex items-center justify-between py-3 border-b border-border/50">
+                  <div className="flex items-center justify-between py-3 border-b border-border/60">
                     <div className="flex items-center gap-3">
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">Email</span>
@@ -345,7 +345,7 @@ export default function SettingsPage() {
 
                   {/* Phone */}
                   <div className={cn(
-                    "flex items-center justify-between py-3 border-b border-border/50",
+                    "flex items-center justify-between py-3 border-b border-border/60",
                     editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
                   )}>
                     <div className="flex items-center gap-3">
@@ -366,7 +366,7 @@ export default function SettingsPage() {
 
                   {/* Booking URL / Slug */}
                   <div className={cn(
-                    "flex items-center justify-between py-3 border-b border-border/50",
+                    "flex items-center justify-between py-3 border-b border-border/60",
                     editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
                   )}>
                     <div className="flex items-center gap-3">
@@ -452,7 +452,7 @@ export default function SettingsPage() {
                 {qrCode && (
                   <div className="pt-4 flex flex-col items-center animate-fade-in">
                     <h3 className="font-semibold mb-4">Escaneie o QR Code</h3>
-                    <div className="bg-white p-4 rounded-2xl border border-border/50 shadow-soft">
+                    <div className="bg-white p-4 rounded-2xl border border-border/60 shadow-soft">
                       <img
                         src={qrCode.startsWith('data:image') ? qrCode : `data:image/png;base64,${qrCode}`}
                         alt="WhatsApp QR Code"
@@ -488,16 +488,16 @@ export default function SettingsPage() {
                       Editar
                     </Button>
                   ) : (
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)}>
-                        <X className="h-4 w-4 mr-1" />
+                    <div className="flex gap-3">
+                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)} className="gap-2">
+                        <X className="h-4 w-4" />
                         Cancelar
                       </Button>
-                      <Button size="sm" onClick={handleSaveBusinessHours} disabled={saving === 'hours'}>
+                      <Button size="sm" onClick={handleSaveBusinessHours} disabled={saving === 'hours'} className="gap-2">
                         {saving === 'hours' ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Save className="h-4 w-4 mr-1" />
+                          <Save className="h-4 w-4" />
                         )}
                         Salvar
                       </Button>
@@ -510,7 +510,7 @@ export default function SettingsPage() {
                     <div
                       key={day}
                       className={cn(
-                        "flex items-center justify-between py-3 border-b border-border/50 last:border-0",
+                        "flex items-center justify-between py-3 border-b border-border/60 last:border-0",
                         editingField === 'hours' && "bg-muted/30 px-3 rounded-lg my-1"
                       )}
                     >
@@ -572,16 +572,16 @@ export default function SettingsPage() {
                       Editar
                     </Button>
                   ) : (
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)}>
-                        <X className="h-4 w-4 mr-1" />
+                    <div className="flex gap-3">
+                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)} className="gap-2">
+                        <X className="h-4 w-4" />
                         Cancelar
                       </Button>
-                      <Button size="sm" onClick={handleSaveServices} disabled={saving === 'services'}>
+                      <Button size="sm" onClick={handleSaveServices} disabled={saving === 'services'} className="gap-2">
                         {saving === 'services' ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Save className="h-4 w-4 mr-1" />
+                          <Save className="h-4 w-4" />
                         )}
                         Salvar
                       </Button>
@@ -591,7 +591,7 @@ export default function SettingsPage() {
 
                 {/* Add new service (only in edit mode) */}
                 {editingField === 'services' && (
-                  <div className="flex gap-2 p-4 bg-muted/30 rounded-xl border border-border/50 mb-4">
+                  <div className="flex gap-2 p-4 bg-muted/30 rounded-xl border border-border/60 mb-4">
                     <div className="relative flex-1">
                       <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -633,7 +633,7 @@ export default function SettingsPage() {
                       <div
                         key={index}
                         className={cn(
-                          "flex items-center justify-between py-3 border-b border-border/50 last:border-0",
+                          "flex items-center justify-between py-3 border-b border-border/60 last:border-0",
                           editingField === 'services' && "bg-muted/30 px-3 rounded-lg my-1"
                         )}
                       >

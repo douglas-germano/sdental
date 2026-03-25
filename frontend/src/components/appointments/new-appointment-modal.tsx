@@ -189,11 +189,11 @@ export function NewAppointmentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogClose onClick={() => onOpenChange(false)} />
 
         <DialogHeader>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
               <CalendarPlus className="h-6 w-6 text-white" />
             </div>
@@ -384,7 +384,7 @@ export function NewAppointmentModal({
               Cancelar
             </Button>
             <Button type="submit" variant="gradient" loading={loading}>
-              <CalendarPlus className="h-4 w-4 mr-2" />
+              <CalendarPlus className="h-4 w-4" />
               Criar Agendamento
             </Button>
           </DialogFooter>

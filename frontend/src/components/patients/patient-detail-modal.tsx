@@ -123,11 +123,11 @@ export function PatientDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogClose onClick={() => onOpenChange(false)} />
 
         <DialogHeader>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg text-white font-semibold text-lg">
               {patient.name.charAt(0).toUpperCase()}
             </div>
@@ -208,11 +208,11 @@ export function PatientDetailModal({
                 onClick={() => setIsEditing(false)}
                 disabled={loading}
               >
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4" />
                 Cancelar
               </Button>
               <Button variant="gradient" onClick={handleSave} loading={loading}>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4" />
                 Salvar Alterações
               </Button>
             </DialogFooter>
@@ -220,7 +220,7 @@ export function PatientDetailModal({
         ) : (
           <div className="space-y-5">
             {/* Contact Info */}
-            <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/60">
               <h4 className="text-sm font-medium text-muted-foreground mb-3">Informações de Contato</h4>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -253,7 +253,7 @@ export function PatientDetailModal({
                   <FileText className="h-4 w-4" />
                   Observações
                 </Label>
-                <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+                <div className="bg-muted/30 p-4 rounded-xl border border-border/60">
                   <p className="text-sm">{patient.notes}</p>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export function PatientDetailModal({
                   {patient.appointments.slice(0, 5).map((apt) => (
                     <div
                       key={apt.id}
-                      className="flex items-center justify-between bg-muted/30 p-3 rounded-xl border border-border/50 transition-all hover:bg-muted/50 hover:border-border"
+                      className="flex items-center justify-between bg-muted/30 p-3 rounded-xl border border-border/60 transition-all hover:bg-muted/50 hover:border-border"
                     >
                       <div>
                         <p className="font-medium text-sm">{apt.service_name}</p>

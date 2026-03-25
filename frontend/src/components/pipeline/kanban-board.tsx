@@ -233,7 +233,7 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
         >
-            <div className="flex h-full gap-4 overflow-x-auto pb-4">
+            <div className="flex h-full gap-5 overflow-x-auto pb-4">
                 {stages.map((stage) => (
                     <KanbanColumn key={stage.id} stage={stage} />
                 ))}

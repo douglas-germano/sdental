@@ -123,26 +123,27 @@ export default function PatientsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-1">
             Gerencie os pacientes da clínica
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             onClick={handleExport}
             disabled={loading || patients.length === 0}
+            className="gap-2"
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4" />
             <span className="hidden sm:inline">Exportar</span>
           </Button>
-          <Button onClick={() => setShowNewModal(true)} variant="gradient">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={() => setShowNewModal(true)} variant="gradient" className="gap-2">
+            <Plus className="h-4 w-4" />
             Novo Paciente
           </Button>
         </div>
@@ -168,8 +169,8 @@ export default function PatientsPage() {
       <Card className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-4">
-              <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <div className="flex flex-col items-center justify-center h-48 gap-3">
+              <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
               <p className="text-muted-foreground text-sm">Carregando pacientes...</p>
             </div>
           ) : patients.length === 0 ? (
@@ -187,12 +188,12 @@ export default function PatientsPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="font-semibold">Nome</TableHead>
-                    <TableHead className="font-semibold">Telefone</TableHead>
-                    <TableHead className="font-semibold">Email</TableHead>
-                    <TableHead className="font-semibold">Cadastro</TableHead>
-                    <TableHead className="text-right font-semibold">Ações</TableHead>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Cadastro</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -244,7 +245,7 @@ export default function PatientsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        <div className="flex items-center justify-center gap-3 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <Button
             variant="outline"
             size="sm"
@@ -258,7 +259,7 @@ export default function PatientsPage() {
           </Button>
 
           {/* Desktop: Full pagination */}
-          <div className="hidden md:flex items-center gap-1 px-4">
+          <div className="hidden md:flex items-center gap-1 px-2">
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let pageNum: number
               if (totalPages <= 5) {
@@ -287,7 +288,7 @@ export default function PatientsPage() {
           </div>
 
           {/* Mobile: Simple page indicator */}
-          <div className="flex md:hidden items-center px-4">
+          <div className="flex md:hidden items-center px-2">
             <span className="text-sm text-muted-foreground">
               Página {page} de {totalPages}
             </span>

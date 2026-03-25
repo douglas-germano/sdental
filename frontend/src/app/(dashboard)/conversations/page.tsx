@@ -49,11 +49,11 @@ export default function ConversationsPage() {
   }
 
   return (
-    <div className="space-y-6 page-enter">
+    <div className="space-y-8 page-enter">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Conversas</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-1">
             Acompanhe as conversas do chatbot
           </p>
         </div>
@@ -97,12 +97,12 @@ export default function ConversationsPage() {
 
       {/* Conversations List */}
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex items-center justify-center h-48">
+          <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
         </div>
       ) : conversations.length === 0 ? (
-        <Card className="border-border/50">
-          <CardContent className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <Card className="border-border/60">
+          <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground">
             <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
               <MessageSquare className="h-8 w-8 opacity-50" />
             </div>
@@ -114,7 +114,7 @@ export default function ConversationsPage() {
         <div className="space-y-3 stagger-children">
           {conversations.map((conv) => (
             <Link key={conv.id} href={`/conversations/${conv.id}`}>
-              <Card className="card-interactive cursor-pointer border-border/50 group">
+              <Card className="card-interactive cursor-pointer border-border/60 group">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">

@@ -128,7 +128,7 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />
@@ -139,7 +139,7 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="name">
               Nome <span className="text-red-500">*</span>
@@ -209,7 +209,7 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border/60">
             <Button
               type="button"
               variant="outline"
@@ -221,12 +221,12 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Adicionando...
                 </>
               ) : (
                 <>
-                  <UserPlus className="w-4 h-4 mr-2" />
+                  <UserPlus className="w-4 h-4" />
                   Adicionar
                 </>
               )}

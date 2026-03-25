@@ -194,15 +194,15 @@ export default function AppointmentsPage() {
   ]
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Agendamentos</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-1">
             Gerencie os agendamentos da clínica
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             onClick={handleExport}
@@ -220,7 +220,7 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="border-border/50">
+      <Card className="border-border/60">
         <CardHeader
           className="pb-3 cursor-pointer md:cursor-default"
           onClick={() => setFiltersExpanded(!filtersExpanded)}
@@ -318,11 +318,11 @@ export default function AppointmentsPage() {
       </Card>
 
       {/* Appointments Table */}
-      <Card className="border-border/50">
+      <Card className="border-border/60">
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center h-48">
+              <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
             </div>
           ) : appointments.length === 0 ? (
             <EmptyState

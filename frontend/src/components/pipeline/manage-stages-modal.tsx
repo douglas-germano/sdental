@@ -307,7 +307,7 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Gerenciar Estágios do Pipeline</DialogTitle>
           <DialogDescription>
@@ -350,11 +350,11 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
               className="w-full"
               type="button"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4" />
               Adicionar Estágio
             </Button>
 
-            <div className="flex gap-2 justify-end pt-4 border-t">
+            <div className="flex gap-3 justify-end pt-4 border-t border-border/60">
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
@@ -365,12 +365,12 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Salvando...
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 mr-2" />
+                    <Save className="w-4 h-4" />
                     Salvar
                   </>
                 )}

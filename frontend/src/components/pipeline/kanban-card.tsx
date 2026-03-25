@@ -46,8 +46,8 @@ export function KanbanCard({ patient }: Props) {
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <Card className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 border-border/50 bg-white group">
-                <CardContent className="p-3 space-y-2">
+            <Card className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 border-border/60 bg-white group">
+                <CardContent className="p-3.5 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                         <span className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
                             {patient.name}

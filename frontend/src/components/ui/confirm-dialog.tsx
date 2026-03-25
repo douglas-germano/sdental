@@ -56,7 +56,7 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-3">
             <div
               className={`flex-shrink-0 w-12 h-12 rounded-xl ${iconBgColor} flex items-center justify-center ${iconColor}`}
             >
@@ -70,7 +70,7 @@ export function ConfirmDialog({
             </div>
           </div>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-2">
+        <DialogFooter className="gap-3 sm:gap-3">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

@@ -423,7 +423,7 @@ export default function BookingPage() {
                                 className="mt-4"
                                 onClick={() => setStep(1)}
                             >
-                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                <ArrowLeft className="h-4 w-4" />
                                 Voltar
                             </Button>
                         </CardContent>
@@ -469,7 +469,7 @@ export default function BookingPage() {
                                 className="mt-4"
                                 onClick={() => setStep(clinic?.has_professionals ? 2 : 1)}
                             >
-                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                <ArrowLeft className="h-4 w-4" />
                                 Voltar
                             </Button>
                         </CardContent>
@@ -524,7 +524,7 @@ export default function BookingPage() {
                                 className="mt-4"
                                 onClick={() => setStep(clinic?.has_professionals ? 3 : 2)}
                             >
-                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                <ArrowLeft className="h-4 w-4" />
                                 Voltar
                             </Button>
                         </CardContent>
@@ -540,7 +540,7 @@ export default function BookingPage() {
                                 Seus Dados
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-5">
                             {/* Summary */}
                             <div className="bg-blue-50 rounded-xl p-4 space-y-1 text-sm">
                                 <p><strong>Servico:</strong> {selectedService?.name}</p>
@@ -614,7 +614,7 @@ export default function BookingPage() {
                                     onClick={() => setStep(clinic?.has_professionals ? 4 : 3)}
                                     className="flex-1"
                                 >
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                    <ArrowLeft className="h-4 w-4" />
                                     Voltar
                                 </Button>
                                 <Button
@@ -625,7 +625,7 @@ export default function BookingPage() {
                                     {submitting ? (
                                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                     ) : (
-                                        <ArrowRight className="h-4 w-4 mr-2" />
+                                        <ArrowRight className="h-4 w-4" />
                                     )}
                                     Confirmar
                                 </Button>

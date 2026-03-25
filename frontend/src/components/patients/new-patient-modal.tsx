@@ -104,11 +104,11 @@ export function NewPatientModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogClose onClick={() => handleOpenChange(false)} />
 
         <DialogHeader>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
               <UserPlus className="h-6 w-6 text-white" />
             </div>
@@ -190,7 +190,7 @@ export function NewPatientModal({
               Cancelar
             </Button>
             <Button type="submit" variant="gradient" loading={loading}>
-              <UserPlus className="h-4 w-4 mr-2" />
+              <UserPlus className="h-4 w-4" />
               Cadastrar Paciente
             </Button>
           </DialogFooter>

@@ -105,11 +105,11 @@ export function AppointmentDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogClose onClick={() => onOpenChange(false)} />
 
         <DialogHeader>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
               <Calendar className="h-6 w-6 text-white" />
             </div>
@@ -129,7 +129,7 @@ export function AppointmentDetailModal({
 
         <div className="space-y-5">
           {/* Patient Info */}
-          <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+          <div className="bg-muted/30 p-4 rounded-xl border border-border/60">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
               <User className="h-4 w-4" />
               Paciente
@@ -158,14 +158,14 @@ export function AppointmentDetailModal({
 
           {/* Appointment Info */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/60">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Stethoscope className="h-4 w-4" />
                 <span className="text-xs">Servico</span>
               </div>
               <p className="font-medium">{appointment.service_name}</p>
             </div>
-            <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/60">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Clock className="h-4 w-4" />
                 <span className="text-xs">Duracao</span>
@@ -219,7 +219,7 @@ export function AppointmentDetailModal({
                 </div>
               </div>
             ) : (
-              <div className="bg-muted/30 p-4 rounded-xl border border-border/50 min-h-[60px]">
+              <div className="bg-muted/30 p-4 rounded-xl border border-border/60 min-h-[60px]">
                 <p className="text-sm text-muted-foreground">
                   {appointment.notes || 'Nenhuma observacao adicionada'}
                 </p>
@@ -228,7 +228,7 @@ export function AppointmentDetailModal({
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex-col sm:flex-row gap-3">
           {appointment.status === 'pending' && (
             <Button
               onClick={() => handleStatusChange('confirmed')}

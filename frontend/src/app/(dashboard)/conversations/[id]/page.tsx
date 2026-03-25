@@ -177,8 +177,8 @@ export default function ConversationDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-48">
+        <div className="w-8 h-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
       </div>
     )
   }
@@ -195,7 +195,7 @@ export default function ConversationDetailPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-xl">
@@ -213,7 +213,7 @@ export default function ConversationDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-full border border-border/50">
+          <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-full border border-border/60">
             <Switch
               id="ai-toggle"
               checked={conversation.status === 'active'}
@@ -247,7 +247,7 @@ export default function ConversationDetailPage() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button variant="outline" onClick={handleReactivate} className="gap-2">
                 <RotateCcw className="h-4 w-4" />
                 Devolver ao Bot
@@ -271,7 +271,7 @@ export default function ConversationDetailPage() {
       )}
 
       {/* Patient Info - Editable */}
-      <Card className="border-border/50">
+      <Card className="border-border/60">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -349,7 +349,7 @@ export default function ConversationDetailPage() {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="flex justify-end gap-3 pt-4">
                   <Button
                     variant="outline"
                     onClick={handleCancelEdit}
@@ -376,28 +376,28 @@ export default function ConversationDetailPage() {
             ) : (
               // View Mode
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/60">
                   <Label className="flex items-center gap-2 text-muted-foreground">
                     <User className="h-4 w-4" />
                     Nome
                   </Label>
                   <p className="font-medium">{conversation.patient.name}</p>
                 </div>
-                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/60">
                   <Label className="flex items-center gap-2 text-muted-foreground">
                     <Phone className="h-4 w-4" />
                     Telefone
                   </Label>
                   <p className="font-medium">{formatPhone(conversation.patient.phone)}</p>
                 </div>
-                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/60">
                   <Label className="flex items-center gap-2 text-muted-foreground">
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
                   <p className="font-medium">{conversation.patient.email || '-'}</p>
                 </div>
-                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/50">
+                <div className="space-y-1 bg-muted/30 p-3 rounded-xl border border-border/60">
                   <Label className="flex items-center gap-2 text-muted-foreground">
                     <FileText className="h-4 w-4" />
                     Observações
@@ -461,7 +461,7 @@ export default function ConversationDetailPage() {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="flex justify-end gap-3 pt-4">
                   <Button
                     variant="outline"
                     onClick={() => setIsEditing(false)}
@@ -502,7 +502,7 @@ export default function ConversationDetailPage() {
       </Card>
 
       {/* Messages */}
-      <Card className="border-border/50">
+      <Card className="border-border/60">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">

@@ -134,11 +134,11 @@ export function ProfessionalDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogClose onClick={() => onOpenChange(false)} />
 
         <DialogHeader>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div
               className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg text-white font-semibold text-lg"
               style={{ backgroundColor: professional.color || '#3B82F6' }}
@@ -244,7 +244,7 @@ export function ProfessionalDetailModal({
               </div>
             </div>
 
-            <div className="space-y-4 bg-muted/30 p-4 rounded-xl border border-border/50">
+            <div className="space-y-5 bg-muted/30 p-4 rounded-xl border border-border/60">
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="font-medium">Status</Label>
@@ -256,7 +256,7 @@ export function ProfessionalDetailModal({
                 />
               </div>
 
-              <div className="flex items-center justify-between border-t border-border/50 pt-4">
+              <div className="flex items-center justify-between border-t border-border/60 pt-4">
                 <div>
                   <Label className="font-medium flex items-center gap-2">
                     <Star className="h-4 w-4" />
@@ -277,11 +277,11 @@ export function ProfessionalDetailModal({
                 onClick={() => setIsEditing(false)}
                 disabled={loading}
               >
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4" />
                 Cancelar
               </Button>
               <Button variant="gradient" onClick={handleSave} loading={loading}>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4" />
                 Salvar Alteracoes
               </Button>
             </DialogFooter>
@@ -302,7 +302,7 @@ export function ProfessionalDetailModal({
             </div>
 
             {/* Contact Info */}
-            <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/60">
               <h4 className="text-sm font-medium text-muted-foreground mb-3">Informacoes</h4>
               <div className="space-y-3">
                 {professional.specialty && (

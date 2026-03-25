@@ -245,7 +245,7 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Link2 className="h-5 w-5 text-primary" />
@@ -256,7 +256,7 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="search">
               Buscar Contato <span className="text-red-500">*</span>
@@ -370,7 +370,7 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
             </select>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border/60">
             <Button
               type="button"
               variant="outline"
@@ -382,12 +382,12 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
             <Button type="submit" disabled={loading || !selectedResult}>
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   {selectedResult?.type === 'conversation' ? 'Criando e vinculando...' : 'Vinculando...'}
                 </>
               ) : (
                 <>
-                  <Link2 className="w-4 h-4 mr-2" />
+                  <Link2 className="w-4 h-4" />
                   {selectedResult?.type === 'conversation' ? 'Criar e Vincular' : 'Vincular'}
                 </>
               )}
