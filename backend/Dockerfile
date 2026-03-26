@@ -15,8 +15,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 5000
+# Make start script executable
+RUN chmod +x start.sh
 
-# Run the application
-CMD ["python", "run.py"]
+# Expose port (Railway sets PORT dynamically)
+EXPOSE ${PORT:-5001}
+
+# Run via start.sh (handles migrations + gunicorn)
+CMD ["bash", "start.sh"]
