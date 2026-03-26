@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { analyticsApi, appointmentsApi, conversationsApi } from '@/lib/api'
 import { AnalyticsOverview, Appointment, Conversation } from '@/types'
 import { formatDateTime, formatRelativeTime, getStatusColor, getStatusLabel } from '@/lib/utils'
@@ -18,7 +19,10 @@ import {
   CheckCircle2,
   XCircle,
   UserX,
-  UserPlus
+  UserPlus,
+  RefreshCw,
+  CalendarCheck,
+  Plus
 } from 'lucide-react'
 import { AppointmentsChart } from '@/components/charts/appointments-chart'
 import { StatusPieChart } from '@/components/charts/status-pie-chart'
@@ -27,132 +31,264 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { useAuth } from '@/app/providers'
+
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'Bom dia'
+  if (hour >= 12 && hour < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
+function getFormattedDate(): string {
+  const now = new Date()
+  const weekdays = ['Domingo', 'Segunda-feira', 'Terca-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sabado']
+  const months = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+  return `${weekdays[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`
+}
+
+function getCurrentMonthName(): string {
+  const months = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  return months[new Date().getMonth()]
+}
+
+function isToday(dateString: string): boolean {
+  const date = new Date(dateString)
+  const today = new Date()
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  )
+}
 
 export default function DashboardPage() {
+  const { clinic } = useAuth()
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null)
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
   const [recentConversations, setRecentConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [overviewRes, appointmentsRes, conversationsRes] = await Promise.all([
+        analyticsApi.overview(),
+        appointmentsApi.upcoming(),
+        conversationsApi.list({ per_page: 5, needs_attention: true })
+      ])
+
+      setOverview(overviewRes.data)
+      setUpcomingAppointments(appointmentsRes.data.appointments || [])
+      setRecentConversations(conversationsRes.data.conversations || [])
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [])
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [overviewRes, appointmentsRes, conversationsRes] = await Promise.all([
-          analyticsApi.overview(),
-          appointmentsApi.upcoming(),
-          conversationsApi.list({ per_page: 5, needs_attention: true })
-        ])
-
-        setOverview(overviewRes.data)
-        setUpcomingAppointments(appointmentsRes.data.appointments || [])
-        setRecentConversations(conversationsRes.data.conversations || [])
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchData()
-  }, [])
+  }, [fetchData])
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    fetchData()
+  }
+
+  const todayAppointmentsCount = useMemo(() => {
+    return upcomingAppointments.filter(apt => isToday(apt.scheduled_datetime)).length
+  }, [upcomingAppointments])
+
+  const chartsHaveData = useMemo(() => {
+    if (!overview) return false
+    const { appointments } = overview
+    return (appointments.completed + appointments.cancelled + appointments.no_shows + appointments.upcoming) > 0
+  }, [overview])
+
+  const greeting = getGreeting()
+  const clinicName = clinic?.name || ''
+  const formattedDate = getFormattedDate()
+  const currentMonth = getCurrentMonthName()
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Dashboard" description="Visao geral da sua clinica" />
+      {/* Personalized Header with Quick Actions */}
+      <PageHeader
+        title={`${greeting}${clinicName ? `, ${clinicName}` : ''}`}
+        description={formattedDate}
+      >
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
+        <Link href="/appointments">
+          <Button variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Agendamento
+          </Button>
+        </Link>
+        <Link href="/patients">
+          <Button variant="outline" size="sm">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Novo Paciente
+          </Button>
+        </Link>
+      </PageHeader>
 
-      {/* Metrics Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Agendamentos do Mes"
-          value={overview?.appointments.this_month || 0}
-          icon={Calendar}
-          variant="primary"
-          loading={loading}
-          delay={0}
-          description={
-            <span className="flex items-center text-success">
-              <ArrowUpRight className="h-3 w-3 mr-1" />
-              {overview?.appointments.completed || 0} concluidos
-            </span>
-          }
-        />
+      {/* Period Indicator + Metrics Cards */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" size="sm" className="text-xs font-medium">
+            {currentMonth}
+          </Badge>
+          <span className="text-xs text-muted-foreground">Este mes</span>
+        </div>
 
-        <StatsCard
-          title="Proximos Agendamentos"
-          value={overview?.appointments.upcoming || 0}
-          icon={Clock}
-          variant="accent"
-          loading={loading}
-          delay={50}
-          description="Nos proximos 7 dias"
-        />
-
-        <StatsCard
-          title="Total de Pacientes"
-          value={overview?.patients.total || 0}
-          icon={Users}
-          variant="success"
-          loading={loading}
-          delay={100}
-          description={
-            <span className="flex items-center text-success">
-              <ArrowUpRight className="h-3 w-3 mr-1" />
-              +{overview?.patients.new_this_month || 0} novos este mes
-            </span>
-          }
-        />
-
-        <StatsCard
-          title="Conversas Ativas"
-          value={overview?.conversations.active || 0}
-          icon={MessageSquare}
-          variant="warning"
-          loading={loading}
-          delay={150}
-          description={
-            (overview?.conversations.needs_attention || 0) > 0 ? (
-              <span className="flex items-center text-warning">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                {overview?.conversations.needs_attention} precisam de atencao
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <StatsCard
+            title="Agendamentos do Mes"
+            value={overview?.appointments.this_month || 0}
+            icon={Calendar}
+            variant="primary"
+            loading={loading}
+            delay={0}
+            description={
+              <span className="flex items-center text-success">
+                <ArrowUpRight className="h-3 w-3 mr-1" />
+                {overview?.appointments.completed || 0} concluidos
               </span>
-            ) : (
-              <span>Todas em dia</span>
-            )
-          }
-        />
+            }
+          />
+
+          <StatsCard
+            title="Agendamentos Hoje"
+            value={todayAppointmentsCount}
+            icon={CalendarCheck}
+            variant="accent"
+            loading={loading}
+            delay={50}
+            description="Para hoje"
+          />
+
+          <StatsCard
+            title="Total de Pacientes"
+            value={overview?.patients.total || 0}
+            icon={Users}
+            variant="success"
+            loading={loading}
+            delay={100}
+            description={
+              <span className="flex items-center text-success">
+                <ArrowUpRight className="h-3 w-3 mr-1" />
+                +{overview?.patients.new_this_month || 0} novos este mes
+              </span>
+            }
+          />
+
+          <StatsCard
+            title="Conversas Ativas"
+            value={overview?.conversations.active || 0}
+            icon={MessageSquare}
+            variant="warning"
+            loading={loading}
+            delay={150}
+            description={
+              (overview?.conversations.needs_attention || 0) > 0 ? (
+                <span className="flex items-center text-warning">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {overview?.conversations.needs_attention} precisam de atencao
+                </span>
+              ) : (
+                <span>Todas em dia</span>
+              )
+            }
+          />
+
+          <StatsCard
+            title="Proximos 7 dias"
+            value={overview?.appointments.upcoming || 0}
+            icon={Clock}
+            variant="default"
+            loading={loading}
+            delay={200}
+            description="Agendamentos futuros"
+          />
+        </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid gap-6 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-primary" />
+      {/* Charts Section with Monthly Summary Row */}
+      <div className="space-y-4">
+        <div className="grid gap-6 lg:grid-cols-7">
+          <Card className="lg:col-span-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                </div>
+                Visao Geral de Agendamentos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pl-2">
+              {loading ? (
+                <Skeleton className="h-[300px] w-full rounded-xl" />
+              ) : chartsHaveData ? (
+                <AppointmentsChart />
+              ) : (
+                <EmptyState
+                  icon={TrendingUp}
+                  title="Sem dados ainda"
+                  description="Os graficos serao exibidos quando houver agendamentos"
+                />
+              )}
+            </CardContent>
+          </Card>
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Status dos Agendamentos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-[300px] w-full rounded-xl" />
+              ) : chartsHaveData ? (
+                <StatusPieChart overview={overview} />
+              ) : (
+                <EmptyState
+                  icon={Calendar}
+                  title="Sem dados ainda"
+                  description="O grafico de status sera exibido quando houver agendamentos"
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Compact Monthly Summary Row (replaces the old full-width card) */}
+        {!loading && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { icon: CheckCircle2, value: overview?.appointments.completed || 0, label: 'Concluidos', color: 'text-success', bg: 'bg-success/8' },
+              { icon: XCircle, value: overview?.appointments.cancelled || 0, label: 'Cancelados', color: 'text-destructive', bg: 'bg-destructive/8' },
+              { icon: UserX, value: overview?.appointments.no_shows || 0, label: 'Faltas', color: 'text-muted-foreground', bg: 'bg-muted' },
+              { icon: UserPlus, value: overview?.patients.new_this_month || 0, label: 'Novos Pacientes', color: 'text-primary', bg: 'bg-primary/8' },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card"
+              >
+                <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
+                  <item.icon className={`h-4 w-4 ${item.color}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-lg font-bold tabular-nums ${item.color}`}>{item.value}</p>
+                  <p className="text-xs text-muted-foreground truncate">{item.label}</p>
+                </div>
               </div>
-              Visao Geral de Agendamentos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            {loading ? (
-              <Skeleton className="h-[300px] w-full rounded-xl" />
-            ) : (
-              <AppointmentsChart />
-            )}
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Status dos Agendamentos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-[300px] w-full rounded-xl" />
-            ) : (
-              <StatusPieChart overview={overview} />
-            )}
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -190,10 +326,11 @@ export default function DashboardPage() {
               />
             ) : (
               <div className="space-y-2">
-                {upcomingAppointments.slice(0, 5).map((apt, index) => (
-                  <div
+                {upcomingAppointments.slice(0, 5).map((apt) => (
+                  <Link
                     key={apt.id}
-                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 cursor-pointer"
+                    href="/appointments"
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
@@ -221,7 +358,7 @@ export default function DashboardPage() {
                         {getStatusLabel(apt.status)}
                       </Badge>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -268,7 +405,7 @@ export default function DashboardPage() {
               />
             ) : (
               <div className="space-y-2">
-                {recentConversations.map((conv, index) => (
+                {recentConversations.map((conv) => (
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
@@ -289,9 +426,9 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge className={getStatusColor(conv.status)} variant="secondary" size="sm">
-                      {getStatusLabel(conv.status)}
-                    </Badge>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {formatRelativeTime(conv.last_message_at)}
+                    </span>
                   </Link>
                 ))}
               </div>
@@ -306,56 +443,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Monthly Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </div>
-            Resumo do Mes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {loading ? (
-              [1, 2, 3, 4].map(i => <Skeleton key={i} className="h-[120px] rounded-xl" />)
-            ) : (
-              <>
-                {[
-                  { icon: CheckCircle2, value: overview?.appointments.completed || 0, label: 'Concluidos', color: 'success' as const },
-                  { icon: XCircle, value: overview?.appointments.cancelled || 0, label: 'Cancelados', color: 'destructive' as const },
-                  { icon: UserX, value: overview?.appointments.no_shows || 0, label: 'Faltas', color: 'muted' as const },
-                  { icon: UserPlus, value: overview?.patients.new_this_month || 0, label: 'Novos Pacientes', color: 'primary' as const },
-                ].map((item, i) => {
-                  const colorMap = {
-                    success: { bg: 'bg-success/[0.06]', border: 'border-success/15', iconBg: 'bg-success/[0.12]', iconText: 'text-success', valueText: 'text-success', hover: 'hover:bg-success/[0.1]' },
-                    destructive: { bg: 'bg-destructive/[0.06]', border: 'border-destructive/15', iconBg: 'bg-destructive/[0.12]', iconText: 'text-destructive', valueText: 'text-destructive', hover: 'hover:bg-destructive/[0.1]' },
-                    muted: { bg: 'bg-muted/60', border: 'border-border/50', iconBg: 'bg-muted', iconText: 'text-muted-foreground', valueText: 'text-foreground', hover: 'hover:bg-muted/80' },
-                    primary: { bg: 'bg-primary/[0.06]', border: 'border-primary/15', iconBg: 'bg-primary/[0.12]', iconText: 'text-primary', valueText: 'text-primary', hover: 'hover:bg-primary/[0.1]' },
-                  }
-                  const c = colorMap[item.color]
-                  return (
-                    <div
-                      key={item.label}
-                      className={`text-center p-5 ${c.bg} border ${c.border} rounded-xl ${c.hover} transition-all duration-200`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl ${c.iconBg} flex items-center justify-center mx-auto mb-3`}>
-                        <item.icon className={`h-5 w-5 ${c.iconText}`} />
-                      </div>
-                      <p className={`text-2xl font-bold ${c.valueText} tabular-nums`}>
-                        {item.value}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 font-medium">{item.label}</p>
-                    </div>
-                  )
-                })}
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
