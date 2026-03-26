@@ -282,7 +282,7 @@ export default function ConversationDetailPage() {
   const messageGroups = getMessageGroups(conversation.messages || [])
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       {/* Header - Responsive */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3 flex-1 min-w-0">

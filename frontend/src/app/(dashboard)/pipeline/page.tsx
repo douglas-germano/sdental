@@ -48,7 +48,7 @@ export default function PipelinePage() {
     }
 
     return (
-        <div className="h-[calc(100vh-7rem)] flex flex-col gap-6 animate-fade-in">
+        <div className="h-[calc(100vh-7rem)] flex flex-col gap-6">
             <PageHeader title="CRM & Pipeline" description="Gerencie o fluxo de atendimento dos seus pacientes" className="flex-shrink-0">
                 <Button
                     onClick={() => setAddPatientModalOpen(true)}

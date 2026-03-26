@@ -53,28 +53,28 @@ export default function LoginPage() {
             backgroundSize: '32px 32px'
           }} />
           {/* Floating geometric shapes */}
-          <div className="absolute top-[15%] right-[10%] w-24 h-24 border border-white/10 rounded-2xl rotate-12 animate-float" />
-          <div className="absolute bottom-[20%] left-[8%] w-16 h-16 border border-white/[0.08] rounded-xl -rotate-6 animate-float" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-[60%] right-[25%] w-10 h-10 border border-white/[0.06] rounded-lg rotate-45 animate-float" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-[15%] right-[10%] w-24 h-24 border border-white/10 rounded-2xl rotate-12" />
+          <div className="absolute bottom-[20%] left-[8%] w-16 h-16 border border-white/[0.08] rounded-xl -rotate-6" />
+          <div className="absolute top-[60%] right-[25%] w-10 h-10 border border-white/[0.06] rounded-lg rotate-45" />
         </div>
 
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
-          <div className="flex items-center gap-3 mb-10 animate-fade-in">
+          <div className="flex items-center gap-3 mb-10">
             <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg shadow-black/10">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-white tracking-tight">SDental</span>
           </div>
 
-          <h1 className="text-3xl xl:text-[2.5rem] font-bold text-white mb-5 animate-fade-in-up leading-[1.15] tracking-tight">
+          <h1 className="text-3xl xl:text-[2.5rem] font-bold text-white mb-5 leading-[1.15] tracking-tight">
             Gerencie sua clinica<br />de forma inteligente
           </h1>
 
-          <p className="text-base text-white/60 mb-10 animate-fade-in-up max-w-sm leading-relaxed" style={{ animationDelay: '0.1s' }}>
+          <p className="text-base text-white/60 mb-10 max-w-sm leading-relaxed">
             Automatize agendamentos, gerencie pacientes e otimize o atendimento com inteligencia artificial.
           </p>
 
-          <div className="space-y-3.5 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="space-y-3.5">
             {[
               'Agendamento automatico via WhatsApp',
               'Gestao completa de pacientes',
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
       {/* Right side - Login form */}
       <div className="flex-1 flex items-center justify-center p-6 bg-background">
-        <div className="w-full max-w-sm animate-fade-in">
+        <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2.5 mb-8">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
@@ -112,7 +112,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/8 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 animate-fade-in border border-destructive/10">
+                  <div className="bg-destructive/8 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 border border-destructive/10">
                     <AlertIcon />
                     {error}
                   </div>

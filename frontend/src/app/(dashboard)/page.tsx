@@ -57,7 +57,7 @@ export default function DashboardPage() {
   }, [])
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <PageHeader title="Dashboard" description="Visao geral da sua clinica" />
 
       {/* Metrics Cards */}
@@ -124,7 +124,7 @@ export default function DashboardPage() {
 
       {/* Charts Section */}
       <div className="grid gap-6 lg:grid-cols-7">
-        <Card className="lg:col-span-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+        <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center">
@@ -141,7 +141,7 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-        <Card className="lg:col-span-3 animate-fade-in-up" style={{ animationDelay: '250ms' }}>
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Status dos Agendamentos</CardTitle>
           </CardHeader>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming Appointments */}
-        <Card className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+        <Card>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center">
@@ -193,8 +193,7 @@ export default function DashboardPage() {
                 {upcomingAppointments.slice(0, 5).map((apt, index) => (
                   <div
                     key={apt.id}
-                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 cursor-pointer animate-fade-in-up"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
@@ -237,7 +236,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Conversations Needing Attention */}
-        <Card className="animate-fade-in-up" style={{ animationDelay: '350ms' }}>
+        <Card>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-warning/8 flex items-center justify-center">
@@ -273,8 +272,7 @@ export default function DashboardPage() {
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block animate-fade-in-up"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
@@ -310,7 +308,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Monthly Summary */}
-      <Card className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center">
@@ -341,8 +339,7 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={item.label}
-                      className={`text-center p-5 ${c.bg} border ${c.border} rounded-xl ${c.hover} transition-all duration-200 animate-fade-in-up`}
-                      style={{ animationDelay: `${450 + i * 50}ms` }}
+                      className={`text-center p-5 ${c.bg} border ${c.border} rounded-xl ${c.hover} transition-all duration-200`}
                     >
                       <div className={`w-10 h-10 rounded-xl ${c.iconBg} flex items-center justify-center mx-auto mb-3`}>
                         <item.icon className={`h-5 w-5 ${c.iconText}`} />

@@ -125,7 +125,7 @@ export default function PatientsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <PageHeader title="Pacientes" description="Gerencie os pacientes da clinica">
         <Button
           variant="outline"
@@ -143,7 +143,7 @@ export default function PatientsPage() {
       </PageHeader>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-3 max-w-lg animate-fade-in">
+      <form onSubmit={handleSearch} className="flex gap-3 max-w-lg">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -159,7 +159,7 @@ export default function PatientsPage() {
       </form>
 
       {/* Patients Table */}
-      <Card className="animate-fade-in" style={{ animationDelay: '100ms' }}>
+      <Card>
         <CardContent className="p-0">
           {loading ? (
             <PageLoader message="Carregando pacientes..." />
@@ -190,8 +190,7 @@ export default function PatientsPage() {
                   {patients.map((patient, index) => (
                     <TableRow
                       key={patient.id}
-                      className="animate-fade-in hover:bg-muted/30 transition-colors"
-                      style={{ animationDelay: `${index * 30}ms` }}
+                      className="hover:bg-muted/30 transition-colors"
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -235,7 +234,7 @@ export default function PatientsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 animate-fade-in" style={{ animationDelay: '150ms' }}>
+        <div className="flex items-center justify-center gap-3">
           <Button
             variant="outline"
             size="sm"

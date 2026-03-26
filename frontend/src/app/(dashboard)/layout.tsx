@@ -84,7 +84,7 @@ export default function DashboardLayout({
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -209,7 +209,7 @@ export default function DashboardLayout({
               sidebarCollapsed ? 'lg:hidden' : 'block'
             )}>
               <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 rounded-full bg-success animate-pulse-soft" />
+                <div className="w-2 h-2 rounded-full bg-success" />
                 <span className="text-muted-foreground text-xs font-medium truncate">{clinic.name}</span>
               </div>
             </div>
@@ -249,7 +249,7 @@ export default function DashboardLayout({
         </button>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-8 animate-fade-in">
+        <main className="flex-1 p-4 lg:p-8">
           <div className={cn(
             "h-full w-full mx-auto",
             pathname === '/pipeline' ? 'max-w-none' : 'max-w-[1400px]'

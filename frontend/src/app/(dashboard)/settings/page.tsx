@@ -235,18 +235,18 @@ export default function SettingsPage() {
   )
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <PageHeader title="Configuracoes" description="Gerencie as configuracoes da sua clinica e integracoes" />
 
       {/* Messages */}
       {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-xl border border-destructive/20 flex items-center gap-3 animate-fade-in mb-6">
+        <div className="bg-destructive/10 text-destructive p-4 rounded-xl border border-destructive/20 flex items-center gap-3 mb-6">
           <XCircle className="h-5 w-5" />
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-success/10 text-success p-4 rounded-xl border border-success/20 flex items-center gap-3 animate-fade-in mb-6">
+        <div className="bg-success/10 text-success p-4 rounded-xl border border-success/20 flex items-center gap-3 mb-6">
           <CheckCircle className="h-5 w-5" />
           {success}
         </div>
@@ -446,7 +446,7 @@ export default function SettingsPage() {
                 )}
 
                 {qrCode && (
-                  <div className="pt-4 flex flex-col items-center animate-fade-in">
+                  <div className="pt-4 flex flex-col items-center">
                     <h3 className="font-semibold mb-4">Escaneie o QR Code</h3>
                     <div className="bg-white p-4 rounded-2xl border border-border/60 shadow-soft">
                       <img

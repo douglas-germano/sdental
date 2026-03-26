@@ -56,27 +56,27 @@ export default function RegisterPage() {
             backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
             backgroundSize: '32px 32px'
           }} />
-          <div className="absolute top-[12%] left-[8%] w-20 h-20 border border-white/10 rounded-2xl rotate-12 animate-float" />
-          <div className="absolute bottom-[15%] right-[10%] w-14 h-14 border border-white/[0.08] rounded-xl -rotate-6 animate-float" style={{ animationDelay: '1.5s' }} />
+          <div className="absolute top-[12%] left-[8%] w-20 h-20 border border-white/10 rounded-2xl rotate-12" />
+          <div className="absolute bottom-[15%] right-[10%] w-14 h-14 border border-white/[0.08] rounded-xl -rotate-6" />
         </div>
 
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
-          <div className="flex items-center gap-3 mb-10 animate-fade-in">
+          <div className="flex items-center gap-3 mb-10">
             <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg shadow-black/10">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-white tracking-tight">SDental</span>
           </div>
 
-          <h1 className="text-3xl xl:text-[2.5rem] font-bold text-white mb-5 animate-fade-in-up leading-[1.15] tracking-tight">
+          <h1 className="text-3xl xl:text-[2.5rem] font-bold text-white mb-5 leading-[1.15] tracking-tight">
             Comece sua jornada<br />digital
           </h1>
 
-          <p className="text-base text-white/60 mb-10 animate-fade-in-up max-w-sm leading-relaxed" style={{ animationDelay: '0.1s' }}>
+          <p className="text-base text-white/60 mb-10 max-w-sm leading-relaxed">
             Cadastre sua clinica e tenha acesso a todas as ferramentas para modernizar seu atendimento.
           </p>
 
-          <div className="grid grid-cols-2 gap-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="grid grid-cols-2 gap-3">
             {[
               { value: '+500', label: 'Clinicas ativas' },
               { value: '50k+', label: 'Agendamentos/mes' },
@@ -94,7 +94,7 @@ export default function RegisterPage() {
 
       {/* Right side - Register form */}
       <div className="flex-1 flex items-center justify-center p-6 bg-background">
-        <div className="w-full max-w-md animate-fade-in">
+        <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2.5 mb-6">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
@@ -113,7 +113,7 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/8 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 animate-fade-in border border-destructive/10">
+                  <div className="bg-destructive/8 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 border border-destructive/10">
                     <AlertIcon />
                     {error}
                   </div>

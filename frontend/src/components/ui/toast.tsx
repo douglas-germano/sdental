@@ -113,7 +113,7 @@ function ToastItem({
   return (
     <div
       className={cn(
-        'pointer-events-auto flex w-full items-start gap-3 rounded-xl border p-4 shadow-soft-lg animate-slide-in-right',
+        'pointer-events-auto flex w-full items-start gap-3 rounded-xl border p-4 shadow-soft-lg',
         variantStyles
       )}
     >

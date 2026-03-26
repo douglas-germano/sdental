@@ -38,14 +38,14 @@ export function EmptyState({
       </div>
 
       <div className="relative">
-        <div className="h-16 w-16 rounded-2xl bg-muted/50 border border-border/40 flex items-center justify-center mb-5 mx-auto animate-fade-in shadow-soft">
+        <div className="h-16 w-16 rounded-2xl bg-muted/50 border border-border/40 flex items-center justify-center mb-5 mx-auto shadow-soft">
           <Icon className="h-7 w-7 text-muted-foreground/50" />
         </div>
-        <h3 className="font-semibold text-foreground mb-1.5 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+        <h3 className="font-semibold text-foreground mb-1.5">
           {title}
         </h3>
         {description && (
-          <p className="text-sm text-muted-foreground mb-6 max-w-[280px] mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+          <p className="text-sm text-muted-foreground mb-6 max-w-[280px] mx-auto leading-relaxed">
             {description}
           </p>
         )}
@@ -54,8 +54,7 @@ export function EmptyState({
             onClick={action.onClick}
             variant="outline"
             size="sm"
-            className="animate-fade-in-up"
-            style={{ animationDelay: '150ms' }}
+            className=""
             leftIcon={ActionIcon ? <ActionIcon className="h-4 w-4" /> : undefined}
           >
             {action.label}

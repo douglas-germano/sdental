@@ -1,6 +1,3 @@
-'use client'
-
-import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -15,41 +12,6 @@ interface StatsCardProps {
     variant?: 'default' | 'success' | 'warning' | 'destructive' | 'accent' | 'primary'
     className?: string
     delay?: number
-}
-
-function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: number }) {
-    const [display, setDisplay] = useState(0)
-    const startTime = useRef<number | null>(null)
-    const rafId = useRef<number | null>(null)
-
-    useEffect(() => {
-        if (value === 0) {
-            setDisplay(0)
-            return
-        }
-
-        const animate = (timestamp: number) => {
-            if (!startTime.current) startTime.current = timestamp
-            const progress = Math.min((timestamp - startTime.current) / duration, 1)
-
-            // Ease-out cubic
-            const eased = 1 - Math.pow(1 - progress, 3)
-            setDisplay(Math.round(eased * value))
-
-            if (progress < 1) {
-                rafId.current = requestAnimationFrame(animate)
-            }
-        }
-
-        startTime.current = null
-        rafId.current = requestAnimationFrame(animate)
-
-        return () => {
-            if (rafId.current) cancelAnimationFrame(rafId.current)
-        }
-    }, [value, duration])
-
-    return <>{display.toLocaleString('pt-BR')}</>
 }
 
 export function StatsCard({
@@ -93,8 +55,7 @@ export function StatsCard({
     return (
         <Card
             hover
-            className={cn("animate-fade-in-up overflow-hidden", className)}
-            style={{ animationDelay: `${delay}ms` }}
+            className={cn("overflow-hidden", className)}
         >
             <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -109,7 +70,7 @@ export function StatsCard({
                     </div>
                 </div>
                 <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
-                    {isNumeric ? <AnimatedCounter value={value} /> : value}
+                    {isNumeric ? value.toLocaleString('pt-BR') : value}
                 </div>
                 {description && (
                     <div className="text-xs text-muted-foreground mt-2">

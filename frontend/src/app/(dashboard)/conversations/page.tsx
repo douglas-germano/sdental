@@ -115,7 +115,7 @@ export default function ConversationsPage() {
   ]
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <PageHeader title="Conversas" description="Acompanhe as conversas do chatbot">
         {needsAttentionCount > 0 && (
           <Badge variant="warning" size="lg" dot className="gap-1.5">
@@ -194,12 +194,10 @@ export default function ConversationsPage() {
             <Link key={conv.id} href={`/conversations/${conv.id}`}>
               <Card
                 className={cn(
-                  "cursor-pointer border-border/60 group transition-all duration-200 hover:shadow-soft-md hover:border-border hover:-translate-y-px",
+                  "cursor-pointer border-border/60 group transition-all duration-200 hover:shadow-soft-md hover:border-border",
                   isUrgent(conv) && "border-l-[3px] border-l-warning",
                   isRecent(conv) && !isUrgent(conv) && "border-l-[3px] border-l-primary",
-                  "animate-fade-in-up"
                 )}
-                style={{ animationDelay: `${index * 30}ms` }}
               >
                 <CardContent className="p-4 sm:p-5">
                   <div className="flex items-center gap-4">

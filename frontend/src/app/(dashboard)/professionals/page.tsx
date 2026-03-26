@@ -71,7 +71,7 @@ export default function ProfessionalsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <PageHeader title="Profissionais" description="Gerencie os profissionais da clinica">
         <Button onClick={() => setShowNewModal(true)} variant="gradient" className="gap-2">
           <Plus className="h-4 w-4" />
@@ -80,7 +80,7 @@ export default function ProfessionalsPage() {
       </PageHeader>
 
       {/* Professionals Table */}
-      <Card className="animate-fade-in" style={{ animationDelay: '100ms' }}>
+      <Card>
         <CardContent className="p-0">
           {loading ? (
             <PageLoader message="Carregando profissionais..." />
@@ -108,8 +108,7 @@ export default function ProfessionalsPage() {
                   {professionals.map((professional, index) => (
                     <TableRow
                       key={professional.id}
-                      className="animate-fade-in hover:bg-muted/30 transition-colors"
-                      style={{ animationDelay: `${index * 30}ms` }}
+                      className="hover:bg-muted/30 transition-colors"
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">

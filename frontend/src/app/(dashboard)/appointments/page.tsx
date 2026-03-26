@@ -196,7 +196,7 @@ export default function AppointmentsPage() {
   ]
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <PageHeader title="Agendamentos" description="Gerencie os agendamentos da clinica">
         <Button
           variant="outline"

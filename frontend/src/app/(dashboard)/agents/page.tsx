@@ -332,14 +332,14 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6">
             {/* Header with status and save */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <PageHeader title="Agentes IA" description="Configure o comportamento da sua assistente virtual" />
                 <div className="flex items-center gap-3 shrink-0">
                     {/* Agent status */}
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border/60">
-                        <div className="w-2 h-2 rounded-full bg-success animate-pulse-soft" />
+                        <div className="w-2 h-2 rounded-full bg-success" />
                         <span className="text-xs font-medium text-muted-foreground">Agente ativo</span>
                     </div>
 
@@ -362,7 +362,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
 
             {/* Unsaved changes banner */}
             {hasChanges && (
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning/[0.08] border border-warning/20 text-warning text-sm font-medium animate-fade-in">
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning/[0.08] border border-warning/20 text-warning text-sm font-medium">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     Voce tem alteracoes nao salvas
                 </div>
@@ -511,7 +511,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
 
                             {/* Template Preview */}
                             {previewTemplate !== null && (
-                                <div className="rounded-xl border border-primary/20 bg-primary/[0.02] p-4 space-y-3 animate-fade-in">
+                                <div className="rounded-xl border border-primary/20 bg-primary/[0.02] p-4 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Eye className="h-4 w-4 text-primary" />
@@ -715,7 +715,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                                             <div
                                                 key={index}
                                                 className={cn(
-                                                    "flex items-start gap-3 animate-fade-in",
+                                                    "flex items-start gap-3",
                                                     msg.role === 'user' && 'flex-row-reverse'
                                                 )}
                                             >
@@ -747,7 +747,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                                         ))
                                     )}
                                     {sendingTest && (
-                                        <div className="flex items-start gap-3 animate-fade-in">
+                                        <div className="flex items-start gap-3">
                                             <div className="h-8 w-8 rounded-full bg-muted border border-border/40 flex items-center justify-center">
                                                 <Bot className="h-3.5 w-3.5" />
                                             </div>

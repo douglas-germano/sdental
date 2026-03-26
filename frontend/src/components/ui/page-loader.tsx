@@ -36,7 +36,7 @@ export function PageLoader({ message, className, size = 'default' }: PageLoaderP
     <div className={cn('flex flex-col items-center justify-center gap-3', s.container, className)}>
       <div className={cn('rounded-full border-primary/20 border-t-primary animate-spin', s.spinner)} />
       {message && (
-        <p className={cn('text-muted-foreground animate-fade-in', s.text)}>{message}</p>
+        <p className={cn('text-muted-foreground', s.text)}>{message}</p>
       )}
     </div>
   )
