@@ -58,7 +58,7 @@ export function ConfirmDialog({
         <DialogHeader>
           <div className="flex items-start gap-3">
             <div
-              className={`flex-shrink-0 w-12 h-12 rounded-xl ${iconBgColor} flex items-center justify-center ${iconColor}`}
+              className={`flex-shrink-0 w-11 h-11 rounded-lg ${iconBgColor} flex items-center justify-center ${iconColor}`}
             >
               <Icon className="h-6 w-6" />
             </div>

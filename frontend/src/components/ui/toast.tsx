@@ -74,7 +74,7 @@ function Toaster() {
   const { toasts, removeToast } = context
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2.5 max-w-[420px]">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-[420px]">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
@@ -96,11 +96,11 @@ function ToastItem({
     default: Info,
   }[toast.variant || 'default']
 
-  const variantStyles = {
-    success: 'border-success/20 bg-card',
-    error: 'border-destructive/20 bg-card',
-    warning: 'border-warning/20 bg-card',
-    default: 'border-border/60 bg-card',
+  const accentColor = {
+    success: 'bg-success',
+    error: 'bg-destructive',
+    warning: 'bg-warning',
+    default: 'bg-primary',
   }[toast.variant || 'default']
 
   const iconColor = {
@@ -112,11 +112,9 @@ function ToastItem({
 
   return (
     <div
-      className={cn(
-        'pointer-events-auto flex w-full items-start gap-3 rounded-xl border p-4 shadow-soft-lg',
-        variantStyles
-      )}
+      className="pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 pl-4 shadow-soft-lg animate-in fade-in-0 slide-in-from-bottom-4 duration-200"
     >
+      <span className={cn('absolute left-0 top-0 h-full w-[3px]', accentColor)} aria-hidden="true" />
       <div className={cn('shrink-0 mt-0.5', iconColor)}>
         <Icon className="h-5 w-5" />
       </div>

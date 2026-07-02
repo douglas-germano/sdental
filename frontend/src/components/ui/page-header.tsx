@@ -22,7 +22,7 @@ export function PageHeader({ title, description, children, className }: PageHead
   return (
     <div className={cn('flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4', className)}>
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-[22px] font-semibold tracking-tight text-foreground">
           {title}
         </h1>
         {description && (

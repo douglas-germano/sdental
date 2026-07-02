@@ -16,11 +16,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <div className="relative group">
         <select
           className={cn(
-            'flex h-11 w-full items-center justify-between rounded-xl border bg-background px-4 py-2 pr-10 text-sm ring-offset-background transition-all duration-200',
+            'flex h-10 w-full items-center justify-between rounded-lg border bg-background px-3.5 py-2 pr-10 text-sm ring-offset-background transition-colors duration-150',
             'text-foreground',
             '[&>option[value=""]]:text-muted-foreground',
-            'hover:border-border/80 hover:bg-muted/30',
-            'focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:bg-background',
+            'hover:border-foreground/20',
+            'focus:outline-none focus:ring-2 focus:ring-ring/25 focus:border-primary',
             'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-input',
             'appearance-none cursor-pointer',
             error ? 'border-destructive focus:ring-destructive/20' : 'border-input',
@@ -32,7 +32,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           {children}
         </select>
         <ChevronDown className={cn(
-          'absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-all duration-200',
+          'absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-transform duration-150',
           'text-muted-foreground group-hover:text-foreground',
           'group-focus-within:text-primary group-focus-within:rotate-180'
         )} />

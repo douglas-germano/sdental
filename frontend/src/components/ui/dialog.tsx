@@ -44,7 +44,7 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150"
         onClick={() => onOpenChange?.(false)}
         aria-hidden="true"
       />
@@ -76,10 +76,10 @@ const DialogContent = React.forwardRef<
     ref={ref}
     className={cn(
       'relative w-full max-w-lg mx-auto',
-      'bg-card border border-border/60 shadow-soft-xl rounded-2xl',
+      'bg-card border border-border shadow-soft-xl rounded-xl',
       'p-6',
       'max-h-[85vh] overflow-y-auto',
-      'animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300',
+      'animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-200',
       'scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
       className
     )}
@@ -111,7 +111,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-5 mt-2 border-t border-border/60',
+      'flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-5 mt-2 border-t border-border',
       className
     )}
     {...props}
@@ -154,10 +154,10 @@ const DialogClose = React.forwardRef<
     ref={ref}
     className={cn(
       'absolute right-4 top-4 z-10',
-      'rounded-lg p-1.5',
+      'rounded-md p-1.5',
       'text-muted-foreground hover:text-foreground',
       'hover:bg-muted',
-      'transition-all duration-150',
+      'transition-colors duration-150',
       'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
       'disabled:pointer-events-none',
       className

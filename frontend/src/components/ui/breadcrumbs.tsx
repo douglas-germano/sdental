@@ -37,13 +37,13 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
         className="text-muted-foreground hover:text-foreground transition-colors"
         aria-label="Início"
       >
-        <Home className="h-4 w-4" />
+        <Home className="h-3.5 w-3.5" />
       </Link>
       {items.map((item, index) => {
         const isLast = index === items.length - 1
         return (
           <React.Fragment key={index}>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
             {item.href && !isLast ? (
               <Link
                 href={item.href}

@@ -214,7 +214,7 @@ export function NewAppointmentModal({
               Paciente
             </Label>
             {loadingPatients ? (
-              <div className="flex items-center gap-3 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground h-10 px-3.5 bg-muted/30 rounded-lg border border-input">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Carregando pacientes...
               </div>
@@ -274,7 +274,7 @@ export function NewAppointmentModal({
                 Profissional
               </Label>
               {loadingProfessionals ? (
-                <div className="flex items-center gap-3 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground h-10 px-3.5 bg-muted/30 rounded-lg border border-input">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Carregando profissionais...
                 </div>
@@ -322,17 +322,17 @@ export function NewAppointmentModal({
                 Horario
               </Label>
               {loadingSlots ? (
-                <div className="flex items-center gap-3 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground h-10 px-3.5 bg-muted/30 rounded-lg border border-input">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Verificando...
                 </div>
               ) : !selectedDate || !selectedService ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground h-11 px-4 bg-muted/30 rounded-xl border border-input">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground h-10 px-3.5 bg-muted/30 rounded-lg border border-input">
                   <AlertCircle className="h-4 w-4" />
                   Selecione data e servico
                 </div>
               ) : slots.length === 0 ? (
-                <div className="flex items-center gap-2 text-sm text-amber-600 h-11 px-4 bg-amber-50 rounded-xl border border-amber-200">
+                <div className="flex items-center gap-2 text-sm text-amber-600 h-10 px-3.5 bg-amber-50 rounded-lg border border-amber-200">
                   <AlertCircle className="h-4 w-4" />
                   Sem horarios disponiveis
                 </div>
