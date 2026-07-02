@@ -38,8 +38,8 @@ export function EmptyState({
       </div>
 
       <div className="relative">
-        <div className="h-16 w-16 rounded-2xl bg-muted/50 border border-border/40 flex items-center justify-center mb-5 mx-auto shadow-soft">
-          <Icon className="h-7 w-7 text-muted-foreground/50" />
+        <div className="h-14 w-14 rounded-xl bg-muted/60 border border-border flex items-center justify-center mb-5 mx-auto">
+          <Icon className="h-6 w-6 text-muted-foreground/60" />
         </div>
         <h3 className="font-semibold text-foreground mb-1.5">
           {title}

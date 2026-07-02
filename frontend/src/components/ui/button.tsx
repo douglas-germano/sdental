@@ -6,37 +6,37 @@ import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97]',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-soft hover:bg-primary/90 hover:shadow-soft-md',
+          'bg-primary text-primary-foreground shadow-soft hover:bg-primary/90',
         destructive:
-          'bg-destructive text-destructive-foreground shadow-soft hover:bg-destructive/90 hover:shadow-soft-md',
+          'bg-destructive text-destructive-foreground shadow-soft hover:bg-destructive/90',
         outline:
-          'border border-border bg-background shadow-soft hover:bg-muted/50 hover:border-border/80 text-foreground',
+          'border border-border bg-background hover:bg-muted/60 hover:border-foreground/20 text-foreground',
         secondary:
-          'bg-secondary text-secondary-foreground shadow-soft hover:bg-secondary/70',
+          'bg-secondary text-secondary-foreground hover:bg-secondary/70',
         ghost:
           'hover:bg-muted text-muted-foreground hover:text-foreground',
         link:
           'text-primary underline-offset-4 hover:underline',
         gradient:
-          'bg-gradient-primary text-white shadow-soft hover:shadow-glow hover:brightness-110',
+          'bg-gradient-primary text-white shadow-soft hover:shadow-glow',
         success:
-          'bg-success text-success-foreground shadow-soft hover:bg-success/90 hover:shadow-soft-md',
+          'bg-success text-success-foreground shadow-soft hover:bg-success/90',
         warning:
-          'bg-warning text-warning-foreground shadow-soft hover:bg-warning/90 hover:shadow-soft-md',
+          'bg-warning text-warning-foreground shadow-soft hover:bg-warning/90',
       },
       size: {
         default: 'h-10 px-4 py-2',
         sm: 'h-9 rounded-md px-3 text-xs',
-        lg: 'h-12 rounded-xl px-6 text-base',
-        xl: 'h-14 rounded-xl px-8 text-lg',
+        lg: 'h-11 px-6 text-base',
+        xl: 'h-14 px-8 text-lg',
         icon: 'h-10 w-10',
         'icon-sm': 'h-8 w-8 rounded-md',
-        'icon-lg': 'h-12 w-12',
+        'icon-lg': 'h-11 w-11',
       },
     },
     defaultVariants: {
