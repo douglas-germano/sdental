@@ -253,9 +253,9 @@ export default function SettingsPage() {
       )}
 
       {/* Main Layout: Sidebar + Content */}
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar Navigation */}
-        <div className="w-64 flex-shrink-0">
+        <div className="w-full lg:w-64 flex-shrink-0">
           <nav className="space-y-1">
             {sections.map((section) => {
               const Icon = section.icon
@@ -279,7 +279,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Content Area */}
-        <Card className="flex-1 border-border/60">
+        <Card className="flex-1 min-w-0 border-border/60">
           <CardContent className="p-6">
             {/* Profile Section */}
             {activeSection === 'profile' && (
