@@ -48,8 +48,9 @@ class Config:
     BASE_URL = os.getenv('BASE_URL')
 
     # Frontend URL, used to build links in transactional emails (password
-    # reset, etc). Falls back to BASE_URL if not set separately.
-    FRONTEND_URL = os.getenv('FRONTEND_URL') or os.getenv('BASE_URL') or 'http://localhost:3000'
+    # reset, etc). Falls back to BASE_URL if not set separately. Stripped of
+    # any trailing slash so callers can safely do f"{FRONTEND_URL}/path".
+    FRONTEND_URL = (os.getenv('FRONTEND_URL') or os.getenv('BASE_URL') or 'http://localhost:3000').rstrip('/')
 
     # Brevo (transactional email)
     BREVO_API_KEY = os.getenv('BREVO_API_KEY')
