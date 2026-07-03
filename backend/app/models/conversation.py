@@ -41,6 +41,31 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     # Relationships
     bot_transfers = db.relationship('BotTransfer', backref='conversation', lazy='dynamic')
 
+    def _lock_row(self) -> None:
+        """
+        Lock this conversation's row (SELECT ... FOR UPDATE) and sync
+        `self.messages` to the latest committed value.
+
+        The `messages` JSONB column is mutated via read-modify-write
+        (`self.messages = self.messages + [...]`), which races if two
+        requests for the same conversation run concurrently (the gthread
+        worker allows this). Locking the row first forces the second
+        writer to wait for the first to commit and see its changes,
+        instead of silently overwriting them.
+
+        Uses the raw table (not the ORM entity) because `Conversation.patient`
+        is a `lazy='joined'` backref, and Postgres refuses `FOR UPDATE` on the
+        nullable side of an outer join - going through `Session.refresh()`
+        would pull that join in and fail.
+        """
+        row = db.session.execute(
+            db.select(self.__table__.c.messages)
+            .where(self.__table__.c.id == self.id)
+            .with_for_update()
+        ).first()
+        if row is not None:
+            self.messages = row.messages
+
     def add_message(
         self,
         role: str,
@@ -61,6 +86,8 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
         match later delivery/read ACK webhooks - it may be unknown at creation
         time (e.g. the bot composes a reply before it is actually sent).
         """
+        self._lock_row()
+
         if self.messages is None:
             self.messages = []
 
@@ -69,7 +96,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             'evolution_id': evolution_id,
             'role': role,
             'content': content,
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
             'status': status,
             'type': message_type
         }
@@ -92,6 +119,8 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
 
     def update_message_status(self, message_id: str, status: str) -> dict:
         """Update the delivery/read status of a message, matched by its id or evolution_id."""
+        self._lock_row()
+
         if not self.messages:
             return None
 
@@ -114,7 +143,12 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
         message (optionally filtered by role). Used when a message is recorded
         before it's actually sent, so later ACK webhooks can match it.
         """
-        if not self.messages or not evolution_id:
+        if not evolution_id:
+            return None
+
+        self._lock_row()
+
+        if not self.messages:
             return None
 
         new_messages = list(self.messages)
@@ -138,7 +172,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             'patient': self.patient.to_dict() if self.patient else None,
             'phone_number': self.phone_number,
             'status': self.status,
-            'last_message_at': self.last_message_at.isoformat() if self.last_message_at else None,
+            'last_message_at': self.last_message_at.isoformat() + 'Z' if self.last_message_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None

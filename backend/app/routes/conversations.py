@@ -315,7 +315,7 @@ def send_manual_message(conversation_id, current_clinic):
     if isinstance(result, dict) and result.get('error'):
         return jsonify({'error': f"Failed to send message: {result['error']}"}), 502
 
-    evolution_message_id = (result or {}).get('key', {}).get('id')
+    evolution_message_id = ((result or {}).get('key') or {}).get('id')
 
     conversation_service = ConversationService(current_clinic)
     conversation_service.add_message(
@@ -385,7 +385,7 @@ def send_media_message(conversation_id, current_clinic):
     if isinstance(result, dict) and result.get('error'):
         return jsonify({'error': f"Failed to send media: {result['error']}"}), 502
 
-    evolution_message_id = (result or {}).get('key', {}).get('id')
+    evolution_message_id = ((result or {}).get('key') or {}).get('id')
 
     conversation_service = ConversationService(current_clinic)
     message = conversation_service.add_message(

@@ -71,10 +71,10 @@ def test_agent():
         return jsonify({'error': 'Message is required'}), 400
 
     try:
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation_service import ConversationService, TEST_PHONE_PREFIX
         from app.services.claude_service import ClaudeService
 
-        test_phone = f"TEST-{str(clinic.id)[:8]}"
+        test_phone = f"{TEST_PHONE_PREFIX}{str(clinic.id)[:8]}"
 
         conversation_service = ConversationService(clinic)
         conversation = conversation_service.get_or_create_conversation(test_phone)

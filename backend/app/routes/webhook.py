@@ -31,6 +31,12 @@ MEDIA_MESSAGE_KEYS = {
     'stickerMessage': 'image',
 }
 
+MEDIA_PLACEHOLDER_TEXT = {
+    'image': 'Imagem enviada',
+    'audio': 'Audio enviado',
+    'document': 'Documento enviado',
+}
+
 
 def _find_clinic_by_instance(instance_name: str):
     return Clinic.query.filter_by(
@@ -45,6 +51,10 @@ def _extract_media(message_obj: dict):
         media = message_obj.get(key)
         if not media:
             continue
+        # documentWithCaptionMessage nests the real document payload one
+        # level deeper: {"message": {"documentMessage": {...}}}
+        if key == 'documentWithCaptionMessage':
+            media = media.get('message', {}).get('documentMessage', media)
         url = media.get('url') or media.get('directPath')
         mimetype = media.get('mimetype') or media.get('mimeType')
         caption = media.get('caption', '')
@@ -139,22 +149,28 @@ def evolution_webhook():
             media_type, media_url, mimetype, caption = media
             logger.info('Received %s message from %s', media_type, phone)
 
+            # Transfer first so the new_message event we publish next carries
+            # the already-updated status - otherwise the open chat UI shows a
+            # stale "active" status until the page is reloaded.
+            if conversation.status != ConversationStatus.TRANSFERRED_TO_HUMAN:
+                conversation_service.transfer_to_human(
+                    conversation,
+                    f'Paciente enviou {media_type} - requer atendimento humano'
+                )
+
+            # Content is never left empty: an empty string here would later be
+            # sent to the Claude API as an empty text block and get rejected.
+            content = caption or MEDIA_PLACEHOLDER_TEXT.get(media_type, 'Midia enviada')
             conversation_service.add_message(
                 conversation,
                 'user',
-                caption or '',
+                content,
                 evolution_id=evolution_message_id,
                 message_type=media_type,
                 media_url=media_url,
                 media_mimetype=mimetype,
                 caption=caption or None
             )
-
-            if conversation.status != ConversationStatus.TRANSFERRED_TO_HUMAN:
-                conversation_service.transfer_to_human(
-                    conversation,
-                    f'Paciente enviou {media_type} - requer atendimento humano'
-                )
 
             return jsonify({'status': 'processed', 'reason': 'Media message routed to human'})
 
@@ -188,7 +204,7 @@ def evolution_webhook():
             if 'error' in send_result:
                 logger.error('Failed to send response: %s', send_result['error'])
             else:
-                reply_evolution_id = send_result.get('key', {}).get('id')
+                reply_evolution_id = (send_result.get('key') or {}).get('id')
                 if reply_evolution_id:
                     conversation_service.attach_evolution_id_to_last_reply(conversation, reply_evolution_id)
 
