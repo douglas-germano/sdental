@@ -10,6 +10,11 @@ from app.utils.validators import normalize_phone, validate_phone
 
 bp = Blueprint('patients', __name__, url_prefix='/api/patients')
 
+ADDRESS_FIELDS = [
+    'address_zip_code', 'address_street', 'address_number',
+    'address_complement', 'address_neighborhood', 'address_city', 'address_state'
+]
+
 
 @bp.route('', methods=['GET'])
 @clinic_required
@@ -98,6 +103,9 @@ def create_patient(current_clinic):
                 existing.email = data['email']
             if data.get('notes'):
                 existing.notes = data['notes']
+            for field in ADDRESS_FIELDS:
+                if data.get(field):
+                    setattr(existing, field, data[field])
 
             # Update pipeline stage if provided
             pipeline_stage_id = data.get('pipeline_stage_id')
@@ -159,7 +167,8 @@ def create_patient(current_clinic):
         phone=phone,
         email=data.get('email'),
         notes=data.get('notes'),
-        pipeline_stage_id=pipeline_stage_id
+        pipeline_stage_id=pipeline_stage_id,
+        **{field: data.get(field) for field in ADDRESS_FIELDS}
     )
 
     db.session.add(patient)
@@ -208,6 +217,10 @@ def update_patient(patient_id, current_clinic):
 
     if 'pipeline_stage_id' in data:
         patient.pipeline_stage_id = data['pipeline_stage_id']
+
+    for field in ADDRESS_FIELDS:
+        if field in data:
+            setattr(patient, field, data[field])
 
     db.session.commit()
 

@@ -25,6 +25,15 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
     data_consent_at = db.Column(db.DateTime, nullable=True)
     data_consent_source = db.Column(db.String(30), nullable=True)  # 'public_booking' | 'whatsapp' | 'manual'
 
+    # Address
+    address_zip_code = db.Column(db.String(9), nullable=True)
+    address_street = db.Column(db.String(255), nullable=True)
+    address_number = db.Column(db.String(20), nullable=True)
+    address_complement = db.Column(db.String(255), nullable=True)
+    address_neighborhood = db.Column(db.String(100), nullable=True)
+    address_city = db.Column(db.String(100), nullable=True)
+    address_state = db.Column(db.String(2), nullable=True)
+
     # Relationships
     appointments = db.relationship('Appointment', backref='patient', lazy='dynamic', cascade='all, delete-orphan')
     conversations = db.relationship('Conversation', backref=db.backref('patient', lazy='joined'), lazy='dynamic')
@@ -59,6 +68,11 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
                 raise ValueError(f"Invalid email format: {email}")
         return email
 
+    @validates('address_state')
+    def validate_address_state(self, key, state):
+        """Normalize the state (UF) to uppercase, e.g. 'sp' -> 'SP'."""
+        return state.upper() if state else state
+
     def set_data_consent(self, source: str) -> None:
         """Record LGPD consent for processing this patient's personal data."""
         self.data_consent_at = datetime.utcnow()
@@ -78,6 +92,13 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
         self.notes = None
         self.data_consent_at = None
         self.data_consent_source = None
+        self.address_zip_code = None
+        self.address_street = None
+        self.address_number = None
+        self.address_complement = None
+        self.address_neighborhood = None
+        self.address_city = None
+        self.address_state = None
         self.soft_delete()
 
     def to_dict(self) -> dict:
@@ -94,7 +115,14 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
             'pipeline_stage_id': str(self.pipeline_stage_id) if self.pipeline_stage_id else None,
             'pipeline_stage': self.pipeline_stage.to_dict() if self.pipeline_stage else None,
             'data_consent_at': self.data_consent_at.isoformat() + 'Z' if self.data_consent_at else None,
-            'data_consent_source': self.data_consent_source
+            'data_consent_source': self.data_consent_source,
+            'address_zip_code': self.address_zip_code,
+            'address_street': self.address_street,
+            'address_number': self.address_number,
+            'address_complement': self.address_complement,
+            'address_neighborhood': self.address_neighborhood,
+            'address_city': self.address_city,
+            'address_state': self.address_state
         }
 
     def __repr__(self) -> str:

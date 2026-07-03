@@ -29,13 +29,24 @@ import {
   getStatusColor,
   getStatusLabel,
 } from '@/lib/utils'
-import { User, Phone, Mail, Calendar, FileText, Edit2, Save, X, ShieldAlert, DownloadCloud, Loader2 } from 'lucide-react'
+import { lookupCep, formatCepInput } from '@/lib/cep'
+import { User, Phone, Mail, Calendar, FileText, Edit2, Save, X, ShieldAlert, DownloadCloud, Loader2, MapPin } from 'lucide-react'
 
 interface PatientDetailModalProps {
   patient: Patient | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onUpdate: () => void
+}
+
+const EMPTY_ADDRESS = {
+  address_zip_code: '',
+  address_street: '',
+  address_number: '',
+  address_complement: '',
+  address_neighborhood: '',
+  address_city: '',
+  address_state: '',
 }
 
 export function PatientDetailModal({
@@ -50,11 +61,13 @@ export function PatientDetailModal({
   const [isEditing, setIsEditing] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [erasing, setErasing] = useState(false)
+  const [lookingUpCep, setLookingUpCep] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
     notes: '',
+    ...EMPTY_ADDRESS,
   })
 
   useEffect(() => {
@@ -64,6 +77,13 @@ export function PatientDetailModal({
         phone: formatPhone(patient.phone),
         email: patient.email || '',
         notes: patient.notes || '',
+        address_zip_code: patient.address_zip_code || '',
+        address_street: patient.address_street || '',
+        address_number: patient.address_number || '',
+        address_complement: patient.address_complement || '',
+        address_neighborhood: patient.address_neighborhood || '',
+        address_city: patient.address_city || '',
+        address_state: patient.address_state || '',
       })
       setIsEditing(false)
     }
@@ -74,6 +94,26 @@ export function PatientDetailModal({
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneInput(e.target.value)
     setFormData({ ...formData, phone: formatted })
+  }
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, address_zip_code: formatCepInput(e.target.value) })
+  }
+
+  const handleCepBlur = async () => {
+    if (formData.address_zip_code.replace(/\D/g, '').length !== 8) return
+    setLookingUpCep(true)
+    const address = await lookupCep(formData.address_zip_code)
+    setLookingUpCep(false)
+    if (address) {
+      setFormData((prev) => ({
+        ...prev,
+        address_street: address.street || prev.address_street,
+        address_neighborhood: address.neighborhood || prev.address_neighborhood,
+        address_city: address.city || prev.address_city,
+        address_state: address.state || prev.address_state,
+      }))
+    }
   }
 
   const handleSave = async () => {
@@ -103,6 +143,13 @@ export function PatientDetailModal({
         phone: normalizePhoneForApi(formData.phone),
         email: formData.email.trim() || undefined,
         notes: formData.notes.trim() || undefined,
+        address_zip_code: formData.address_zip_code.trim(),
+        address_street: formData.address_street.trim(),
+        address_number: formData.address_number.trim(),
+        address_complement: formData.address_complement.trim(),
+        address_neighborhood: formData.address_neighborhood.trim(),
+        address_city: formData.address_city.trim(),
+        address_state: formData.address_state.trim(),
       })
 
       toast({
@@ -207,7 +254,7 @@ export function PatientDetailModal({
         </DialogHeader>
 
         {isEditing ? (
-          <div className="space-y-5">
+          <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
             <div className="space-y-2">
               <Label htmlFor="edit-name" required>Nome completo</Label>
               <div className="relative">
@@ -262,6 +309,91 @@ export function PatientDetailModal({
               />
             </div>
 
+            <div className="space-y-3 pt-1">
+              <Label className="flex items-center gap-2 text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                Endereço
+              </Label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-cep" className="text-xs text-muted-foreground">CEP</Label>
+                  <div className="relative">
+                    <Input
+                      id="edit-cep"
+                      placeholder="00000-000"
+                      value={formData.address_zip_code}
+                      onChange={handleCepChange}
+                      onBlur={handleCepBlur}
+                    />
+                    {lookingUpCep && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-address-number" className="text-xs text-muted-foreground">Número</Label>
+                  <Input
+                    id="edit-address-number"
+                    placeholder="123"
+                    value={formData.address_number}
+                    onChange={(e) => setFormData({ ...formData, address_number: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-address-street" className="text-xs text-muted-foreground">Rua / Logradouro</Label>
+                <Input
+                  id="edit-address-street"
+                  placeholder="Rua Exemplo"
+                  value={formData.address_street}
+                  onChange={(e) => setFormData({ ...formData, address_street: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-address-complement" className="text-xs text-muted-foreground">Complemento</Label>
+                <Input
+                  id="edit-address-complement"
+                  placeholder="Apto, bloco, referência..."
+                  value={formData.address_complement}
+                  onChange={(e) => setFormData({ ...formData, address_complement: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-[1fr_1fr_80px] gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-address-neighborhood" className="text-xs text-muted-foreground">Bairro</Label>
+                  <Input
+                    id="edit-address-neighborhood"
+                    placeholder="Bairro"
+                    value={formData.address_neighborhood}
+                    onChange={(e) => setFormData({ ...formData, address_neighborhood: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-address-city" className="text-xs text-muted-foreground">Cidade</Label>
+                  <Input
+                    id="edit-address-city"
+                    placeholder="Cidade"
+                    value={formData.address_city}
+                    onChange={(e) => setFormData({ ...formData, address_city: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-address-state" className="text-xs text-muted-foreground">UF</Label>
+                  <Input
+                    id="edit-address-state"
+                    placeholder="SP"
+                    maxLength={2}
+                    value={formData.address_state}
+                    onChange={(e) => setFormData({ ...formData, address_state: e.target.value.toUpperCase() })}
+                  />
+                </div>
+              </div>
+            </div>
+
             <DialogFooter>
               <Button
                 variant="outline"
@@ -300,6 +432,29 @@ export function PatientDetailModal({
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
                       <p className="font-medium">{patient.email}</p>
+                    </div>
+                  </div>
+                )}
+                {(patient.address_street || patient.address_city) && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Endereço</p>
+                      <p className="font-medium">
+                        {[
+                          patient.address_street && patient.address_number
+                            ? `${patient.address_street}, ${patient.address_number}`
+                            : patient.address_street,
+                          patient.address_complement,
+                          patient.address_neighborhood,
+                          patient.address_city && patient.address_state
+                            ? `${patient.address_city}/${patient.address_state}`
+                            : patient.address_city,
+                          patient.address_zip_code,
+                        ].filter(Boolean).join(' - ')}
+                      </p>
                     </div>
                   </div>
                 )}

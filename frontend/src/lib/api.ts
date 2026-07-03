@@ -106,6 +106,16 @@ export const clinicsApi = {
     api.put('/clinics/services', { services })
 }
 
+interface PatientAddressFields {
+  address_zip_code?: string
+  address_street?: string
+  address_number?: string
+  address_complement?: string
+  address_neighborhood?: string
+  address_city?: string
+  address_state?: string
+}
+
 // Patients API
 export const patientsApi = {
   list: (params?: { page?: number; per_page?: number; search?: string }) =>
@@ -113,10 +123,10 @@ export const patientsApi = {
 
   get: (id: string) => api.get(`/patients/${id}`),
 
-  create: (data: { name: string; phone: string; email?: string; notes?: string; pipeline_stage_id?: string }) =>
+  create: (data: { name: string; phone: string; email?: string; notes?: string; pipeline_stage_id?: string } & PatientAddressFields) =>
     api.post('/patients', data),
 
-  update: (id: string, data: { name?: string; phone?: string; email?: string; notes?: string }) =>
+  update: (id: string, data: { name?: string; phone?: string; email?: string; notes?: string } & PatientAddressFields) =>
     api.put(`/patients/${id}`, data),
 
   delete: (id: string) => api.delete(`/patients/${id}`),
