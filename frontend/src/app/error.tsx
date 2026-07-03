@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { AlertTriangle } from 'lucide-react'
+import { Warning as AlertTriangle } from '@phosphor-icons/react'
 import { Button, buttonVariants } from '@/components/ui/button'
 
 export default function GlobalError({

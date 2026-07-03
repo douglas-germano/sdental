@@ -30,7 +30,7 @@ import {
   getStatusLabel,
 } from '@/lib/utils'
 import { lookupCep, formatCepInput } from '@/lib/cep'
-import { User, Phone, Mail, Calendar, FileText, Edit2, Save, X, ShieldAlert, DownloadCloud, Loader2, MapPin } from 'lucide-react'
+import { User, Phone, EnvelopeSimple as Mail, CalendarBlank as Calendar, FileText, PencilSimple as Edit2, FloppyDisk as Save, X, ShieldWarning as ShieldAlert, CloudArrowDown as DownloadCloud, CircleNotch as Loader2, MapPin } from '@phosphor-icons/react'
 
 interface PatientDetailModalProps {
   patient: Patient | null

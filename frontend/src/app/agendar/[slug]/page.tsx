@@ -9,19 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import {
-    Calendar,
-    Clock,
-    User,
-    Phone,
-    Mail,
-    FileText,
-    CheckCircle,
-    ArrowLeft,
-    ArrowRight,
-    Loader2,
-    Users
-} from 'lucide-react'
+import { CalendarBlank as Calendar, Clock, User, Phone, EnvelopeSimple as Mail, FileText, CheckCircle, ArrowLeft, ArrowRight, CircleNotch as Loader2, Users } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageLoader } from '@/components/ui/page-loader'
 

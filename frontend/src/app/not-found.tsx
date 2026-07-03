@@ -1,5 +1,7 @@
+'use client'
+
 import Link from 'next/link'
-import { FileQuestion } from 'lucide-react'
+import { Question as FileQuestion } from '@phosphor-icons/react'
 import { buttonVariants } from '@/components/ui/button'
 
 export default function NotFound() {

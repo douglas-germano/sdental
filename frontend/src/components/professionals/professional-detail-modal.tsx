@@ -19,7 +19,7 @@ import { useToast } from '@/components/ui/toast'
 import { professionalsApi } from '@/lib/api'
 import { Professional } from '@/types'
 import { formatPhone, formatDate } from '@/lib/utils'
-import { User, Phone, Mail, Edit2, Save, X, Stethoscope, Palette, Star } from 'lucide-react'
+import { User, Phone, EnvelopeSimple as Mail, PencilSimple as Edit2, FloppyDisk as Save, X, Stethoscope, Palette, Star } from '@phosphor-icons/react'
 
 interface ProfessionalDetailModalProps {
   professional: Professional | null

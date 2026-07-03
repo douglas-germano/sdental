@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, Loader2, AlertCircle, WifiOff } from 'lucide-react'
+import { Check, CircleNotch as Loader2, WarningCircle as AlertCircle, WifiSlash as WifiOff } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 

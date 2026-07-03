@@ -3,10 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { clinicsApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import {
-  Wifi, Smartphone, QrCode, CheckCircle2, RefreshCw, Loader2,
-  MessageCircle, ShieldCheck, ChevronRight
-} from 'lucide-react'
+import { WifiHigh as Wifi, DeviceMobile as Smartphone, QrCode, CheckCircle as CheckCircle2, ArrowsClockwise as RefreshCw, CircleNotch as Loader2, ChatCircle as MessageCircle, ShieldCheck, CaretRight as ChevronRight } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 type WizardStep = 'intro' | 'connecting' | 'qrcode' | 'connected'

@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, Info, AlertCircle } from 'lucide-react'
+import { Warning as AlertTriangle, Info, WarningCircle as AlertCircle } from '@phosphor-icons/react'
 
 interface ConfirmDialogProps {
   open: boolean

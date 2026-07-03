@@ -15,7 +15,7 @@ import {
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 import { formatPhone, formatDate } from '@/lib/utils'
-import { Users, Search, Eye, Trash2, Plus, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { Users, MagnifyingGlass as Search, Eye, Trash as Trash2, Plus, CaretLeft as ChevronLeft, CaretRight as ChevronRight, DownloadSimple as Download } from '@phosphor-icons/react'
 import { NewPatientModal } from '@/components/patients/new-patient-modal'
 import { PatientDetailModal } from '@/components/patients/patient-detail-modal'
 import { useToast } from '@/components/ui/toast'

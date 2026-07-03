@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
 import { formatPhoneInput, normalizePhoneForApi, validatePhoneForApi } from '@/lib/utils'
 import { lookupCep, formatCepInput } from '@/lib/cep'
-import { User, Phone, Mail, FileText, UserPlus, MapPin, Loader2 } from 'lucide-react'
+import { User, Phone, EnvelopeSimple as Mail, FileText, UserPlus, MapPin, CircleNotch as Loader2 } from '@phosphor-icons/react'
 
 const EMPTY_ADDRESS = {
   address_zip_code: '',

@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { analyticsApi } from '@/lib/api'
-import { Calendar } from 'lucide-react'
+import { CalendarBlank as Calendar } from '@phosphor-icons/react'
 
 interface ChartData {
   date: string

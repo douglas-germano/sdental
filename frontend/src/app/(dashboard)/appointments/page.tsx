@@ -26,7 +26,7 @@ import {
 import { appointmentsApi, professionalsApi } from '@/lib/api'
 import { Appointment, Professional } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { Calendar, Filter, X, Check, MoreVertical, Plus, FileText, Ban, Eye, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react'
+import { CalendarBlank as Calendar, Funnel as Filter, X, Check, DotsThreeVertical as MoreVertical, Plus, FileText, Prohibit as Ban, Eye, CaretLeft as ChevronLeft, CaretRight as ChevronRight, CaretDown as ChevronDown, CaretUp as ChevronUp } from '@phosphor-icons/react'
 import { NewAppointmentModal } from '@/components/appointments/new-appointment-modal'
 import { AppointmentDetailModal } from '@/components/appointments/appointment-detail-modal'
 import { useToast } from '@/components/ui/toast'

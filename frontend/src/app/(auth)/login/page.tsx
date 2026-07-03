@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Lock, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { EnvelopeSimple as Mail, Lock, Sparkle as Sparkles, ArrowRight, CheckCircle as CheckCircle2 } from '@phosphor-icons/react'
 
 export default function LoginPage() {
   const { login } = useAuth()

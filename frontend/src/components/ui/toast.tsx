@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react'
+import { X, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Info } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 export interface Toast {

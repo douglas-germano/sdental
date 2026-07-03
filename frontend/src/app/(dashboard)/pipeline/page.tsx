@@ -7,7 +7,7 @@ import { AddPatientModal } from '@/components/pipeline/add-patient-modal'
 import { LinkPatientModal } from '@/components/pipeline/link-patient-modal'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
-import { Columns, Settings, UserPlus, Link2 } from 'lucide-react'
+import { Columns, Gear as Settings, UserPlus, LinkSimple as Link2 } from '@phosphor-icons/react'
 import { pipelineApi } from '@/lib/api'
 
 import { PipelineStage } from '@/types'

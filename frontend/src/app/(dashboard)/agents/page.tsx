@@ -12,11 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/toast'
 import { agentsApi } from '@/lib/api'
-import {
-    Bot, Save, Sparkles, MessageSquare, Send, Loader2, User,
-    Zap, Brain, AlertCircle, RotateCcw, Eye, Copy, Check,
-    Info, Thermometer, ChevronRight
-} from 'lucide-react'
+import { Robot as Bot, FloppyDisk as Save, Sparkle as Sparkles, Chat as MessageSquare, PaperPlaneTilt as Send, CircleNotch as Loader2, User, Lightning as Zap, Brain, WarningCircle as AlertCircle, ArrowCounterClockwise as RotateCcw, Eye, Copy, Check, Info, Thermometer, CaretRight as ChevronRight } from '@phosphor-icons/react'
 import { PageLoader } from '@/components/ui/page-loader'
 import { PageHeader } from '@/components/ui/page-header'
 import { cn } from '@/lib/utils'

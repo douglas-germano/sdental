@@ -6,21 +6,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/button'
-import {
-  LayoutDashboard,
-  Calendar,
-  Users,
-  MessageSquare,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Bot,
-  PanelLeftClose,
-  PanelLeft,
-  Stethoscope,
-  Columns
-} from 'lucide-react'
+import { SquaresFour as LayoutDashboard, CalendarBlank as Calendar, Users, Chat as MessageSquare, Gear as Settings, SignOut as LogOut, List as Menu, X, Robot as Bot, CaretLineLeft as PanelLeftClose, CaretLineRight as PanelLeft, Stethoscope, Columns } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -158,6 +144,25 @@ export default function DashboardLayout({
             </button>
           )}
 
+          {/* Clinic identity */}
+          <div className={cn('px-3 pt-3', sidebarCollapsed && 'lg:px-2')}>
+            <div className={cn(
+              'flex items-center gap-2.5 rounded-xl bg-muted/40 border border-border/40 p-2.5',
+              sidebarCollapsed && 'lg:justify-center lg:p-1.5'
+            )}>
+              <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center text-white text-xs font-semibold shrink-0">
+                {clinic.name.charAt(0).toUpperCase()}
+              </div>
+              <div className={cn('min-w-0', sidebarCollapsed && 'lg:hidden')}>
+                <p className="text-xs font-semibold text-foreground truncate">{clinic.name}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
+                  <span className="text-[11px] text-muted-foreground">Sessão ativa</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Navigation */}
           <nav className={cn(
             'flex-1 py-3 space-y-0.5 overflow-y-auto',
@@ -173,19 +178,15 @@ export default function DashboardLayout({
                     'relative flex items-center gap-3 text-[13px] font-medium rounded-lg transition-all duration-150',
                     sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-2' : 'px-3 py-2',
                     isActive
-                      ? 'bg-primary/8 text-primary font-semibold'
+                      ? 'bg-primary text-primary-foreground font-semibold shadow-soft'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   )}
                   onClick={() => setSidebarOpen(false)}
                   title={sidebarCollapsed ? item.name : undefined}
                 >
-                  {/* Active indicator bar */}
-                  {isActive && !sidebarCollapsed && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-r-full" />
-                  )}
                   <item.icon className={cn(
                     'h-[18px] w-[18px] shrink-0 transition-colors',
-                    isActive ? 'text-primary' : 'text-muted-foreground'
+                    isActive ? 'text-primary-foreground' : 'text-muted-foreground'
                   )} />
                   <span className={cn(
                     'transition-all duration-300',
@@ -203,17 +204,6 @@ export default function DashboardLayout({
             'p-3 border-t border-border/40',
             sidebarCollapsed ? 'lg:px-3' : ''
           )}>
-            {/* Clinic status */}
-            <div className={cn(
-              'mb-2 px-1 transition-all duration-300',
-              sidebarCollapsed ? 'lg:hidden' : 'block'
-            )}>
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 rounded-full bg-success" />
-                <span className="text-muted-foreground text-xs font-medium truncate">{clinic.name}</span>
-              </div>
-            </div>
-
             <Button
               variant="ghost"
               size="sm"
