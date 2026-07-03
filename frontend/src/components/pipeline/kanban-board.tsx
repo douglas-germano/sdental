@@ -25,7 +25,7 @@ import { pipelineApi } from '@/lib/api'
 import { KanbanColumn } from './kanban-column'
 import { KanbanCard } from './kanban-card'
 import { useToast } from '@/components/ui/toast'
-import { Loader2 } from 'lucide-react'
+import { CircleNotch as Loader2 } from '@phosphor-icons/react'
 import { PageLoader } from '@/components/ui/page-loader'
 
 import { Patient, PipelineStage } from '@/types'

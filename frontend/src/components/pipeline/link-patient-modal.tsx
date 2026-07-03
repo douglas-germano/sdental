@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi, pipelineApi, conversationsApi } from '@/lib/api'
-import { Loader2, Link2, Search, User, MessageSquare } from 'lucide-react'
+import { CircleNotch as Loader2, LinkSimple as Link2, MagnifyingGlass as Search, User, Chat as MessageSquare } from '@phosphor-icons/react'
 import { cn, normalizePhoneForApi } from '@/lib/utils'
 
 interface Patient {

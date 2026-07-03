@@ -19,17 +19,7 @@ import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
 import { appointmentsApi, patientsApi, professionalsApi } from '@/lib/api'
 import { Patient, AvailabilitySlot, Professional } from '@/types'
-import {
-  Loader2,
-  CalendarPlus,
-  User,
-  Stethoscope,
-  Calendar,
-  Clock,
-  FileText,
-  AlertCircle,
-  Users
-} from 'lucide-react'
+import { CircleNotch as Loader2, CalendarPlus, User, Stethoscope, CalendarBlank as Calendar, Clock, FileText, WarningCircle as AlertCircle, Users } from '@phosphor-icons/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'

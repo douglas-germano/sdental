@@ -1,6 +1,6 @@
 'use client'
 
-import { LucideIcon } from 'lucide-react'
+import type { Icon as LucideIcon } from '@phosphor-icons/react'
 import { Button } from './button'
 import { cn } from '@/lib/utils'
 

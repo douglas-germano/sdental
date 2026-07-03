@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
 import { formatPhoneInput, normalizePhoneForApi, validatePhoneForApi } from '@/lib/utils'
-import { Loader2, UserPlus } from 'lucide-react'
+import { CircleNotch as Loader2, UserPlus } from '@phosphor-icons/react'
 
 interface Stage {
   id: string

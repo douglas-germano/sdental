@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Building2, Mail, Phone, Lock, Sparkles, ArrowRight } from 'lucide-react'
+import { Buildings as Building2, EnvelopeSimple as Mail, Phone, Lock, Sparkle as Sparkles, ArrowRight } from '@phosphor-icons/react'
 
 export default function RegisterPage() {
   const { register: registerUser } = useAuth()

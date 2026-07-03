@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Sparkles, ArrowLeft } from 'lucide-react'
+import { LegalBrandHeader, LegalBackLink } from '@/components/legal/legal-chrome'
 
 export const metadata = {
   title: 'Termos de Uso - SDental',
@@ -9,12 +9,7 @@ export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-6 py-12">
-        <div className="flex items-center gap-2.5 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-lg font-semibold">SDental</span>
-        </div>
+        <LegalBrandHeader />
 
         <h1 className="text-2xl font-bold text-foreground mb-2">Termos de Uso</h1>
         <p className="text-sm text-muted-foreground mb-10">Última atualização: julho de 2026</p>
@@ -104,10 +99,7 @@ export default function TermsOfServicePage() {
           </section>
         </div>
 
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-10">
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Voltar
-        </Link>
+        <LegalBackLink />
       </div>
     </div>
   )

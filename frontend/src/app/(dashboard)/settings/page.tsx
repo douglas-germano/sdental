@@ -10,10 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { clinicsApi } from '@/lib/api'
 import { getDayName } from '@/lib/utils'
-import {
-  Save, Wifi, Clock, Stethoscope, Trash2, Plus, CheckCircle, XCircle,
-  ChevronRight, X, Loader2, User, Building2, Mail, Phone, Link, Copy
-} from 'lucide-react'
+import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'

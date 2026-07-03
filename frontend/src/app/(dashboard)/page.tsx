@@ -8,22 +8,7 @@ import { Button } from '@/components/ui/button'
 import { analyticsApi, appointmentsApi, conversationsApi } from '@/lib/api'
 import { AnalyticsOverview, Appointment, Conversation } from '@/types'
 import { formatDateTime, formatRelativeTime, getStatusColor, getStatusLabel } from '@/lib/utils'
-import {
-  Calendar,
-  Users,
-  MessageSquare,
-  TrendingUp,
-  Clock,
-  AlertCircle,
-  ArrowUpRight,
-  CheckCircle2,
-  XCircle,
-  UserX,
-  UserPlus,
-  RefreshCw,
-  CalendarCheck,
-  Plus
-} from 'lucide-react'
+import { CalendarBlank as Calendar, Users, Chat as MessageSquare, TrendUp as TrendingUp, Clock, WarningCircle as AlertCircle, ArrowUpRight, CheckCircle as CheckCircle2, XCircle, UserMinus as UserX, UserPlus, ArrowsClockwise as RefreshCw, CalendarCheck, Plus } from '@phosphor-icons/react'
 import { AppointmentsChart } from '@/components/charts/appointments-chart'
 import { StatusPieChart } from '@/components/charts/status-pie-chart'
 import { StatsCard } from '@/components/dashboard/stats-card'

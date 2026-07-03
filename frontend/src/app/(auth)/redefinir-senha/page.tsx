@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Lock, Sparkles, ArrowRight, CheckCircle2, ArrowLeft } from 'lucide-react'
+import { Lock, Sparkle as Sparkles, ArrowRight, CheckCircle as CheckCircle2, ArrowLeft } from '@phosphor-icons/react'
 
 function ResetPasswordForm() {
   const router = useRouter()

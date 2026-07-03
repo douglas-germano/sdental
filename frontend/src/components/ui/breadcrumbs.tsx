@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ChevronRight, Home } from 'lucide-react'
+import { CaretRight as ChevronRight, House as Home } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 interface BreadcrumbItem {

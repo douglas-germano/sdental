@@ -11,7 +11,7 @@ import { PageLoader } from '@/components/ui/page-loader'
 import { useConversations, FilterStatus } from './conversations-provider'
 import { Conversation } from '@/types'
 import { formatRelativeTime, formatPhone, cn } from '@/lib/utils'
-import { MessageSquare, RefreshCw, Search, ChevronLeft, ChevronRight, ImageIcon, Mic, FileText } from 'lucide-react'
+import { Chat as MessageSquare, ArrowsClockwise as RefreshCw, MagnifyingGlass as Search, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Image as ImageIcon, Microphone as Mic, FileText } from '@phosphor-icons/react'
 
 const FILTERS: { value: FilterStatus; label: string }[] = [
   { value: 'all', label: 'Todas' },

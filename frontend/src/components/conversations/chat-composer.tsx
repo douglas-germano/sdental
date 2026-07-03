@@ -4,10 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
-import {
-  Send, Paperclip, Mic, Square, X, Image as ImageIcon,
-  FileText, Loader2, Music
-} from 'lucide-react'
+import { PaperPlaneTilt as Send, Paperclip, Microphone as Mic, Square, X, Image as ImageIcon, FileText, CircleNotch as Loader2, MusicNote as Music } from '@phosphor-icons/react'
 
 export interface MediaPayload {
   media_type: 'image' | 'audio' | 'document'

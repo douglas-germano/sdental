@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
 import { professionalsApi } from '@/lib/api'
-import { User, Phone, Mail, Stethoscope, Palette, UserPlus } from 'lucide-react'
+import { User, Phone, EnvelopeSimple as Mail, Stethoscope, Palette, UserPlus } from '@phosphor-icons/react'
 
 interface NewProfessionalModalProps {
   open: boolean

@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card, CardContent } from '@/components/ui/card'
 import { Patient } from '@/types'
-import { Phone, Clock } from 'lucide-react'
+import { Phone, Clock } from '@phosphor-icons/react'
 import { formatPhone, formatRelativeTime } from '@/lib/utils'
 
 interface Props {

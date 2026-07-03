@@ -18,19 +18,7 @@ import { useToast } from '@/components/ui/toast'
 import { appointmentsApi } from '@/lib/api'
 import { Appointment } from '@/types'
 import { formatDateTime, formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import {
-  User,
-  Calendar,
-  Clock,
-  FileText,
-  Phone,
-  Mail,
-  CheckCircle,
-  Edit2,
-  Save,
-  X,
-  Stethoscope
-} from 'lucide-react'
+import { User, CalendarBlank as Calendar, Clock, FileText, Phone, EnvelopeSimple as Mail, CheckCircle, PencilSimple as Edit2, FloppyDisk as Save, X, Stethoscope } from '@phosphor-icons/react'
 
 interface AppointmentDetailModalProps {
   appointment: Appointment | null

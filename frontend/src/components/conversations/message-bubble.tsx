@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Message } from '@/types'
 import { cn } from '@/lib/utils'
-import { Bot, User, Check, CheckCheck, Clock, AlertTriangle, FileText, Download } from 'lucide-react'
+import { Robot as Bot, User, Check, Checks as CheckCheck, Clock, Warning as AlertTriangle, FileText, DownloadSimple as Download } from '@phosphor-icons/react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 
 function MessageStatusTicks({ status }: { status?: string }) {

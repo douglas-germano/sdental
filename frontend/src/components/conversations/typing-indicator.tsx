@@ -1,6 +1,6 @@
 'use client'
 
-import { User } from 'lucide-react'
+import { User } from '@phosphor-icons/react'
 
 export function TypingIndicator() {
   return (

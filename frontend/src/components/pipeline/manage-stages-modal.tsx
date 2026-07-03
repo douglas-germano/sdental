@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
 import { pipelineApi } from '@/lib/api'
-import { Plus, Trash2, GripVertical, Save, Loader2 } from 'lucide-react'
+import { Plus, Trash as Trash2, DotsSixVertical as GripVertical, FloppyDisk as Save, CircleNotch as Loader2 } from '@phosphor-icons/react'
 import { PageLoader } from '@/components/ui/page-loader'
 import {
   DndContext,

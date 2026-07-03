@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageSquare } from 'lucide-react'
+import { Chat as MessageSquare } from '@phosphor-icons/react'
 
 export default function ConversationsPage() {
   return (

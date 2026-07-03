@@ -12,10 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { conversationsApi, patientsApi } from '@/lib/api'
 import { Conversation, Message } from '@/types'
 import { formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import {
-  ArrowLeft, User, AlertCircle, CheckCircle, RotateCcw,
-  Save, X, Edit2, Info, ChevronDown
-} from 'lucide-react'
+import { ArrowLeft, User, WarningCircle as AlertCircle, CheckCircle, ArrowCounterClockwise as RotateCcw, FloppyDisk as Save, X, PencilSimple as Edit2, Info, CaretDown as ChevronDown } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
 import { useConfirm } from '@/hooks/useConfirm'
