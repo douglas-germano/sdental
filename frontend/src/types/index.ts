@@ -39,6 +39,13 @@ export interface Patient {
   updated_at: string
   pipeline_stage_id?: string
   appointments?: Appointment[]
+  address_zip_code?: string
+  address_street?: string
+  address_number?: string
+  address_complement?: string
+  address_neighborhood?: string
+  address_city?: string
+  address_state?: string
 }
 
 export interface PipelineStage {
