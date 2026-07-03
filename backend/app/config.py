@@ -127,6 +127,13 @@ def validate_config(app):
     if not app.config.get('WEBHOOK_SECRET'):
         warnings.append('WEBHOOK_SECRET nao definida. Webhooks sem autenticacao.')
 
+    if not app.config.get('REDIS_URL'):
+        warnings.append(
+            'REDIS_URL nao definida. Com mais de um worker Gunicorn, eventos '
+            'de tempo real (novas mensagens, status, digitando) so chegarao '
+            'aos clientes conectados ao mesmo worker que os processou.'
+        )
+
     # Log warnings
     for w in warnings:
         logger.warning('CONFIG WARNING: %s', w)

@@ -4,7 +4,7 @@ from sqlalchemy import or_
 from app import db
 from app.models import Patient, PipelineStage
 from app.utils.auth import clinic_required
-from app.utils.validators import normalize_phone
+from app.utils.validators import normalize_phone, validate_phone
 
 bp = Blueprint('patients', __name__, url_prefix='/api/patients')
 
@@ -191,6 +191,8 @@ def update_patient(patient_id, current_clinic):
         patient.notes = data['notes']
     if 'phone' in data:
         new_phone = normalize_phone(data['phone'])
+        if not validate_phone(new_phone):
+            return jsonify({'error': 'Invalid phone format'}), 400
         # Check if phone is already used by another patient (including soft deleted due to unique constraint)
         existing = Patient.query.filter_by(
             clinic_id=current_clinic.id,

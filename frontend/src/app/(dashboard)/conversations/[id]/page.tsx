@@ -355,6 +355,15 @@ export default function ConversationDetailPage() {
         </div>
       )}
 
+      {conversation.status === 'active' && (
+        <div className="flex justify-end px-4 py-2 border-b border-border shrink-0">
+          <Button variant="outline" size="sm" onClick={handleResolve} className="gap-1.5 h-7 text-xs">
+            <CheckCircle className="h-3 w-3" />
+            Finalizar Conversa
+          </Button>
+        </div>
+      )}
+
       {/* Collapsible patient info panel */}
       {showInfo && (
         <div className="border-b border-border shrink-0 bg-muted/20 px-4 py-4 max-h-[45%] overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
@@ -420,7 +429,7 @@ export default function ConversationDetailPage() {
                 <Button
                   size="sm"
                   onClick={conversation.patient ? handleSavePatient : handleCreatePatient}
-                  disabled={saving || !patientForm.name || (!conversation.patient && !patientForm.name)}
+                  disabled={saving || !patientForm.name || (!!conversation.patient && !patientForm.phone)}
                   loading={saving}
                   className="gap-1.5 h-7 text-xs"
                 >

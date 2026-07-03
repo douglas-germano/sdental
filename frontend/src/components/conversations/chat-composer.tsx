@@ -98,14 +98,18 @@ export function ChatComposer({ onSendText, onSendMedia, disabled }: ChatComposer
       return
     }
 
-    const base64 = await fileToBase64(file)
-    setAttachment({
-      mediaType: mediaTypeFromMime(file.type),
-      mimetype: file.type || 'application/octet-stream',
-      filename: file.name,
-      base64,
-      previewUrl: URL.createObjectURL(file)
-    })
+    try {
+      const base64 = await fileToBase64(file)
+      setAttachment({
+        mediaType: mediaTypeFromMime(file.type),
+        mimetype: file.type || 'application/octet-stream',
+        filename: file.name,
+        base64,
+        previewUrl: URL.createObjectURL(file)
+      })
+    } catch {
+      toast({ title: 'Nao foi possivel ler o arquivo', variant: 'error' })
+    }
   }
 
   const startRecording = async () => {

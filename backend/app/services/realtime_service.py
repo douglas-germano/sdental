@@ -2,7 +2,6 @@ import json
 import logging
 import queue
 import threading
-import time
 
 from flask import current_app
 
@@ -30,6 +29,12 @@ def _get_redis_client():
     _redis_client_checked = True
     redis_url = current_app.config.get('REDIS_URL')
     if not redis_url:
+        logger.warning(
+            'Realtime: REDIS_URL not configured, using in-process pub/sub. '
+            'This only delivers events to clients connected to the same '
+            'worker process that handled the event - with more than one '
+            'Gunicorn worker, some clients will silently miss live updates.'
+        )
         return None
 
     try:

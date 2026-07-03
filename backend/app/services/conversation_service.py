@@ -9,6 +9,11 @@ from app.services.realtime_service import publish_event
 
 logger = logging.getLogger(__name__)
 
+# Synthetic conversations created by the "test agent" preview feature
+# (see routes/agents.py) use this phone prefix and should never be
+# broadcast to the clinic's live realtime channel.
+TEST_PHONE_PREFIX = 'TEST-'
+
 
 class ConversationService:
     """Service for managing conversation context and history."""
@@ -97,11 +102,12 @@ class ConversationService:
         )
         db.session.commit()
 
-        publish_event(str(self.clinic.id), 'new_message', {
-            'conversation_id': str(conversation.id),
-            'conversation_status': conversation.status,
-            'message': message
-        })
+        if not conversation.phone_number.startswith(TEST_PHONE_PREFIX):
+            publish_event(str(self.clinic.id), 'new_message', {
+                'conversation_id': str(conversation.id),
+                'conversation_status': conversation.status,
+                'message': message
+            })
 
         return message
 
@@ -258,9 +264,13 @@ class ConversationService:
         # Take last N messages
         recent_messages = messages[-max_messages:]
 
-        # Format for Claude API
+        # Format for Claude API. Skip empty-content entries (e.g. a media
+        # message stored without a caption in older data) - Claude's API
+        # rejects empty text blocks.
         formatted = []
         for msg in recent_messages:
+            if not msg.get('content'):
+                continue
             formatted.append({
                 'role': msg['role'],
                 'content': msg['content']
