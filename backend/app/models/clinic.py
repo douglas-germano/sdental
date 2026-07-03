@@ -1,12 +1,16 @@
+import hashlib
+import secrets
 import uuid
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import validates
 
 from app import db
 from .mixins import TimestampMixin
+
+PASSWORD_RESET_TOKEN_TTL = timedelta(hours=1)
 
 
 class Clinic(db.Model, TimestampMixin):
@@ -49,6 +53,10 @@ class Clinic(db.Model, TimestampMixin):
     reminder_1h_message = db.Column(db.Text, nullable=True)   # Custom template
 
     active = db.Column(db.Boolean, default=True)
+
+    # Password reset (hashed token, never store the raw token)
+    password_reset_token_hash = db.Column(db.String(64), nullable=True)
+    password_reset_expires_at = db.Column(db.DateTime, nullable=True)
 
     __table_args__ = (
         db.CheckConstraint('agent_temperature >= 0 AND agent_temperature <= 1', name='check_temperature_range'),
@@ -114,6 +122,26 @@ class Clinic(db.Model, TimestampMixin):
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
+
+    def generate_password_reset_token(self) -> str:
+        """Create a password reset token, store only its hash, and return the raw token to send by e-mail."""
+        raw_token = secrets.token_urlsafe(32)
+        self.password_reset_token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        self.password_reset_expires_at = datetime.utcnow() + PASSWORD_RESET_TOKEN_TTL
+        return raw_token
+
+    def verify_password_reset_token(self, token: str) -> bool:
+        """Check a raw token against the stored hash and expiry, using a constant-time comparison."""
+        if not token or not self.password_reset_token_hash or not self.password_reset_expires_at:
+            return False
+        if datetime.utcnow() > self.password_reset_expires_at:
+            return False
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        return secrets.compare_digest(token_hash, self.password_reset_token_hash)
+
+    def clear_password_reset_token(self) -> None:
+        self.password_reset_token_hash = None
+        self.password_reset_expires_at = None
 
     def to_dict(self, include_sensitive: bool = False) -> dict:
         data = {

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ subject }}</title>
+<style>
+  body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #1f1f28; }
+  .wrapper { width: 100%; padding: 32px 16px; }
+  .container { max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e5ec; }
+  .header { background: linear-gradient(125deg, #4F46E5 0%, #7C3AED 100%); padding: 28px 32px; }
+  .header .logo { color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .body { padding: 32px; }
+  .body h1 { font-size: 18px; margin: 0 0 16px; color: #1f1f28; }
+  .body p { font-size: 14px; line-height: 1.6; color: #4b4b57; margin: 0 0 16px; }
+  .button { display: inline-block; background: #4F46E5; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+  .details { background: #f7f7fb; border-radius: 10px; padding: 16px 20px; margin: 0 0 16px; }
+  .details p { margin: 0 0 6px; font-size: 13px; }
+  .details p:last-child { margin-bottom: 0; }
+  .footer { padding: 20px 32px 28px; font-size: 12px; color: #9a9aa6; text-align: center; }
+  .footer a { color: #9a9aa6; }
+</style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <span class="logo">SDental</span>
+      </div>
+      <div class="body">
+        {% block content %}{% endblock %}
+      </div>
+      <div class="footer">
+        {% block footer %}
+        Voce esta recebendo este e-mail porque interage com uma clinica que usa o SDental.<br>
+        <a href="{{ frontend_url }}/privacidade">Politica de Privacidade</a>
+        {% endblock %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

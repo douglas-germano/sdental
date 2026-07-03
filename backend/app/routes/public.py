@@ -2,7 +2,7 @@
 Public booking routes - No authentication required.
 """
 from datetime import datetime, timedelta, time
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 
 from app import db
 from app.models.clinic import Clinic
@@ -190,13 +190,17 @@ def create_booking(slug: str):
         return jsonify({'error': 'Clínica não encontrada'}), 404
     
     data = request.get_json()
-    
+
     # Validate required fields
     required = ['name', 'phone', 'date', 'time', 'service']
     for field in required:
         if not data.get(field):
             return jsonify({'error': f'{field} é obrigatório'}), 400
-    
+
+    # LGPD: explicit consent to process personal data is required to book online
+    if not data.get('consent'):
+        return jsonify({'error': 'É necessário aceitar os termos de tratamento de dados para agendar'}), 400
+
     # Parse datetime
     try:
         scheduled_datetime = datetime.strptime(
@@ -229,6 +233,7 @@ def create_booking(slug: str):
             email=data.get('email'),
             notes=data.get('notes')
         )
+        patient.set_data_consent('public_booking')
         db.session.add(patient)
         db.session.flush()
     else:
@@ -236,6 +241,8 @@ def create_booking(slug: str):
         patient.name = data['name']
         if data.get('email'):
             patient.email = data['email']
+        if not patient.data_consent_at:
+            patient.set_data_consent('public_booking')
     
     # Find service duration
     duration = 30
@@ -264,6 +271,13 @@ def create_booking(slug: str):
 
     if error:
         return jsonify({'error': error}), 409
+
+    # Best-effort confirmation e-mail - must never fail the booking request
+    try:
+        from app.services.email_service import EmailService
+        EmailService().send_appointment_confirmation_email(patient, appointment)
+    except Exception:
+        current_app.logger.exception('Failed to send appointment confirmation email for appointment %s', appointment.id)
 
     response_data = {
         'success': True,

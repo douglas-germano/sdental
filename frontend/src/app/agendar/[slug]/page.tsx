@@ -87,6 +87,7 @@ export default function BookingPage() {
         email: '',
         notes: ''
     })
+    const [consent, setConsent] = useState(false)
 
     const [appointment, setAppointment] = useState<{
         service: string
@@ -155,7 +156,7 @@ export default function BookingPage() {
     }, [selectedDate, selectedService, selectedProfessional, slug])
 
     const handleSubmit = async () => {
-        if (!selectedService || !selectedDate || !selectedTime) return
+        if (!selectedService || !selectedDate || !selectedTime || !consent) return
 
         setSubmitting(true)
         setError(null)
@@ -172,7 +173,8 @@ export default function BookingPage() {
                     phone: formData.phone,
                     email: formData.email || undefined,
                     notes: formData.notes || undefined,
-                    professional_id: selectedProfessional?.id || undefined
+                    professional_id: selectedProfessional?.id || undefined,
+                    consent
                 })
             })
 
@@ -609,7 +611,22 @@ export default function BookingPage() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 pt-4">
+                            <label className="flex items-start gap-3 text-sm text-gray-600 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={consent}
+                                    onChange={(e) => setConsent(e.target.checked)}
+                                    className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>
+                                    Concordo com o tratamento dos meus dados pessoais para fins de agendamento, conforme a{' '}
+                                    <a href="/privacidade" target="_blank" className="text-blue-600 hover:underline">
+                                        Política de Privacidade
+                                    </a>. *
+                                </span>
+                            </label>
+
+                            <div className="flex gap-3 pt-2">
                                 <Button
                                     variant="outline"
                                     onClick={() => setStep(clinic?.has_professionals ? 4 : 3)}
@@ -620,7 +637,7 @@ export default function BookingPage() {
                                 </Button>
                                 <Button
                                     onClick={handleSubmit}
-                                    disabled={!formData.name || !formData.phone || submitting}
+                                    disabled={!formData.name || !formData.phone || !consent || submitting}
                                     className="flex-1 bg-blue-600 hover:bg-blue-700"
                                 >
                                     {submitting ? (

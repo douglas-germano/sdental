@@ -21,6 +21,10 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
     # CRM / Pipeline
     pipeline_stage_id = db.Column(UUID(as_uuid=True), db.ForeignKey('pipeline_stages.id'), nullable=True)
 
+    # LGPD - consent to process personal data
+    data_consent_at = db.Column(db.DateTime, nullable=True)
+    data_consent_source = db.Column(db.String(30), nullable=True)  # 'public_booking' | 'whatsapp' | 'manual'
+
     # Relationships
     appointments = db.relationship('Appointment', backref='patient', lazy='dynamic', cascade='all, delete-orphan')
     conversations = db.relationship('Conversation', backref=db.backref('patient', lazy='joined'), lazy='dynamic')
@@ -55,6 +59,27 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
                 raise ValueError(f"Invalid email format: {email}")
         return email
 
+    def set_data_consent(self, source: str) -> None:
+        """Record LGPD consent for processing this patient's personal data."""
+        self.data_consent_at = datetime.utcnow()
+        self.data_consent_source = source
+
+    def anonymize(self) -> None:
+        """
+        LGPD right to erasure (Art. 18, VI) - irreversibly scrub personal data.
+
+        The row itself is kept (and soft-deleted) so clinic-side appointment
+        history stays consistent, but nothing identifying the patient remains.
+        """
+        unique_suffix = str(self.id.int)[-11:].rjust(11, '0')
+        self.name = 'Paciente removido (LGPD)'
+        self.phone = f'99{unique_suffix}'
+        self.email = None
+        self.notes = None
+        self.data_consent_at = None
+        self.data_consent_source = None
+        self.soft_delete()
+
     def to_dict(self) -> dict:
         return {
             'id': str(self.id),
@@ -67,7 +92,9 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
             'pipeline_stage_id': str(self.pipeline_stage_id) if self.pipeline_stage_id else None,
-            'pipeline_stage': self.pipeline_stage.to_dict() if self.pipeline_stage else None
+            'pipeline_stage': self.pipeline_stage.to_dict() if self.pipeline_stage else None,
+            'data_consent_at': self.data_consent_at.isoformat() + 'Z' if self.data_consent_at else None,
+            'data_consent_source': self.data_consent_source
         }
 
     def __repr__(self) -> str:

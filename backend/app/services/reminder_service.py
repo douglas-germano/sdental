@@ -16,6 +16,7 @@ from app.models import (
     Clinic
 )
 from app.services.evolution_service import EvolutionService
+from app.services.email_service import EmailService
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +186,14 @@ class ReminderService:
             reminder.mark_sent()
             db.session.commit()
             logger.info('Successfully sent reminder %s to %s', reminder.id, patient.phone)
+
+            # Best-effort e-mail reminder alongside WhatsApp - doesn't affect reminder status
+            try:
+                hours_before = 24 if reminder.reminder_type == ReminderType.REMINDER_24H else 1
+                EmailService().send_appointment_reminder_email(patient, appointment, hours_before)
+            except Exception:
+                logger.exception('Failed to send reminder e-mail for reminder %s', reminder.id)
+
             return True
 
         except Exception as e:
