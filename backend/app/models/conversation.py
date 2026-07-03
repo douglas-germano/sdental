@@ -12,6 +12,20 @@ class ConversationStatus:
     COMPLETED = 'completed'
 
 
+class MessageStatus:
+    SENT = 'sent'
+    DELIVERED = 'delivered'
+    READ = 'read'
+    FAILED = 'failed'
+
+
+class MessageType:
+    TEXT = 'text'
+    IMAGE = 'image'
+    AUDIO = 'audio'
+    DOCUMENT = 'document'
+
+
 class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     __tablename__ = 'conversations'
 
@@ -27,15 +41,94 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     # Relationships
     bot_transfers = db.relationship('BotTransfer', backref='conversation', lazy='dynamic')
 
-    def add_message(self, role: str, content: str) -> None:
+    def add_message(
+        self,
+        role: str,
+        content: str,
+        message_id: str = None,
+        evolution_id: str = None,
+        status: str = MessageStatus.SENT,
+        message_type: str = MessageType.TEXT,
+        media_url: str = None,
+        media_mimetype: str = None,
+        caption: str = None
+    ) -> dict:
+        """
+        Append a message to the conversation.
+
+        `message_id` is our own stable identifier for the message (used by the
+        frontend). `evolution_id` is the WhatsApp/Evolution message id, used to
+        match later delivery/read ACK webhooks - it may be unknown at creation
+        time (e.g. the bot composes a reply before it is actually sent).
+        """
         if self.messages is None:
             self.messages = []
-        self.messages = self.messages + [{
+
+        message = {
+            'id': message_id or uuid.uuid4().hex,
+            'evolution_id': evolution_id,
             'role': role,
             'content': content,
-            'timestamp': datetime.utcnow().isoformat()
-        }]
+            'timestamp': datetime.utcnow().isoformat(),
+            'status': status,
+            'type': message_type
+        }
+        if media_url:
+            message['media_url'] = media_url
+        if media_mimetype:
+            message['media_mimetype'] = media_mimetype
+        if caption:
+            message['caption'] = caption
+
+        self.messages = self.messages + [message]
         self.last_message_at = datetime.utcnow()
+        return message
+
+    def find_message(self, message_id: str) -> dict:
+        for msg in (self.messages or []):
+            if msg.get('id') == message_id or msg.get('evolution_id') == message_id:
+                return msg
+        return None
+
+    def update_message_status(self, message_id: str, status: str) -> dict:
+        """Update the delivery/read status of a message, matched by its id or evolution_id."""
+        if not self.messages:
+            return None
+
+        updated = None
+        new_messages = []
+        for msg in self.messages:
+            if msg.get('id') == message_id or msg.get('evolution_id') == message_id:
+                msg = {**msg, 'status': status}
+                updated = msg
+            new_messages.append(msg)
+
+        if updated:
+            self.messages = new_messages
+
+        return updated
+
+    def set_evolution_id_for_last_message(self, evolution_id: str, role: str = None) -> dict:
+        """
+        Attach the real Evolution/WhatsApp message id to the most recently added
+        message (optionally filtered by role). Used when a message is recorded
+        before it's actually sent, so later ACK webhooks can match it.
+        """
+        if not self.messages or not evolution_id:
+            return None
+
+        new_messages = list(self.messages)
+        for i in range(len(new_messages) - 1, -1, -1):
+            msg = new_messages[i]
+            if role and msg.get('role') != role:
+                continue
+            if msg.get('evolution_id'):
+                break
+            new_messages[i] = {**msg, 'evolution_id': evolution_id}
+            self.messages = new_messages
+            return new_messages[i]
+
+        return None
 
     def to_dict(self, include_messages: bool = True, include_last_message_only: bool = False) -> dict:
         data = {

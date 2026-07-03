@@ -240,19 +240,26 @@ export default function DashboardLayout({
         'min-h-screen flex flex-col transition-all duration-300',
         sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-60'
       )}>
-        {/* Mobile menu button - floating */}
+        {/* Mobile menu button - floating. Raised on /conversations, which has
+            no page padding on mobile and docks a composer at the very bottom. */}
         <button
-          className="lg:hidden fixed bottom-4 left-4 z-40 p-3 bg-card border border-border/60 rounded-xl shadow-soft-md hover:shadow-soft-lg hover:bg-muted transition-all duration-200"
+          className={cn(
+            'lg:hidden fixed left-4 z-40 p-3 bg-card border border-border/60 rounded-xl shadow-soft-md hover:shadow-soft-lg hover:bg-muted transition-all duration-200',
+            pathname.startsWith('/conversations') ? 'bottom-20' : 'bottom-4'
+          )}
           onClick={() => setSidebarOpen(true)}
         >
           <Menu className="h-5 w-5 text-foreground" />
         </button>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-8">
+        <main className={cn(
+          'flex-1',
+          pathname.startsWith('/conversations') ? 'p-0 lg:p-4' : 'p-4 lg:p-8'
+        )}>
           <div className={cn(
             "h-full w-full mx-auto",
-            pathname === '/pipeline' ? 'max-w-none' : 'max-w-[1400px]'
+            pathname === '/pipeline' || pathname.startsWith('/conversations') ? 'max-w-none' : 'max-w-[1400px]'
           )}>
             {children}
           </div>

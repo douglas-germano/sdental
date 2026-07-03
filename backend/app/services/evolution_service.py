@@ -159,6 +159,71 @@ class EvolutionService:
             logger.error('Failed to send message via Evolution API: %s', str(e))
             return {'error': str(e)}
 
+    def send_media(
+        self,
+        phone: str,
+        media_type: str,
+        base64_data: str,
+        mimetype: str,
+        filename: Optional[str] = None,
+        caption: str = ''
+    ) -> dict:
+        """
+        Send a media message (image, audio or document) via WhatsApp.
+
+        Args:
+            phone: Phone number in format 5511999999999
+            media_type: 'image', 'audio' or 'document'
+            base64_data: Raw base64-encoded file content (no data: prefix)
+            mimetype: MIME type of the file, e.g. "image/png"
+            filename: Optional file name (used for documents)
+            caption: Optional caption text
+
+        Returns:
+            API response dict
+        """
+        if not self.api_url or not self.api_key:
+            logger.error('Evolution API not configured globally')
+            return {'error': 'Evolution API not configured'}
+
+        # Audio uses a dedicated endpoint in Evolution API v2
+        if media_type == 'audio':
+            url = f'{self.api_url}/message/sendWhatsAppAudio/{self.instance_name}'
+            payload = {
+                "number": phone,
+                "audio": base64_data,
+                "options": {"delay": 1200}
+            }
+        else:
+            url = f'{self.api_url}/message/sendMedia/{self.instance_name}'
+            payload = {
+                "number": phone,
+                "mediatype": media_type,
+                "mimetype": mimetype,
+                "media": base64_data,
+                "fileName": filename or f"file.{mimetype.split('/')[-1]}",
+                "caption": caption,
+                "options": {"delay": 1200}
+            }
+
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                headers=self._get_headers(),
+                timeout=60
+            )
+
+            if response.status_code == 400:
+                logger.error('Evolution API 400 Error: %s', response.text)
+
+            response.raise_for_status()
+            logger.info('Media (%s) sent to %s via Evolution API', media_type, phone)
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            logger.error('Failed to send media via Evolution API: %s', str(e))
+            return {'error': str(e)}
+
     def get_instance_status(self) -> dict:
         """
         Check the status of the WhatsApp instance.
@@ -219,7 +284,9 @@ class EvolutionService:
                 'url': webhook_url,
                 'webhookByEvents': True,
                 'events': [
-                    'MESSAGES_UPSERT'
+                    'MESSAGES_UPSERT',
+                    'MESSAGES_UPDATE',
+                    'PRESENCE_UPDATE'
                 ]
             }
         }

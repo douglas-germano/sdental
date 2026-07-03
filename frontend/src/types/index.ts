@@ -112,10 +112,20 @@ export type ConversationStatus =
   | 'transferred_to_human'
   | 'completed'
 
+export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed'
+export type MessageType = 'text' | 'image' | 'audio' | 'document'
+
 export interface Message {
+  id?: string
+  evolution_id?: string | null
   role: 'user' | 'assistant'
   content: string
   timestamp: string
+  status?: MessageStatus
+  type?: MessageType
+  media_url?: string
+  media_mimetype?: string
+  caption?: string
 }
 
 export interface BotTransfer {

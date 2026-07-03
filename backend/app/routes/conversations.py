@@ -1,11 +1,47 @@
-from flask import Blueprint, request, jsonify
+import base64
+import binascii
+
+from flask import Blueprint, request, jsonify, Response, stream_with_context
 
 from app import db
 from app.models import Conversation, BotTransfer, ConversationStatus, Patient, PipelineStage
-from app.utils.auth import clinic_required
+from app.services.conversation_service import ConversationService
+from app.services.evolution_service import EvolutionService
+from app.services import realtime_service
+from app.utils.auth import clinic_required, clinic_required_stream
 from app.utils.validators import normalize_phone
 
 bp = Blueprint('conversations', __name__, url_prefix='/api/conversations')
+
+MAX_MEDIA_BYTES = 8 * 1024 * 1024  # 8MB, base64-decoded size
+ALLOWED_MEDIA_TYPES = {'image', 'audio', 'document'}
+
+
+@bp.route('/stream', methods=['GET'])
+@clinic_required_stream
+def stream_conversations(current_clinic):
+    """
+    Server-Sent Events stream of realtime conversation events for the clinic:
+    new messages, status updates (delivered/read) and typing presence.
+
+    Auth accepts either the normal Authorization header or a `?token=` query
+    param, since the browser's EventSource API cannot set custom headers.
+    """
+    clinic_id = str(current_clinic.id)
+
+    def event_stream():
+        for chunk in realtime_service.subscribe(clinic_id):
+            yield chunk
+
+    return Response(
+        stream_with_context(event_stream()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
+        }
+    )
 
 
 @bp.route('', methods=['GET'])
@@ -269,21 +305,103 @@ def send_manual_message(conversation_id, current_clinic):
     if not message:
         return jsonify({'error': 'Message is required'}), 400
 
-    # Send via Evolution API
-    from app.services.evolution_service import EvolutionService
     evolution = EvolutionService(current_clinic)
 
     try:
-        evolution.send_message(conversation.phone_number, message)
+        result = evolution.send_message(conversation.phone_number, message)
     except Exception as e:
         return jsonify({'error': f'Failed to send message: {str(e)}'}), 500
 
-    # Add message to conversation history
-    conversation.add_message('assistant', message)
-    db.session.commit()
+    if isinstance(result, dict) and result.get('error'):
+        return jsonify({'error': f"Failed to send message: {result['error']}"}), 502
+
+    evolution_message_id = (result or {}).get('key', {}).get('id')
+
+    conversation_service = ConversationService(current_clinic)
+    conversation_service.add_message(
+        conversation,
+        'assistant',
+        message,
+        evolution_id=evolution_message_id
+    )
 
     return jsonify({
         'message': 'Message sent successfully',
+        'conversation': conversation.to_dict(include_messages=False)
+    })
+
+
+@bp.route('/<conversation_id>/send-media', methods=['POST'])
+@clinic_required
+def send_media_message(conversation_id, current_clinic):
+    """Send an image, audio or document message to the patient via WhatsApp."""
+    conversation = Conversation.query.filter_by(
+        id=conversation_id,
+        clinic_id=current_clinic.id
+    ).first()
+
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    data = request.get_json() or {}
+    media_type = data.get('media_type')
+    b64_data = data.get('data')
+    mimetype = data.get('mimetype')
+    filename = data.get('filename')
+    caption = data.get('caption', '')
+
+    if media_type not in ALLOWED_MEDIA_TYPES:
+        return jsonify({'error': f"media_type must be one of {sorted(ALLOWED_MEDIA_TYPES)}"}), 400
+
+    if not b64_data or not mimetype:
+        return jsonify({'error': 'data and mimetype are required'}), 400
+
+    # Strip data URI prefix if present (e.g. "data:image/png;base64,...")
+    if ',' in b64_data and b64_data.strip().lower().startswith('data:'):
+        b64_data = b64_data.split(',', 1)[1]
+
+    try:
+        decoded_size = len(base64.b64decode(b64_data, validate=True))
+    except (binascii.Error, ValueError):
+        return jsonify({'error': 'Invalid base64 data'}), 400
+
+    if decoded_size > MAX_MEDIA_BYTES:
+        return jsonify({'error': f'File too large. Max size is {MAX_MEDIA_BYTES // (1024 * 1024)}MB'}), 413
+
+    evolution = EvolutionService(current_clinic)
+
+    try:
+        result = evolution.send_media(
+            conversation.phone_number,
+            media_type=media_type,
+            base64_data=b64_data,
+            mimetype=mimetype,
+            filename=filename,
+            caption=caption
+        )
+    except Exception as e:
+        return jsonify({'error': f'Failed to send media: {str(e)}'}), 500
+
+    if isinstance(result, dict) and result.get('error'):
+        return jsonify({'error': f"Failed to send media: {result['error']}"}), 502
+
+    evolution_message_id = (result or {}).get('key', {}).get('id')
+
+    conversation_service = ConversationService(current_clinic)
+    message = conversation_service.add_message(
+        conversation,
+        'assistant',
+        caption,
+        evolution_id=evolution_message_id,
+        message_type=media_type,
+        media_url=f'data:{mimetype};base64,{b64_data}',
+        media_mimetype=mimetype,
+        caption=caption or None
+    )
+
+    return jsonify({
+        'message': 'Media sent successfully',
+        'sent_message': message,
         'conversation': conversation.to_dict(include_messages=False)
     })
 
