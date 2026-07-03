@@ -15,6 +15,7 @@ class BotTransfer(db.Model, SoftDeleteMixin, TimestampMixin):
     transferred_at = db.Column(db.DateTime, default=datetime.utcnow)
     resolved = db.Column(db.Boolean, default=False)
     resolved_at = db.Column(db.DateTime, nullable=True)
+    urgent = db.Column(db.Boolean, default=False, nullable=False)
 
     def resolve(self) -> None:
         self.resolved = True
@@ -25,6 +26,7 @@ class BotTransfer(db.Model, SoftDeleteMixin, TimestampMixin):
             'id': str(self.id),
             'conversation_id': str(self.conversation_id),
             'reason': self.reason,
+            'urgent': self.urgent,
             'transferred_at': self.transferred_at.isoformat() if self.transferred_at else None,
             'resolved': self.resolved,
             'resolved_at': self.resolved_at.isoformat() if self.resolved_at else None,

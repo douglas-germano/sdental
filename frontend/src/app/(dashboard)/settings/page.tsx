@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { clinicsApi } from '@/lib/api'
 import { getDayName } from '@/lib/utils'
-import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy } from '@phosphor-icons/react'
+import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'
@@ -30,7 +30,7 @@ export default function SettingsPage() {
 
   // Services State
   const [services, setServices] = useState(clinic?.services || [])
-  const [newService, setNewService] = useState({ name: '', duration: 30 })
+  const [newService, setNewService] = useState({ name: '', duration: 30, price: '', instructions: '' })
 
   // Profile State
   const [profileForm, setProfileForm] = useState({
@@ -136,8 +136,13 @@ export default function SettingsPage() {
 
   const addService = () => {
     if (!newService.name.trim()) return
-    setServices([...services, { ...newService }])
-    setNewService({ name: '', duration: 30 })
+    setServices([...services, {
+      name: newService.name,
+      duration: newService.duration,
+      price: newService.price ? parseFloat(newService.price) : undefined,
+      instructions: newService.instructions.trim() || undefined
+    }])
+    setNewService({ name: '', duration: 30, price: '', instructions: '' })
   }
 
   const removeService = (index: number) => {
@@ -459,27 +464,50 @@ export default function SettingsPage() {
 
                 {/* Add new service (only in edit mode) */}
                 {editingField === 'services' && (
-                  <div className="flex gap-2 p-4 bg-muted/30 rounded-xl border border-border/60 mb-4">
-                    <div className="relative flex-1">
-                      <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Nome do serviço"
-                        value={newService.name}
-                        onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                        className="pl-10"
+                  <div className="flex flex-col gap-2 p-4 bg-muted/30 rounded-xl border border-border/60 mb-4">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="relative flex-1">
+                        <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Nome do serviço"
+                          value={newService.name}
+                          onChange={(e) => setNewService({ ...newService, name: e.target.value })}
+                          className="pl-10"
+                        />
+                      </div>
+                      <div className="relative w-full sm:w-28">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={newService.duration}
+                          onChange={(e) => setNewService({ ...newService, duration: parseInt(e.target.value) || 30 })}
+                          className="pl-10"
+                        />
+                      </div>
+                      <div className="relative w-full sm:w-32">
+                        <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Preço"
+                          value={newService.price}
+                          onChange={(e) => setNewService({ ...newService, price: e.target.value })}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <NotePencil className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <textarea
+                        placeholder="Instruções de preparo/pós-procedimento (opcional, enviadas pela IA quando solicitado)"
+                        value={newService.instructions}
+                        onChange={(e) => setNewService({ ...newService, instructions: e.target.value })}
+                        rows={2}
+                        className="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                     </div>
-                    <div className="relative w-32">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="number"
-                        placeholder="Min"
-                        value={newService.duration}
-                        onChange={(e) => setNewService({ ...newService, duration: parseInt(e.target.value) || 30 })}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Button variant="outline" onClick={addService} className="gap-1">
+                    <Button variant="outline" onClick={addService} className="gap-1 self-end">
                       <Plus className="h-4 w-4" />
                       Adicionar
                     </Button>
@@ -501,17 +529,28 @@ export default function SettingsPage() {
                       <div
                         key={index}
                         className={cn(
-                          "flex items-center justify-between py-3 border-b border-border/60 last:border-0",
+                          "flex items-center justify-between py-3 border-b border-border/60 last:border-0 gap-3",
                           editingField === 'services' && "bg-muted/30 px-3 rounded-lg my-1"
                         )}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                             <Stethoscope className="h-4 w-4 text-primary" />
                           </div>
-                          <span className="font-medium">{service.name}</span>
+                          <div className="min-w-0">
+                            <span className="font-medium truncate block">{service.name}</span>
+                            {service.instructions && (
+                              <p className="text-xs text-muted-foreground truncate">{service.instructions}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
+                          {typeof service.price === 'number' && (
+                            <Badge variant="success" className="gap-1">
+                              <CurrencyDollar className="h-3 w-3" />
+                              R$ {service.price.toFixed(2)}
+                            </Badge>
+                          )}
                           <Badge variant="outline">{service.duration} min</Badge>
                           {editingField === 'services' && (
                             <Button

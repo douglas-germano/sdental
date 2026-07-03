@@ -102,7 +102,7 @@ export const clinicsApi = {
   updateBusinessHours: (business_hours: Record<string, unknown>) =>
     api.put('/clinics/business-hours', { business_hours }),
 
-  updateServices: (services: Array<{ name: string; duration: number }>) =>
+  updateServices: (services: Array<{ name: string; duration: number; price?: number; instructions?: string }>) =>
     api.put('/clinics/services', { services })
 }
 

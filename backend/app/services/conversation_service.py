@@ -203,7 +203,8 @@ class ConversationService:
     def transfer_to_human(
         self,
         conversation: Conversation,
-        reason: str
+        reason: str,
+        urgent: bool = False
     ) -> BotTransfer:
         """
         Transfer conversation to human handling.
@@ -211,23 +212,26 @@ class ConversationService:
         Args:
             conversation: The conversation to transfer
             reason: Reason for transfer
+            urgent: Whether this needs priority attention (e.g. dental emergency)
 
         Returns:
             BotTransfer record
         """
         conversation.status = ConversationStatus.TRANSFERRED_TO_HUMAN
+        conversation.urgent = urgent
 
         transfer = BotTransfer(
             conversation_id=conversation.id,
-            reason=reason
+            reason=reason,
+            urgent=urgent
         )
 
         db.session.add(transfer)
         db.session.commit()
 
         logger.info(
-            'Conversation %s transferred to human. Reason: %s',
-            conversation.id, reason
+            'Conversation %s transferred to human (urgent=%s). Reason: %s',
+            conversation.id, urgent, reason
         )
 
         return transfer

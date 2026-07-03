@@ -21,6 +21,7 @@ class ReminderType:
     REMINDER_24H = '24h'
     REMINDER_1H = '1h'
     CONFIRMATION = 'confirmation'
+    FOLLOW_UP = 'follow_up'
 
 
 class AppointmentReminder(db.Model, TimestampMixin):
@@ -63,7 +64,8 @@ class AppointmentReminder(db.Model, TimestampMixin):
         allowed_types = [
             ReminderType.REMINDER_24H,
             ReminderType.REMINDER_1H,
-            ReminderType.CONFIRMATION
+            ReminderType.CONFIRMATION,
+            ReminderType.FOLLOW_UP
         ]
         if reminder_type not in allowed_types:
             raise ValueError(f"Invalid reminder type: {reminder_type}. Must be one of {allowed_types}")

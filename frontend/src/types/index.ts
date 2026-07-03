@@ -26,6 +26,8 @@ export interface BusinessHour {
 export interface Service {
   name: string
   duration: number
+  price?: number
+  instructions?: string
 }
 
 export interface Patient {
@@ -90,6 +92,7 @@ export interface Appointment {
   created_at: string
   updated_at: string
   cancelled_at?: string
+  patient_confirmed_at?: string
 }
 
 export type AppointmentStatus =
@@ -108,6 +111,7 @@ export interface Conversation {
   messages?: Message[]
   context?: Record<string, unknown>
   status: ConversationStatus
+  urgent?: boolean
   last_message_at: string
   created_at: string
   updated_at: string
@@ -139,6 +143,7 @@ export interface BotTransfer {
   id: string
   conversation_id: string
   reason: string
+  urgent?: boolean
   transferred_at: string
   resolved: boolean
   resolved_at?: string

@@ -45,6 +45,15 @@ Sua consulta é *daqui a 1 hora*:
 
 Estamos te esperando! 😊"""
 
+DEFAULT_FOLLOW_UP = """Olá {patient_name}! 👋
+
+Passando para saber como foi sua consulta de *{service}* hoje na {clinic_name}.
+
+Ficou com alguma dúvida ou precisa de algo? É só responder por aqui. 😊"""
+
+# How long after an appointment's scheduled end time to send the follow-up
+FOLLOW_UP_DELAY_AFTER_APPOINTMENT = timedelta(hours=2)
+
 
 class ReminderService:
     """Service for scheduling and sending appointment reminders."""
@@ -101,6 +110,20 @@ class ReminderService:
                 logger.info('Scheduled 1h reminder for appointment %s at %s',
                            appointment.id, reminder_time)
 
+        # Schedule post-appointment follow-up
+        follow_up_time = scheduled_dt + timedelta(minutes=appointment.duration_minutes) + FOLLOW_UP_DELAY_AFTER_APPOINTMENT
+        if follow_up_time > now:
+            reminder = AppointmentReminder(
+                appointment_id=appointment.id,
+                reminder_type=ReminderType.FOLLOW_UP,
+                scheduled_for=follow_up_time,
+                status=ReminderStatus.PENDING
+            )
+            db.session.add(reminder)
+            reminders.append(reminder)
+            logger.info('Scheduled follow-up for appointment %s at %s',
+                       appointment.id, follow_up_time)
+
         if reminders:
             db.session.commit()
 
@@ -139,7 +162,16 @@ class ReminderService:
             AppointmentReminder.status == ReminderStatus.PENDING,
             AppointmentReminder.scheduled_for <= now
         ).join(Appointment).filter(
-            Appointment.status.in_([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED])
+            db.or_(
+                db.and_(
+                    AppointmentReminder.reminder_type == ReminderType.FOLLOW_UP,
+                    Appointment.status.in_([AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED])
+                ),
+                db.and_(
+                    AppointmentReminder.reminder_type != ReminderType.FOLLOW_UP,
+                    Appointment.status.in_([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED])
+                )
+            )
         ).all()
 
     def send_reminder(self, reminder: AppointmentReminder) -> bool:
@@ -162,8 +194,13 @@ class ReminderService:
             db.session.commit()
             return False
 
-        # Check if appointment is still valid
-        if appointment.status not in [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]:
+        # Check if appointment is still valid for this reminder type
+        if reminder.reminder_type == ReminderType.FOLLOW_UP:
+            valid_statuses = [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED]
+        else:
+            valid_statuses = [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]
+
+        if appointment.status not in valid_statuses:
             logger.info('Appointment %s is no longer active, cancelling reminder', appointment.id)
             reminder.cancel()
             db.session.commit()
@@ -187,12 +224,14 @@ class ReminderService:
             db.session.commit()
             logger.info('Successfully sent reminder %s to %s', reminder.id, patient.phone)
 
-            # Best-effort e-mail reminder alongside WhatsApp - doesn't affect reminder status
-            try:
-                hours_before = 24 if reminder.reminder_type == ReminderType.REMINDER_24H else 1
-                EmailService().send_appointment_reminder_email(patient, appointment, hours_before)
-            except Exception:
-                logger.exception('Failed to send reminder e-mail for reminder %s', reminder.id)
+            # Best-effort e-mail reminder alongside WhatsApp - doesn't affect reminder status.
+            # Follow-ups are WhatsApp-only (no e-mail template for those).
+            if reminder.reminder_type != ReminderType.FOLLOW_UP:
+                try:
+                    hours_before = 24 if reminder.reminder_type == ReminderType.REMINDER_24H else 1
+                    EmailService().send_appointment_reminder_email(patient, appointment, hours_before)
+                except Exception:
+                    logger.exception('Failed to send reminder e-mail for reminder %s', reminder.id)
 
             return True
 
@@ -241,6 +280,8 @@ class ReminderService:
             template = clinic.reminder_24h_message or DEFAULT_REMINDER_24H
         elif reminder.reminder_type == ReminderType.REMINDER_1H:
             template = clinic.reminder_1h_message or DEFAULT_REMINDER_1H
+        elif reminder.reminder_type == ReminderType.FOLLOW_UP:
+            template = DEFAULT_FOLLOW_UP
         else:
             template = DEFAULT_REMINDER_24H
 

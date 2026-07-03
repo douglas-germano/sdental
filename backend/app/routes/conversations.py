@@ -157,6 +157,7 @@ def resolve_conversation(conversation_id, current_clinic):
 
     # Mark conversation as completed
     conversation.status = ConversationStatus.COMPLETED
+    conversation.urgent = False
 
     # Resolve any pending transfers
     pending_transfers = BotTransfer.query.filter_by(
@@ -188,6 +189,7 @@ def reactivate_conversation(conversation_id, current_clinic):
         return jsonify({'error': 'Conversation not found'}), 404
 
     conversation.status = ConversationStatus.ACTIVE
+    conversation.urgent = False
 
     db.session.commit()
 

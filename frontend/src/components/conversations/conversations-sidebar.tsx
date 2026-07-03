@@ -139,7 +139,7 @@ export function ConversationsSidebar() {
                     <div className="relative shrink-0">
                       <div className={cn(
                         'h-11 w-11 rounded-full flex items-center justify-center text-white font-semibold text-sm',
-                        isUrgent(conv) ? 'bg-warning' : 'bg-gradient-primary'
+                        conv.urgent ? 'bg-destructive' : isUrgent(conv) ? 'bg-warning' : 'bg-gradient-primary'
                       )}>
                         {conv.patient?.name?.charAt(0).toUpperCase() || '?'}
                       </div>
@@ -165,7 +165,9 @@ export function ConversationsSidebar() {
                             <LastMessagePreview conv={conv} />
                           )}
                         </p>
-                        {isUrgent(conv) && (
+                        {conv.urgent ? (
+                          <Badge variant="destructive" size="sm" dot className="shrink-0">Urgente</Badge>
+                        ) : isUrgent(conv) && (
                           <Badge variant="warning" size="sm" className="shrink-0">Aguardando</Badge>
                         )}
                       </div>
