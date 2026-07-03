@@ -47,6 +47,15 @@ class Config:
     # Base URL for webhook configuration
     BASE_URL = os.getenv('BASE_URL')
 
+    # Frontend URL, used to build links in transactional emails (password
+    # reset, etc). Falls back to BASE_URL if not set separately.
+    FRONTEND_URL = os.getenv('FRONTEND_URL') or os.getenv('BASE_URL') or 'http://localhost:3000'
+
+    # Brevo (transactional email)
+    BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+    BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'naoresponda@sdental.com.br')
+    BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'SDental')
+
     # CORS - Allowed origins (comma-separated)
     ALLOWED_ORIGINS = [
         origin.strip()
@@ -126,6 +135,9 @@ def validate_config(app):
 
     if not app.config.get('WEBHOOK_SECRET'):
         warnings.append('WEBHOOK_SECRET nao definida. Webhooks sem autenticacao.')
+
+    if not app.config.get('BREVO_API_KEY'):
+        warnings.append('BREVO_API_KEY nao definida. E-mails transacionais nao serao enviados (apenas logados).')
 
     if not app.config.get('REDIS_URL'):
         warnings.append(

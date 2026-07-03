@@ -1,0 +1,15 @@
+{% extends "emails/_base.html" %}
+{% block content %}
+<h1>Bem-vindo(a), {{ clinic_name }}! 🎉</h1>
+<p>Sua conta no SDental foi criada com sucesso. Agora voce ja pode configurar sua clinica, conectar o WhatsApp e comecar a atender seus pacientes com a ajuda da nossa IA.</p>
+<p style="text-align:center; margin: 24px 0;">
+  <a class="button" href="{{ login_url }}">Acessar o painel</a>
+</p>
+<p>Proximos passos recomendados:</p>
+<div class="details">
+  <p>1. Conecte seu WhatsApp em Configuracoes</p>
+  <p>2. Defina seus horarios de funcionamento e servicos</p>
+  <p>3. Personalize seu agente de IA</p>
+</div>
+<p>Qualquer duvida, e so responder este e-mail.</p>
+{% endblock %}

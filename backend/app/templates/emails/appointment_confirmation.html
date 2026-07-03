@@ -1,0 +1,11 @@
+{% extends "emails/_base.html" %}
+{% block content %}
+<h1>Agendamento confirmado ✅</h1>
+<p>Ola, {{ patient_name }}! Seu agendamento na <strong>{{ clinic_name }}</strong> foi confirmado.</p>
+<div class="details">
+  <p><strong>Servico:</strong> {{ service_name }}</p>
+  <p><strong>Data:</strong> {{ date }}</p>
+  <p><strong>Horario:</strong> {{ time }}</p>
+</div>
+<p>Caso precise remarcar ou cancelar, entre em contato diretamente com a clinica pelo WhatsApp.</p>
+{% endblock %}

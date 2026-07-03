@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 
@@ -5,6 +6,9 @@ from app import db
 from app.models import Appointment, Patient, AppointmentStatus
 from app.utils.auth import clinic_required
 from app.services.appointment_service import AppointmentService
+from app.services.email_service import EmailService
+
+bp_logger = logging.getLogger(__name__)
 
 bp = Blueprint('appointments', __name__, url_prefix='/api/appointments')
 
@@ -159,6 +163,11 @@ def create_appointment(current_clinic):
 
     db.session.add(appointment)
     db.session.commit()
+
+    try:
+        EmailService().send_appointment_confirmation_email(patient, appointment)
+    except Exception:
+        bp_logger.exception('Failed to send appointment confirmation email for appointment %s', appointment.id)
 
     return jsonify({
         'message': 'Appointment created successfully',

@@ -132,7 +132,12 @@ export default function LoginPage() {
                   {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm">Senha</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-sm">Senha</Label>
+                    <Link href="/esqueci-senha" className="text-xs text-primary hover:underline font-medium">
+                      Esqueci minha senha
+                    </Link>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                     <Input

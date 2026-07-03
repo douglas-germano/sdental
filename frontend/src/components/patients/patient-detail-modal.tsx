@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
+import { useConfirm } from '@/hooks/useConfirm'
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 import {
@@ -28,7 +29,7 @@ import {
   getStatusColor,
   getStatusLabel,
 } from '@/lib/utils'
-import { User, Phone, Mail, Calendar, FileText, Edit2, Save, X } from 'lucide-react'
+import { User, Phone, Mail, Calendar, FileText, Edit2, Save, X, ShieldAlert, DownloadCloud, Loader2 } from 'lucide-react'
 
 interface PatientDetailModalProps {
   patient: Patient | null
@@ -44,8 +45,11 @@ export function PatientDetailModal({
   onUpdate,
 }: PatientDetailModalProps) {
   const { toast } = useToast()
+  const { confirm, ConfirmDialogComponent } = useConfirm()
   const [loading, setLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [erasing, setErasing] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -118,6 +122,62 @@ export function PatientDetailModal({
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleExportData = async () => {
+    setExporting(true)
+    try {
+      const { data } = await patientsApi.exportData(patient.id)
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `dados-${patient.name.toLowerCase().replace(/\s+/g, '-')}.json`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting patient data:', error)
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível exportar os dados do paciente.',
+        variant: 'error',
+      })
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleEraseData = async () => {
+    const confirmed = await confirm({
+      title: 'Excluir dados pessoais (LGPD)',
+      description: 'Isso anonimiza permanentemente o nome, telefone, email, observações e o conteúdo das conversas deste paciente. Essa ação não pode ser desfeita.',
+      confirmText: 'Sim, excluir dados',
+      cancelText: 'Cancelar',
+      variant: 'destructive',
+    })
+
+    if (!confirmed) return
+
+    setErasing(true)
+    try {
+      await patientsApi.eraseData(patient.id)
+      toast({
+        title: 'Sucesso',
+        description: 'Dados pessoais do paciente foram removidos.',
+        variant: 'success',
+      })
+      onOpenChange(false)
+      onUpdate()
+    } catch (error) {
+      console.error('Error erasing patient data:', error)
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir os dados do paciente.',
+        variant: 'error',
+      })
+    } finally {
+      setErasing(false)
     }
   }
 
@@ -287,6 +347,36 @@ export function PatientDetailModal({
               </div>
             )}
 
+            {/* LGPD data rights */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-muted-foreground">
+                <ShieldAlert className="h-4 w-4" />
+                Dados pessoais (LGPD)
+              </Label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportData}
+                  disabled={exporting}
+                  className="gap-2"
+                >
+                  {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadCloud className="h-4 w-4" />}
+                  Baixar meus dados
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEraseData}
+                  disabled={erasing}
+                  className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20"
+                >
+                  {erasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
+                  Excluir dados pessoais
+                </Button>
+              </div>
+            </div>
+
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Fechar
@@ -295,6 +385,8 @@ export function PatientDetailModal({
           </div>
         )}
       </DialogContent>
+
+      {ConfirmDialogComponent}
     </Dialog>
   )
 }

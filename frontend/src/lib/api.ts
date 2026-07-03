@@ -77,7 +77,13 @@ export const authApi = {
 
   refresh: () => api.post('/auth/refresh'),
 
-  logout: () => api.post('/auth/logout')
+  logout: () => api.post('/auth/logout'),
+
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
+
+  resetPassword: (token: string, password: string) =>
+    api.post('/auth/reset-password', { token, password })
 }
 
 // Clinics API
@@ -113,7 +119,11 @@ export const patientsApi = {
   update: (id: string, data: { name?: string; phone?: string; email?: string; notes?: string }) =>
     api.put(`/patients/${id}`, data),
 
-  delete: (id: string) => api.delete(`/patients/${id}`)
+  delete: (id: string) => api.delete(`/patients/${id}`),
+
+  exportData: (id: string) => api.get(`/patients/${id}/export`),
+
+  eraseData: (id: string) => api.post(`/patients/${id}/erase`, { confirm: true })
 }
 
 // Appointments API

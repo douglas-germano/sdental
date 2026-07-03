@@ -249,16 +249,24 @@ class EvolutionService:
                 
             response.raise_for_status()
             data = response.json()
-            
+
             # Handle potential nested structure (Evolution API v2)
             instance_data = data.get('instance', {}) if 'instance' in data else data
             state = instance_data.get('state')
-            
-            return {
+
+            result = {
                 'connected': state == 'open',
                 'state': state,
                 'instance': self.instance_name
             }
+
+            # When connected, try to surface the linked WhatsApp number for the wizard's success screen
+            if state == 'open':
+                owner = instance_data.get('owner') or instance_data.get('ownerJid')
+                if owner:
+                    result['phone_number'] = owner.split('@')[0].split(':')[0]
+
+            return result
         except requests.exceptions.RequestException as e:
             logger.error('Failed to get instance status: %s', str(e))
             return {'error': str(e), 'connected': False}
@@ -305,12 +313,27 @@ class EvolutionService:
             logger.error('Failed to set webhook: %s', str(e))
             return {'error': str(e)}
 
+    # WhatsApp Web QR codes are only valid for a short window before the
+    # underlying pairing session rotates - the wizard uses this to know when
+    # to automatically request a fresh code.
+    QR_CODE_TTL_SECONDS = 30
+
     def get_qr_code(self) -> Optional[str]:
         """
         Get QR code for connecting WhatsApp.
 
         Returns:
             Base64 QR code string or None
+        """
+        result = self.get_qr_code_info()
+        return result.get('qrcode') if result else None
+
+    def get_qr_code_info(self) -> Optional[dict]:
+        """
+        Get QR code for connecting WhatsApp, plus metadata for the connection wizard.
+
+        Returns:
+            Dict with 'qrcode' (base64) and 'expires_in' (seconds), or None on failure
         """
         if not self.api_url or not self.api_key:
             return None
@@ -326,7 +349,10 @@ class EvolutionService:
             )
             response.raise_for_status()
             data = response.json()
-            return data.get('base64')
+            base64_qr = data.get('base64')
+            if not base64_qr:
+                return None
+            return {'qrcode': base64_qr, 'expires_in': self.QR_CODE_TTL_SECONDS}
         except requests.exceptions.RequestException as e:
             logger.error('Failed to get QR code: %s', str(e))
             return None

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
+import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'
 
 type Section = 'profile' | 'whatsapp' | 'hours' | 'services'
 
@@ -26,10 +27,6 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [editingField, setEditingField] = useState<string | null>(null)
-
-  // Evolution API State
-  const [evolutionStatus, setEvolutionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking')
-  const [qrCode, setQrCode] = useState<string | null>(null)
 
   // Business Hours State
   const [businessHours, setBusinessHours] = useState(clinic?.business_hours || {})
@@ -66,29 +63,6 @@ export default function SettingsPage() {
     }, 3000)
   }
 
-  const checkStatus = async () => {
-    try {
-      const { data } = await clinicsApi.getEvolutionStatus()
-      if (data.connected) {
-        setEvolutionStatus('connected')
-        setQrCode(null)
-      } else {
-        setEvolutionStatus('disconnected')
-      }
-    } catch {
-      setEvolutionStatus('disconnected')
-    }
-  }
-
-  useEffect(() => {
-    checkStatus()
-    let interval: NodeJS.Timeout
-    if (qrCode) {
-      interval = setInterval(checkStatus, 3000)
-    }
-    return () => clearInterval(interval)
-  }, [qrCode])
-
   // Sync profile form when clinic data changes
   useEffect(() => {
     if (clinic) {
@@ -114,25 +88,6 @@ export default function SettingsPage() {
     } catch (err) {
       setAgentEnabled(!enabled) // revert
       showMessage('error', 'Erro ao atualizar configuração.')
-    }
-  }
-
-  const handleConnect = async () => {
-    setSaving('evolution')
-    setError(null)
-    try {
-      await clinicsApi.createEvolutionInstance()
-      const { data } = await clinicsApi.getEvolutionQrCode()
-      if (data.qrcode) {
-        setQrCode(data.qrcode)
-      } else {
-        checkStatus()
-      }
-    } catch (err: any) {
-      console.error(err)
-      showMessage('error', 'Erro ao iniciar conexão. Tente novamente.')
-    } finally {
-      setSaving(null)
     }
   }
 
@@ -201,38 +156,6 @@ export default function SettingsPage() {
       }
     })
   }
-
-  // Setting Row Component
-  const SettingRow = ({
-    label,
-    value,
-    onEdit,
-    badge,
-    badgeVariant = 'outline'
-  }: {
-    label: string
-    value: React.ReactNode
-    onEdit?: () => void
-    badge?: string
-    badgeVariant?: 'outline' | 'success' | 'destructive'
-  }) => (
-    <div className="flex items-center justify-between py-4 border-b border-border/60 last:border-0">
-      <div>
-        <p className="font-medium text-foreground">{label}</p>
-        <div className="text-sm text-muted-foreground mt-0.5">{value}</div>
-      </div>
-      <div className="flex items-center gap-2">
-        {badge && (
-          <Badge variant={badgeVariant}>{badge}</Badge>
-        )}
-        {onEdit && (
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            Editar
-          </Button>
-        )}
-      </div>
-    </div>
-  )
 
   return (
     <div className="space-y-8">
@@ -406,19 +329,10 @@ export default function SettingsPage() {
 
             {/* WhatsApp Section */}
             {activeSection === 'whatsapp' && (
-              <div className="space-y-2">
-                <h2 className="text-lg font-semibold mb-4">WhatsApp / Evolution API</h2>
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold mb-2">WhatsApp / Evolution API</h2>
 
-                <SettingRow
-                  label="Status da Conexão"
-                  value={evolutionStatus === 'connected'
-                    ? "WhatsApp conectado e pronto para receber mensagens"
-                    : "WhatsApp não está conectado"}
-                  badge={evolutionStatus === 'connected' ? 'Conectado' : 'Desconectado'}
-                  badgeVariant={evolutionStatus === 'connected' ? 'success' : 'outline'}
-                />
-
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-card mt-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
                   <div className="space-y-0.5">
                     <Label className="text-base">Agente de IA (Claude)</Label>
                     <p className="text-sm text-muted-foreground">
@@ -431,46 +345,7 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                {evolutionStatus === 'disconnected' && !qrCode && (
-                  <div className="pt-4">
-                    <Button
-                      variant="gradient"
-                      onClick={handleConnect}
-                      disabled={saving === 'evolution'}
-                      className="gap-2"
-                    >
-                      <Wifi className="h-4 w-4" />
-                      {saving === 'evolution' ? 'Iniciando...' : 'Conectar WhatsApp'}
-                    </Button>
-                  </div>
-                )}
-
-                {qrCode && (
-                  <div className="pt-4 flex flex-col items-center">
-                    <h3 className="font-semibold mb-4">Escaneie o QR Code</h3>
-                    <div className="bg-white p-4 rounded-2xl border border-border/60 shadow-soft">
-                      <img
-                        src={qrCode.startsWith('data:image') ? qrCode : `data:image/png;base64,${qrCode}`}
-                        alt="WhatsApp QR Code"
-                        className="w-64 h-64"
-                      />
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-4 text-center max-w-xs">
-                      Abra o WhatsApp no seu celular, vá em Aparelhos Conectados {'>'} Conectar Aparelho
-                    </p>
-                    <Button variant="ghost" className="mt-2" onClick={() => setQrCode(null)}>
-                      Cancelar
-                    </Button>
-                  </div>
-                )}
-
-                {evolutionStatus === 'connected' && (
-                  <div className="pt-2">
-                    <Button variant="outline" size="sm" onClick={checkStatus}>
-                      Verificar Conexão
-                    </Button>
-                  </div>
-                )}
+                <WhatsappConnectionWizard />
               </div>
             )}
 

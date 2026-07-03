@@ -63,16 +63,16 @@ def get_evolution_status(current_clinic):
 @bp.route('/evolution/qrcode', methods=['GET'])
 @clinic_required
 def get_evolution_qrcode(current_clinic):
-    """Get QR Code for connecting WhatsApp."""
+    """Get QR Code for connecting WhatsApp, plus expiry info for the connection wizard."""
     from app.services.evolution_service import EvolutionService
-    
+
     service = EvolutionService(current_clinic)
-    qr_code = service.get_qr_code()
-    
-    if not qr_code:
+    result = service.get_qr_code_info()
+
+    if not result:
         return jsonify({'error': 'Could not generate QR code'}), 400
-        
-    return jsonify({'qrcode': qr_code})
+
+    return jsonify(result)
 
 
 @bp.route('/business-hours', methods=['PUT'])

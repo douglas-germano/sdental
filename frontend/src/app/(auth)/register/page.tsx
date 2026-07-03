@@ -212,6 +212,12 @@ export default function RegisterPage() {
                     Faca login
                   </Link>
                 </p>
+                <p className="text-xs text-center text-muted-foreground">
+                  Ao se cadastrar, voce concorda com nossos{' '}
+                  <Link href="/termos" className="text-primary hover:underline">Termos de Uso</Link>
+                  {' '}e{' '}
+                  <Link href="/privacidade" className="text-primary hover:underline">Politica de Privacidade</Link>.
+                </p>
               </CardFooter>
             </form>
           </Card>
