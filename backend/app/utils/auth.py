@@ -2,6 +2,8 @@ from functools import wraps
 from typing import Callable
 from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+from flask_jwt_extended.exceptions import JWTExtendedException
+from jwt.exceptions import PyJWTError
 
 from app.models import Clinic
 
@@ -20,6 +22,28 @@ def clinic_required(fn: Callable) -> Callable:
     @wraps(fn)
     def wrapper(*args, **kwargs):
         verify_jwt_in_request()
+        clinic = get_current_clinic()
+        if not clinic:
+            return jsonify({'error': 'Clinic not found'}), 404
+        if not clinic.active:
+            return jsonify({'error': 'Clinic account is inactive'}), 403
+        kwargs['current_clinic'] = clinic
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def clinic_required_stream(fn: Callable) -> Callable:
+    """
+    Like clinic_required, but also accepts the JWT via a `?token=` query
+    param (as `JWT_QUERY_STRING_NAME`). Needed for endpoints consumed by the
+    browser's EventSource API, which cannot set custom request headers.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            verify_jwt_in_request(locations=['headers'])
+        except (JWTExtendedException, PyJWTError):
+            verify_jwt_in_request(locations=['query_string'])
         clinic = get_current_clinic()
         if not clinic:
             return jsonify({'error': 'Clinic not found'}), 404

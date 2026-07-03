@@ -29,6 +29,9 @@ class Config:
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    # Allows the SSE stream endpoint to authenticate via ?token=, since
+    # EventSource cannot set an Authorization header.
+    JWT_QUERY_STRING_NAME = 'token'
 
     # Claude API
     CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')

@@ -5,6 +5,7 @@ from typing import Optional
 from app import db
 from app.models import Conversation, Patient, BotTransfer, ConversationStatus
 from app.utils.validators import normalize_phone
+from app.services.realtime_service import publish_event
 
 logger = logging.getLogger(__name__)
 
@@ -66,18 +67,100 @@ class ConversationService:
         self,
         conversation: Conversation,
         role: str,
-        content: str
-    ) -> None:
+        content: str,
+        message_id: str = None,
+        evolution_id: str = None,
+        status: str = 'sent',
+        message_type: str = 'text',
+        media_url: str = None,
+        media_mimetype: str = None,
+        caption: str = None
+    ) -> dict:
         """
-        Add a message to the conversation history.
+        Add a message to the conversation history and broadcast it in realtime.
 
         Args:
             conversation: The conversation to add to
             role: 'user' or 'assistant'
             content: Message content
         """
-        conversation.add_message(role, content)
+        message = conversation.add_message(
+            role,
+            content,
+            message_id=message_id,
+            evolution_id=evolution_id,
+            status=status,
+            message_type=message_type,
+            media_url=media_url,
+            media_mimetype=media_mimetype,
+            caption=caption
+        )
         db.session.commit()
+
+        publish_event(str(self.clinic.id), 'new_message', {
+            'conversation_id': str(conversation.id),
+            'conversation_status': conversation.status,
+            'message': message
+        })
+
+        return message
+
+    def find_conversation_with_message(self, phone_number: str, evolution_id: str) -> Optional[Conversation]:
+        """Find the conversation (active or not) for this phone that contains a message with this evolution_id."""
+        phone = normalize_phone(phone_number)
+        conversations = Conversation.query.filter_by(
+            clinic_id=self.clinic.id,
+            phone_number=phone
+        ).order_by(Conversation.last_message_at.desc()).all()
+
+        for conversation in conversations:
+            if conversation.find_message(evolution_id):
+                return conversation
+
+        return None
+
+    def update_message_status(
+        self,
+        conversation: Conversation,
+        message_id: str,
+        status: str
+    ) -> Optional[dict]:
+        """Update a message's delivery/read status and broadcast the change."""
+        updated = conversation.update_message_status(message_id, status)
+        if not updated:
+            return None
+
+        db.session.commit()
+
+        publish_event(str(self.clinic.id), 'message_status', {
+            'conversation_id': str(conversation.id),
+            'message_id': updated.get('id'),
+            'status': status
+        })
+
+        return updated
+
+    def attach_evolution_id_to_last_reply(
+        self,
+        conversation: Conversation,
+        evolution_id: str
+    ) -> Optional[dict]:
+        """Attach the real WhatsApp message id to the bot's most recent reply, for later ACK matching."""
+        updated = conversation.set_evolution_id_for_last_message(evolution_id, role='assistant')
+        if updated:
+            db.session.commit()
+        return updated
+
+    def attach_evolution_id_to_last_inbound(
+        self,
+        conversation: Conversation,
+        evolution_id: str
+    ) -> Optional[dict]:
+        """Attach the real WhatsApp message id to the patient's most recent message."""
+        updated = conversation.set_evolution_id_for_last_message(evolution_id, role='user')
+        if updated:
+            db.session.commit()
+        return updated
 
     def update_context(
         self,

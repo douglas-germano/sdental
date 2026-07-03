@@ -9,6 +9,7 @@ Flask-Caching==2.1.0
 
 # Database
 psycopg2-binary>=2.9.11
+redis>=5.0.0
 
 # Validation
 marshmallow==3.20.1

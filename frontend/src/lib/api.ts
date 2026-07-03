@@ -205,7 +205,19 @@ export const conversationsApi = {
     api.post(`/conversations/${id}/link-patient`, data),
 
   sendMessage: (id: string, message: string) =>
-    api.post(`/conversations/${id}/send-message`, { message })
+    api.post(`/conversations/${id}/send-message`, { message }),
+
+  sendMedia: (id: string, data: { media_type: 'image' | 'audio' | 'document'; data: string; mimetype: string; filename?: string; caption?: string }) =>
+    api.post(`/conversations/${id}/send-media`, data),
+
+  /**
+   * URL for the SSE realtime stream. EventSource can't set an Authorization
+   * header, so the access token is passed as a query param instead.
+   */
+  streamUrl: () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+    return `${API_URL}/conversations/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
+  }
 }
 
 // Analytics API
