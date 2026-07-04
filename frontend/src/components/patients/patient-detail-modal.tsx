@@ -315,7 +315,7 @@ export function PatientDetailModal({
                 Endereço
               </Label>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="edit-cep" className="text-xs text-muted-foreground">CEP</Label>
                   <div className="relative">

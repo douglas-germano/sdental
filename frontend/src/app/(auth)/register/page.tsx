@@ -132,7 +132,7 @@ export default function RegisterPage() {
                   </div>
                   {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm">Email</Label>
                     <div className="relative">
@@ -162,7 +162,7 @@ export default function RegisterPage() {
                     {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-sm">Senha</Label>
                     <div className="relative">
