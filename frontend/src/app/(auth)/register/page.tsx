@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Buildings as Building2, EnvelopeSimple as Mail, Phone, Lock, Sparkle as Sparkles, ArrowRight } from '@phosphor-icons/react'
+import { Buildings as Building2, EnvelopeSimple as Mail, Phone, Lock, ChatCircleDots, ArrowRight } from '@phosphor-icons/react'
 
 export default function RegisterPage() {
   const { register: registerUser } = useAuth()
@@ -46,29 +46,17 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ background: 'linear-gradient(160deg, hsl(238 76% 55%) 0%, hsl(262 83% 50%) 50%, hsl(280 70% 45%) 100%)' }}>
-        {/* Layered decorative elements */}
-        <div className="absolute inset-0">
-          <div className="absolute -top-1/3 -right-1/4 w-2/3 h-2/3 bg-white/[0.07] rounded-full blur-[100px]" />
-          <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-black/15 rounded-full blur-[80px]" />
-          <div className="absolute inset-0 opacity-[0.04]" style={{
-            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-            backgroundSize: '32px 32px'
-          }} />
-          <div className="absolute top-[12%] left-[8%] w-20 h-20 border border-white/10 rounded-2xl rotate-12" />
-          <div className="absolute bottom-[15%] right-[10%] w-14 h-14 border border-white/[0.08] rounded-xl -rotate-6" />
-        </div>
-
+      {/* Left side - Charcoal institutional panel */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-charcoal text-charcoal-foreground">
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg shadow-black/10">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center">
+              <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">SDental</span>
+            <span className="text-xl font-extrabold uppercase tracking-tight text-white">SDental</span>
           </div>
 
-          <h1 className="text-3xl xl:text-[2.5rem] font-bold text-white mb-5 leading-[1.15] tracking-tight">
+          <h1 className="text-4xl xl:text-5xl font-extrabold text-white mb-5 leading-[0.95] tracking-tight uppercase">
             Comece sua jornada<br />digital
           </h1>
 
@@ -83,13 +71,15 @@ export default function RegisterPage() {
               { value: '98%', label: 'Satisfacao' },
               { value: '24/7', label: 'Atendimento IA' }
             ].map((stat, i) => (
-              <div key={i} className="p-4 rounded-xl bg-white/[0.08] border border-white/10 backdrop-blur-sm hover:bg-white/[0.12] transition-colors">
-                <div className="text-2xl font-bold text-white mb-0.5 tracking-tight">{stat.value}</div>
+              <div key={i} className="p-4 rounded-card border border-white/25">
+                <div className="text-2xl font-extrabold text-primary mb-0.5 tracking-tight">{stat.value}</div>
                 <div className="text-xs text-white/50 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
+
+        <div className="absolute inset-x-0 bottom-0 h-2 bg-primary" aria-hidden="true" />
       </div>
 
       {/* Right side - Register form */}
@@ -97,15 +87,15 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2.5 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
             </div>
-            <span className="text-xl font-semibold">SDental</span>
+            <span className="text-xl font-extrabold uppercase">SDental</span>
           </div>
 
-          <Card className="border-border/40 shadow-soft-md">
+          <Card>
             <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-xl font-semibold text-center">Criar Conta</CardTitle>
+              <CardTitle className="text-xl text-center">Criar Conta</CardTitle>
               <CardDescription className="text-center text-sm">
                 Cadastre sua clinica para comecar a usar o SDental
               </CardDescription>
@@ -113,7 +103,7 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/8 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 border border-destructive/10">
+                  <div className="bg-destructive/8 text-destructive p-3 rounded-button text-sm flex items-center gap-2 border border-destructive/20">
                     <AlertIcon />
                     {error}
                   </div>
@@ -208,15 +198,15 @@ export default function RegisterPage() {
                 </Button>
                 <p className="text-sm text-center text-muted-foreground">
                   Ja tem uma conta?{' '}
-                  <Link href="/login" className="text-primary hover:underline font-medium">
+                  <Link href="/login" className="text-accent hover:underline font-medium">
                     Faca login
                   </Link>
                 </p>
                 <p className="text-xs text-center text-muted-foreground">
                   Ao se cadastrar, voce concorda com nossos{' '}
-                  <Link href="/termos" className="text-primary hover:underline">Termos de Uso</Link>
+                  <Link href="/termos" className="text-accent hover:underline">Termos de Uso</Link>
                   {' '}e{' '}
-                  <Link href="/privacidade" className="text-primary hover:underline">Politica de Privacidade</Link>.
+                  <Link href="/privacidade" className="text-accent hover:underline">Politica de Privacidade</Link>.
                 </p>
               </CardFooter>
             </form>

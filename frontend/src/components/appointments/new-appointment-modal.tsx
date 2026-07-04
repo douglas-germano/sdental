@@ -184,7 +184,7 @@ export function NewAppointmentModal({
 
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
+            <div className="h-12 w-12 rounded-card bg-primary flex items-center justify-center">
               <CalendarPlus className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -322,7 +322,7 @@ export function NewAppointmentModal({
                   Selecione data e servico
                 </div>
               ) : slots.length === 0 ? (
-                <div className="flex items-center gap-2 text-sm text-amber-600 h-10 px-3.5 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2 text-sm text-warning h-10 px-3.5 bg-warning/10 rounded-button border border-warning/30">
                   <AlertCircle className="h-4 w-4" />
                   Sem horarios disponiveis
                 </div>

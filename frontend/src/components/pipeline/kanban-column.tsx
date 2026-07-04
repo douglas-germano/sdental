@@ -29,8 +29,8 @@ export function KanbanColumn({ stage }: Props) {
     }
 
     return (
-        <div className="flex-shrink-0 w-80 flex flex-col h-full rounded-xl bg-muted/30 border border-border/60">
-            <div className="p-4 border-b border-border/60 flex items-center justify-between bg-white/50 backdrop-blur-sm rounded-t-xl">
+        <div className="flex-shrink-0 w-80 flex flex-col h-full rounded-card bg-muted/30 border border-border/60">
+            <div className="p-4 border-b border-border/60 flex items-center justify-between bg-card rounded-t-card">
                 <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-sm tracking-tight">{stage.name}</h3>
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={badgeStyle}>

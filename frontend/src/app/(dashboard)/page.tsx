@@ -322,7 +322,7 @@ export default function DashboardPage() {
                     className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
                         {apt.patient?.name?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div>
@@ -401,7 +401,7 @@ export default function DashboardPage() {
                     className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
                         {conv.patient?.name?.charAt(0).toUpperCase() || conv.phone_number?.charAt(0) || '?'}
                       </div>
                       <div className="min-w-0">

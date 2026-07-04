@@ -9,7 +9,7 @@ const config: Config = {
   ],
   theme: {
     fontFamily: {
-      sans: ['var(--font-sans)', 'system-ui', '-apple-system', 'sans-serif'],
+      sans: ['var(--font-sans)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
     },
     extend: {
       colors: {
@@ -21,6 +21,7 @@ const config: Config = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          shade: 'hsl(var(--primary-shade))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -48,6 +49,7 @@ const config: Config = {
         },
         popover: {
           DEFAULT: 'hsl(var(--popover))',
+          popover: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
         card: {
@@ -58,30 +60,41 @@ const config: Config = {
           DEFAULT: 'hsl(var(--sidebar-bg))',
           border: 'hsl(var(--sidebar-border))',
         },
+        charcoal: {
+          DEFAULT: 'hsl(var(--charcoal))',
+          foreground: 'hsl(var(--charcoal-foreground))',
+        },
       },
       borderRadius: {
+        /* Vodafone-inspired non-linear scale: sharp utility rectangles vs. full pills */
+        none: '0px',
+        hairline: '1px',
+        button: '2px',
+        sm: '2px',
+        DEFAULT: '6px',
+        md: '4px',
+        card: '6px',
         lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
-        xl: 'calc(var(--radius) + 4px)',
-        '2xl': 'calc(var(--radius) + 8px)',
-        '3xl': 'calc(var(--radius) + 16px)',
+        xl: '12px',
+        '2xl': '16px',
+        'glass-pill': '24px',
+        'badge-pill': '32px',
+        pill: '60px',
+        full: '9999px',
       },
       boxShadow: {
-        'soft': '0 1px 2px rgba(0,0,0,0.05)',
-        'soft-md': '0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.05)',
-        'soft-lg': '0 2px 4px rgba(0,0,0,0.03), 0 6px 16px rgba(0,0,0,0.07)',
-        'soft-xl': '0 4px 6px rgba(0,0,0,0.03), 0 12px 32px rgba(0,0,0,0.09)',
-        'glow': '0 0 0 1px hsl(var(--primary) / 0.4), 0 4px 16px -4px hsl(var(--primary) / 0.35)',
-        'glow-lg': '0 0 0 1px hsl(var(--primary) / 0.3), 0 8px 24px -6px hsl(var(--primary) / 0.3)',
-        'inner-soft': 'inset 0 1px 2px rgba(0,0,0,0.04)',
-        'border': '0 0 0 1px rgba(0,0,0,0.04)',
+        /* The system is deliberately flat — only an inset focus ring is used for elevation. */
+        none: 'none',
+        soft: 'none',
+        'soft-md': 'none',
+        'soft-lg': 'none',
+        'soft-xl': 'none',
+        focus: 'inset 0 0 0 1px hsl(var(--ring))',
+        'border': '0 0 0 1px hsl(var(--border))',
       },
       backgroundImage: {
+        /* Gradient-free system — kept only as escape hatches, unused by default components */
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'gradient-primary': 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)',
-        'gradient-subtle': 'linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%)',
       },
       animation: {
         'fade-in': 'fade-in 0.2s ease-out forwards',
@@ -92,7 +105,6 @@ const config: Config = {
         'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
         'shimmer': 'shimmer 1.4s ease-in-out infinite',
         'spin-slow': 'spin-slow 3s linear infinite',
-        'float': 'float 3s ease-in-out infinite',
       },
       keyframes: {
         'fade-in': {
@@ -127,23 +139,22 @@ const config: Config = {
           from: { transform: 'rotate(0deg)' },
           to: { transform: 'rotate(360deg)' },
         },
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-4px)' },
-        },
       },
       transitionDuration: {
         '400': '400ms',
       },
       transitionTimingFunction: {
         'ease-out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
-        'bounce-in': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
       letterSpacing: {
         tightest: '-0.02em',
+        display: '-0.01em',
       },
       fontSize: {
         '2xs': ['0.65rem', { lineHeight: '1rem' }],
+        'display-sm': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.01em', fontWeight: '800' }],
+        'display-md': ['3.5rem', { lineHeight: '0.95', letterSpacing: '-0.02em', fontWeight: '800' }],
+        'display-lg': ['5rem', { lineHeight: '0.9', letterSpacing: '-0.02em', fontWeight: '800' }],
       },
     },
   },

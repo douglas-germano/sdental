@@ -193,7 +193,7 @@ export default function BookingPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div className="min-h-screen bg-background flex items-center justify-center">
                 <PageLoader size="lg" message="Carregando..." />
             </div>
         )
@@ -201,14 +201,14 @@ export default function BookingPage() {
 
     if (error && !clinic) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
                 <Card className="max-w-md w-full">
                     <CardContent className="p-8 text-center">
-                        <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                        <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
                             <span className="text-2xl">❌</span>
                         </div>
                         <h2 className="text-xl font-semibold mb-2">Erro</h2>
-                        <p className="text-gray-600">{error}</p>
+                        <p className="text-muted-foreground">{error}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -217,25 +217,25 @@ export default function BookingPage() {
 
     if (success && appointment) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
                 <Card className="max-w-md w-full">
                     <CardContent className="p-8 text-center">
-                        <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                            <CheckCircle className="h-10 w-10 text-green-600" />
+                        <div className="h-20 w-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
+                            <CheckCircle className="h-10 w-10 text-success" />
                         </div>
-                        <h2 className="text-2xl font-bold text-green-800 mb-2">
+                        <h2 className="text-2xl font-bold text-success mb-2">
                             Agendamento Confirmado!
                         </h2>
-                        <p className="text-gray-600 mb-6">
+                        <p className="text-muted-foreground mb-6">
                             Seu horário foi reservado com sucesso.
                         </p>
-                        <div className="bg-green-50 rounded-xl p-4 text-left space-y-2">
+                        <div className="bg-success/5 rounded-card p-4 text-left space-y-2">
                             <p><strong>Serviço:</strong> {appointment.service}</p>
                             <p><strong>Data:</strong> {appointment.date}</p>
                             <p><strong>Horário:</strong> {appointment.time}</p>
                             <p><strong>Paciente:</strong> {appointment.patient_name}</p>
                         </div>
-                        <p className="text-sm text-gray-500 mt-6">
+                        <p className="text-sm text-muted-foreground mt-6">
                             Em caso de dúvidas, entre em contato pelo telefone da clínica.
                         </p>
                     </CardContent>
@@ -245,14 +245,15 @@ export default function BookingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+        <div className="min-h-screen bg-background py-8 px-4">
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-3xl font-extrabold uppercase tracking-tight text-foreground mb-2">
                         {clinic?.name}
                     </h1>
-                    <p className="text-gray-600">Agende sua consulta online</p>
+                    <p className="text-muted-foreground">Agende sua consulta online</p>
+                    <div className="w-12 h-1 bg-primary mx-auto mt-4" aria-hidden="true" />
                 </div>
 
                 {/* Progress Steps */}
@@ -266,8 +267,8 @@ export default function BookingPage() {
                                         className={cn(
                                             'h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
                                             step >= s
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-gray-200 text-gray-500'
+                                                ? 'bg-primary text-white'
+                                                : 'bg-muted text-muted-foreground'
                                         )}
                                     >
                                         {s}
@@ -276,7 +277,7 @@ export default function BookingPage() {
                                         <div
                                             className={cn(
                                                 'w-8 h-1 mx-1',
-                                                step > s ? 'bg-blue-600' : 'bg-gray-200'
+                                                step > s ? 'bg-primary' : 'bg-muted'
                                             )}
                                         />
                                     )}
@@ -288,7 +289,7 @@ export default function BookingPage() {
 
                 {/* Error Message */}
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
+                    <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-card mb-6">
                         {error}
                     </div>
                 )}
@@ -298,13 +299,13 @@ export default function BookingPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-5 w-5 text-blue-600" />
+                                <FileText className="h-5 w-5 text-primary" />
                                 Selecione o Serviço
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {(!clinic?.services || clinic.services.length === 0) ? (
-                                <p className="text-gray-500 text-center py-8">
+                                <p className="text-muted-foreground text-center py-8">
                                     Nenhum serviço disponível
                                 </p>
                             ) : (
@@ -317,16 +318,16 @@ export default function BookingPage() {
                                             setStep(2)
                                         }}
                                         className={cn(
-                                            'w-full p-4 rounded-xl border-2 text-left transition-all hover:border-blue-400 hover:bg-blue-50',
+                                            'w-full p-4 rounded-card border-2 text-left transition-all hover:border-primary/50 hover:bg-primary/5',
                                             selectedService?.name === service.name
-                                                ? 'border-blue-600 bg-blue-50'
-                                                : 'border-gray-200'
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-border'
                                         )}
                                     >
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="font-medium text-gray-900">{service.name}</p>
-                                                <p className="text-sm text-gray-500">
+                                                <p className="font-medium text-foreground">{service.name}</p>
+                                                <p className="text-sm text-muted-foreground">
                                                     Duração: {service.duration} minutos
                                                 </p>
                                             </div>
@@ -348,7 +349,7 @@ export default function BookingPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Users className="h-5 w-5 text-blue-600" />
+                                <Users className="h-5 w-5 text-primary" />
                                 Escolha o Profissional
                             </CardTitle>
                         </CardHeader>
@@ -360,19 +361,19 @@ export default function BookingPage() {
                                     setStep(3)
                                 }}
                                 className={cn(
-                                    'w-full p-4 rounded-xl border-2 text-left transition-all hover:border-blue-400 hover:bg-blue-50',
+                                    'w-full p-4 rounded-card border-2 text-left transition-all hover:border-primary/50 hover:bg-primary/5',
                                     selectedProfessional === null
-                                        ? 'border-blue-600 bg-blue-50'
-                                        : 'border-gray-200'
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-border'
                                 )}
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <Users className="h-5 w-5 text-gray-600" />
+                                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                        <Users className="h-5 w-5 text-muted-foreground" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-gray-900">Qualquer profissional</p>
-                                        <p className="text-sm text-gray-500">Proximo disponivel</p>
+                                        <p className="font-medium text-foreground">Qualquer profissional</p>
+                                        <p className="text-sm text-muted-foreground">Proximo disponivel</p>
                                     </div>
                                 </div>
                             </button>
@@ -386,10 +387,10 @@ export default function BookingPage() {
                                         setStep(3)
                                     }}
                                     className={cn(
-                                        'w-full p-4 rounded-xl border-2 text-left transition-all hover:border-blue-400 hover:bg-blue-50',
+                                        'w-full p-4 rounded-card border-2 text-left transition-all hover:border-primary/50 hover:bg-primary/5',
                                         selectedProfessional?.id === professional.id
-                                            ? 'border-blue-600 bg-blue-50'
-                                            : 'border-gray-200'
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border'
                                     )}
                                 >
                                     <div className="flex items-center gap-3">
@@ -400,9 +401,9 @@ export default function BookingPage() {
                                             {professional.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">{professional.name}</p>
+                                            <p className="font-medium text-foreground">{professional.name}</p>
                                             {professional.specialty && (
-                                                <p className="text-sm text-gray-500">{professional.specialty}</p>
+                                                <p className="text-sm text-muted-foreground">{professional.specialty}</p>
                                             )}
                                         </div>
                                     </div>
@@ -426,7 +427,7 @@ export default function BookingPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Calendar className="h-5 w-5 text-blue-600" />
+                                <Calendar className="h-5 w-5 text-primary" />
                                 Escolha a Data
                             </CardTitle>
                         </CardHeader>
@@ -444,13 +445,13 @@ export default function BookingPage() {
                                         className={cn(
                                             'p-2 rounded-lg text-center transition-all',
                                             !day.available
-                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                ? 'bg-muted text-muted-foreground/60 cursor-not-allowed'
                                                 : selectedDate === day.date
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                                                    ? 'bg-primary text-white'
+                                                    : 'bg-white border border-border hover:border-primary/50 hover:bg-primary/5'
                                         )}
                                     >
-                                        <p className="text-xs text-gray-500">{day.weekday}</p>
+                                        <p className="text-xs text-muted-foreground">{day.weekday}</p>
                                         <p className="font-medium">{day.day}</p>
                                     </button>
                                 ))}
@@ -472,10 +473,10 @@ export default function BookingPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Clock className="h-5 w-5 text-blue-600" />
+                                <Clock className="h-5 w-5 text-primary" />
                                 Escolha o Horario
                             </CardTitle>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted-foreground">
                                 {selectedDate && formatDate(selectedDate)}
                                 {selectedProfessional && ` - ${selectedProfessional.name}`}
                             </p>
@@ -483,10 +484,10 @@ export default function BookingPage() {
                         <CardContent>
                             {loadingSlots ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
                                 </div>
                             ) : timeSlots.length === 0 ? (
-                                <p className="text-gray-500 text-center py-8">
+                                <p className="text-muted-foreground text-center py-8">
                                     Nenhum horario disponivel nesta data
                                 </p>
                             ) : (
@@ -501,8 +502,8 @@ export default function BookingPage() {
                                             className={cn(
                                                 'p-3 rounded-lg text-center transition-all font-medium',
                                                 selectedTime === slot.time
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                                                    ? 'bg-primary text-white'
+                                                    : 'bg-white border border-border hover:border-primary/50 hover:bg-primary/5'
                                             )}
                                         >
                                             {slot.time}
@@ -527,13 +528,13 @@ export default function BookingPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <User className="h-5 w-5 text-blue-600" />
+                                <User className="h-5 w-5 text-primary" />
                                 Seus Dados
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             {/* Summary */}
-                            <div className="bg-blue-50 rounded-xl p-4 space-y-1 text-sm">
+                            <div className="bg-primary/5 rounded-card p-4 space-y-1 text-sm">
                                 <p><strong>Servico:</strong> {selectedService?.name}</p>
                                 {selectedProfessional && (
                                     <p><strong>Profissional:</strong> {selectedProfessional.name}</p>
@@ -599,16 +600,16 @@ export default function BookingPage() {
                                 </div>
                             </div>
 
-                            <label className="flex items-start gap-3 text-sm text-gray-600 cursor-pointer">
+                            <label className="flex items-start gap-3 text-sm text-muted-foreground cursor-pointer">
                                 <input
                                     type="checkbox"
                                     checked={consent}
                                     onChange={(e) => setConsent(e.target.checked)}
-                                    className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="mt-0.5 rounded border-border text-primary focus:ring-primary/40"
                                 />
                                 <span>
                                     Concordo com o tratamento dos meus dados pessoais para fins de agendamento, conforme a{' '}
-                                    <a href="/privacidade" target="_blank" className="text-blue-600 hover:underline">
+                                    <a href="/privacidade" target="_blank" className="text-accent hover:underline">
                                         Política de Privacidade
                                     </a>. *
                                 </span>
@@ -626,7 +627,7 @@ export default function BookingPage() {
                                 <Button
                                     onClick={handleSubmit}
                                     disabled={!formData.name || !formData.phone || !consent || submitting}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                    className="flex-1"
                                 >
                                     {submitting ? (
                                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -641,7 +642,7 @@ export default function BookingPage() {
                 )}
 
                 {/* Footer */}
-                <div className="text-center mt-8 text-sm text-gray-500">
+                <div className="text-center mt-8 text-sm text-muted-foreground">
                     <p>Powered by SDental</p>
                 </div>
             </div>

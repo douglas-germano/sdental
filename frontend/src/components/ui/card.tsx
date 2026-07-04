@@ -4,17 +4,18 @@ import { cn } from '@/lib/utils'
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   hover?: boolean
-  glass?: boolean
+  /** Deliberate single-corner-rounded shape echoing the speech-mark logo geometry */
+  asymmetric?: boolean
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, hover = false, glass = false, ...props }, ref) => (
+  ({ className, hover = false, asymmetric = false, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-border bg-card text-card-foreground shadow-soft transition-all duration-150',
-        hover && 'hover:shadow-soft-md hover:border-foreground/15 cursor-pointer',
-        glass && 'glass border-white/20',
+        'rounded-card border border-border bg-card text-card-foreground transition-colors duration-150',
+        asymmetric && 'rounded-none rounded-tr-card',
+        hover && 'hover:border-foreground/25 cursor-pointer',
         className
       )}
       {...props}
@@ -42,7 +43,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      'text-base font-semibold leading-none tracking-tight text-foreground',
+      'text-base font-bold leading-none tracking-tight text-foreground',
       className
     )}
     {...props}

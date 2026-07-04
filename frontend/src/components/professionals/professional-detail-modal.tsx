@@ -140,7 +140,7 @@ export function ProfessionalDetailModal({
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div
-              className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg text-white font-semibold text-lg"
+              className="h-12 w-12 rounded-card flex items-center justify-center text-white font-semibold text-lg"
               style={{ backgroundColor: professional.color || '#3B82F6' }}
             >
               {professional.name.charAt(0).toUpperCase()}

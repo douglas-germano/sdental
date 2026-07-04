@@ -4,24 +4,26 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-xs font-medium tracking-wide transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+  'inline-flex items-center gap-1.5 border px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
   {
     variants: {
       variant: {
+        /* Outlined Red Pill - inline article/list metadata */
         default:
-          'border-primary/15 bg-primary/10 text-primary',
+          'rounded-sm border-primary bg-background/80 text-foreground/80',
+        /* Filled Neutral Pill - quieter tags */
         secondary:
-          'border-transparent bg-secondary text-secondary-foreground',
+          'rounded-badge-pill border-transparent bg-secondary text-secondary-foreground normal-case',
         destructive:
-          'border-destructive/15 bg-destructive/10 text-destructive',
+          'rounded-sm border-destructive bg-destructive/10 text-destructive',
         outline:
-          'text-foreground border-border',
+          'rounded-sm text-foreground border-border normal-case',
         success:
-          'border-success/15 bg-success/10 text-success',
+          'rounded-sm border-success bg-success/10 text-success',
         warning:
-          'border-warning/15 bg-warning/10 text-warning',
+          'rounded-sm border-warning bg-warning/10 text-warning',
         info:
-          'border-primary/15 bg-primary/10 text-primary',
+          'rounded-sm border-accent bg-accent/10 text-accent',
       },
       size: {
         default: 'px-2.5 py-0.5 text-xs',
@@ -51,7 +53,7 @@ function Badge({ className, variant, size, dot, children, ...props }: BadgeProps
           variant === 'success' && 'bg-success',
           variant === 'destructive' && 'bg-destructive',
           variant === 'warning' && 'bg-warning',
-          variant === 'info' && 'bg-primary',
+          variant === 'info' && 'bg-accent',
           variant === 'default' && 'bg-primary',
           (!variant || variant === 'secondary' || variant === 'outline') && 'bg-muted-foreground',
         )} />

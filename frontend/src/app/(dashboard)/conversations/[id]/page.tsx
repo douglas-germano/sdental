@@ -295,7 +295,7 @@ export default function ConversationDetailPage() {
         >
           <div className={cn(
             'h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-white font-semibold text-sm',
-            conversation.urgent ? 'bg-destructive' : 'bg-gradient-primary'
+            conversation.urgent ? 'bg-destructive' : 'bg-primary'
           )}>
             {conversation.patient?.name?.charAt(0).toUpperCase() || '?'}
           </div>

@@ -19,7 +19,7 @@ export default function ConversationsLayout({
 
   return (
     <ConversationsProvider>
-      <div className="flex h-[100dvh] lg:h-[calc(100dvh-2rem)] lg:rounded-2xl lg:border lg:border-border lg:shadow-soft overflow-hidden bg-card">
+      <div className="flex h-[100dvh] lg:h-[calc(100dvh-2rem)] lg:rounded-card lg:border lg:border-border overflow-hidden bg-card">
         <div className={cn(
           'w-full lg:w-[360px] xl:w-[400px] shrink-0 border-r border-border flex flex-col',
           hasSelectedConversation ? 'hidden lg:flex' : 'flex'

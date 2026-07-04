@@ -235,7 +235,7 @@ export function PatientDetailModal({
 
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg text-white font-semibold text-lg">
+            <div className="h-12 w-12 rounded-card bg-primary flex items-center justify-center text-white font-semibold text-lg">
               {patient.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1">

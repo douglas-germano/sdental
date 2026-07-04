@@ -260,7 +260,7 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="search">
-              Buscar Contato <span className="text-red-500">*</span>
+              Buscar Contato <span className="text-destructive">*</span>
             </Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -323,7 +323,7 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-medium truncate">{displayName}</p>
                               {result.type === 'conversation' && (
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex-shrink-0">
+                                <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full flex-shrink-0">
                                   Conversa
                                 </span>
                               )}
@@ -354,7 +354,7 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
 
           <div className="space-y-2">
             <Label htmlFor="stageId">
-              Estágio <span className="text-red-500">*</span>
+              Estágio <span className="text-destructive">*</span>
             </Label>
             <Select
               id="stageId"

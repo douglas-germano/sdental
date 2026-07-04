@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { EnvelopeSimple as Mail, Lock, Sparkle as Sparkles, ArrowRight, CheckCircle as CheckCircle2 } from '@phosphor-icons/react'
+import { EnvelopeSimple as Mail, Lock, ChatCircleDots, ArrowRight, CheckCircle as CheckCircle2 } from '@phosphor-icons/react'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -41,32 +41,17 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ background: 'linear-gradient(160deg, hsl(238 76% 55%) 0%, hsl(262 83% 50%) 50%, hsl(280 70% 45%) 100%)' }}>
-        {/* Layered decorative elements */}
-        <div className="absolute inset-0">
-          <div className="absolute -top-1/3 -left-1/4 w-2/3 h-2/3 bg-white/[0.07] rounded-full blur-[100px]" />
-          <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-black/15 rounded-full blur-[80px]" />
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.04]" style={{
-            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-            backgroundSize: '32px 32px'
-          }} />
-          {/* Floating geometric shapes */}
-          <div className="absolute top-[15%] right-[10%] w-24 h-24 border border-white/10 rounded-2xl rotate-12" />
-          <div className="absolute bottom-[20%] left-[8%] w-16 h-16 border border-white/[0.08] rounded-xl -rotate-6" />
-          <div className="absolute top-[60%] right-[25%] w-10 h-10 border border-white/[0.06] rounded-lg rotate-45" />
-        </div>
-
+      {/* Left side - Charcoal institutional panel */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-charcoal text-charcoal-foreground">
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg shadow-black/10">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center">
+              <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">SDental</span>
+            <span className="text-xl font-extrabold uppercase tracking-tight text-white">SDental</span>
           </div>
 
-          <h1 className="text-3xl xl:text-[2.5rem] font-bold text-white mb-5 leading-[1.15] tracking-tight">
+          <h1 className="text-4xl xl:text-5xl font-extrabold text-white mb-5 leading-[0.95] tracking-tight uppercase">
             Gerencie sua clinica<br />de forma inteligente
           </h1>
 
@@ -80,15 +65,15 @@ export default function LoginPage() {
               'Gestao completa de pacientes',
               'Relatorios e analises detalhadas'
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 text-white/75">
-                <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
-                  <CheckCircle2 className="w-3 h-3 text-white/70" />
-                </div>
+              <div key={i} className="flex items-center gap-3 text-white/80">
+                <CheckCircle2 className="w-5 h-5 text-primary shrink-0" weight="fill" />
                 <span className="text-sm font-medium">{item}</span>
               </div>
             ))}
           </div>
         </div>
+
+        <div className="absolute inset-x-0 bottom-0 h-2 bg-primary" aria-hidden="true" />
       </div>
 
       {/* Right side - Login form */}
@@ -96,15 +81,15 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2.5 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
             </div>
-            <span className="text-xl font-semibold">SDental</span>
+            <span className="text-xl font-extrabold uppercase">SDental</span>
           </div>
 
-          <Card className="border-border/40 shadow-soft-md">
+          <Card>
             <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-xl font-semibold text-center">Bem-vindo de volta</CardTitle>
+              <CardTitle className="text-xl text-center">Bem-vindo de volta</CardTitle>
               <CardDescription className="text-center text-sm">
                 Entre na sua conta para acessar o painel
               </CardDescription>
@@ -112,7 +97,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/8 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 border border-destructive/10">
+                  <div className="bg-destructive/8 text-destructive p-3 rounded-button text-sm flex items-center gap-2 border border-destructive/20">
                     <AlertIcon />
                     {error}
                   </div>
@@ -134,7 +119,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password" className="text-sm">Senha</Label>
-                    <Link href="/esqueci-senha" className="text-xs text-primary hover:underline font-medium">
+                    <Link href="/esqueci-senha" className="text-xs text-accent hover:underline font-medium">
                       Esqueci minha senha
                     </Link>
                   </div>
@@ -166,7 +151,7 @@ export default function LoginPage() {
                 </Button>
                 <p className="text-sm text-center text-muted-foreground">
                   Ainda nao tem uma conta?{' '}
-                  <Link href="/register" className="text-primary hover:underline font-medium">
+                  <Link href="/register" className="text-accent hover:underline font-medium">
                     Cadastre-se
                   </Link>
                 </p>

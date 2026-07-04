@@ -157,7 +157,7 @@ export function WhatsappConnectionWizard() {
 
       {/* Step: intro */}
       {step === 'intro' && (
-        <div className="rounded-2xl border border-border/60 bg-card p-6">
+        <div className="rounded-card border border-border/60 bg-card p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
               <MessageCircle className="h-6 w-6 text-primary" />
@@ -198,7 +198,7 @@ export function WhatsappConnectionWizard() {
 
       {/* Step: connecting */}
       {step === 'connecting' && (
-        <div className="rounded-2xl border border-border/60 bg-card p-10 flex flex-col items-center justify-center text-center">
+        <div className="rounded-card border border-border/60 bg-card p-10 flex flex-col items-center justify-center text-center">
           <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
           <p className="font-medium text-foreground">Preparando a conexao...</p>
           <p className="text-sm text-muted-foreground mt-1">Isso leva apenas alguns segundos</p>
@@ -207,13 +207,13 @@ export function WhatsappConnectionWizard() {
 
       {/* Step: qrcode */}
       {step === 'qrcode' && qrCode && (
-        <div className="rounded-2xl border border-border/60 bg-card p-6 flex flex-col items-center">
+        <div className="rounded-card border border-border/60 bg-card p-6 flex flex-col items-center">
           <h3 className="font-semibold text-foreground mb-1">Escaneie o QR Code</h3>
           <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
             No WhatsApp do celular, va em <strong>Aparelhos conectados</strong> {'>'} <strong>Conectar aparelho</strong> e aponte a camera para o codigo abaixo.
           </p>
 
-          <div className="relative bg-white p-4 rounded-2xl border border-border/60 shadow-soft">
+          <div className="relative bg-white p-4 rounded-card border border-border/60">
             <img
               src={qrCode.startsWith('data:image') ? qrCode : `data:image/png;base64,${qrCode}`}
               alt="WhatsApp QR Code"
@@ -249,7 +249,7 @@ export function WhatsappConnectionWizard() {
 
       {/* Step: connected */}
       {step === 'connected' && (
-        <div className="rounded-2xl border border-success/30 bg-success/5 p-6 flex flex-col items-center text-center">
+        <div className="rounded-card border border-success/30 bg-success/5 p-6 flex flex-col items-center text-center">
           <div className="w-14 h-14 rounded-full bg-success/15 flex items-center justify-center mb-3">
             <CheckCircle2 className="h-7 w-7 text-success" />
           </div>

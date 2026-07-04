@@ -149,7 +149,7 @@ export function NewPatientModal({
 
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
+            <div className="h-12 w-12 rounded-card bg-primary flex items-center justify-center">
               <UserPlus className="h-6 w-6 text-white" />
             </div>
             <div>

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Lock, Sparkle as Sparkles, ArrowRight, CheckCircle as CheckCircle2, ArrowLeft } from '@phosphor-icons/react'
+import { Lock, ChatCircleDots, ArrowRight, CheckCircle as CheckCircle2, ArrowLeft } from '@phosphor-icons/react'
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -55,19 +55,19 @@ function ResetPasswordForm() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-white" />
+          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+            <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
           </div>
-          <span className="text-xl font-semibold">SDental</span>
+          <span className="text-xl font-extrabold uppercase">SDental</span>
         </div>
 
-        <Card className="border-border/40 shadow-soft-md">
+        <Card>
           {done ? (
             <CardHeader className="space-y-3 pb-4 items-center text-center">
               <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
                 <CheckCircle2 className="h-6 w-6 text-success" />
               </div>
-              <CardTitle className="text-xl font-semibold">Senha redefinida!</CardTitle>
+              <CardTitle className="text-xl">Senha redefinida!</CardTitle>
               <CardDescription className="text-sm">
                 Redirecionando para o login...
               </CardDescription>
@@ -75,7 +75,7 @@ function ResetPasswordForm() {
           ) : !token ? (
             <>
               <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-xl font-semibold text-center">Link invalido</CardTitle>
+                <CardTitle className="text-xl text-center">Link invalido</CardTitle>
                 <CardDescription className="text-center text-sm">
                   Este link de redefinicao de senha e invalido ou esta incompleto.
                 </CardDescription>
@@ -89,7 +89,7 @@ function ResetPasswordForm() {
           ) : (
             <>
               <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-xl font-semibold text-center">Redefinir senha</CardTitle>
+                <CardTitle className="text-xl text-center">Redefinir senha</CardTitle>
                 <CardDescription className="text-center text-sm">
                   Escolha uma nova senha para sua conta
                 </CardDescription>
@@ -97,7 +97,7 @@ function ResetPasswordForm() {
               <form onSubmit={handleSubmit(onSubmit)}>
                 <CardContent className="space-y-4">
                   {error && (
-                    <div className="bg-destructive/8 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 border border-destructive/10">
+                    <div className="bg-destructive/8 text-destructive p-3 rounded-button text-sm flex items-center gap-2 border border-destructive/20">
                       {error}
                     </div>
                   )}

@@ -194,7 +194,7 @@ export default function PatientsPage() {
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm">
+                          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
                             {patient.name.charAt(0).toUpperCase()}
                           </div>
                           <span className="font-medium">{patient.name}</span>

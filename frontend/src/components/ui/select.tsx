@@ -16,10 +16,10 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <div className="relative group">
         <select
           className={cn(
-            'flex h-10 w-full items-center justify-between rounded-lg border bg-background px-3.5 py-2 pr-10 text-sm ring-offset-background transition-colors duration-150',
+            'flex h-10 w-full items-center justify-between rounded-button border bg-background px-3.5 py-2 pr-10 text-sm ring-offset-background transition-colors duration-150',
             'text-foreground',
             '[&>option[value=""]]:text-muted-foreground',
-            'hover:border-foreground/20',
+            'hover:border-foreground/40',
             'focus:outline-none focus:ring-2 focus:ring-ring/25 focus:border-primary',
             'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-input',
             'appearance-none cursor-pointer',
