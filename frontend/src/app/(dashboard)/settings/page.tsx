@@ -236,7 +236,7 @@ export default function SettingsPage() {
                 <div className="space-y-1">
                   {/* Clinic Name */}
                   <div className={cn(
-                    "flex items-center justify-between py-3 border-b border-border/60",
+                    "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60",
                     editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
                   )}>
                     <div className="flex items-center gap-3">
@@ -247,7 +247,7 @@ export default function SettingsPage() {
                       <Input
                         value={profileForm.name}
                         onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                        className="w-64"
+                        className="w-full sm:w-64"
                         placeholder="Nome da clínica"
                       />
                     ) : (
@@ -256,7 +256,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Email (read-only) */}
-                  <div className="flex items-center justify-between py-3 border-b border-border/60">
+                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60">
                     <div className="flex items-center gap-3">
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">Email</span>
@@ -266,7 +266,7 @@ export default function SettingsPage() {
 
                   {/* Phone */}
                   <div className={cn(
-                    "flex items-center justify-between py-3 border-b border-border/60",
+                    "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60",
                     editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
                   )}>
                     <div className="flex items-center gap-3">
@@ -277,7 +277,7 @@ export default function SettingsPage() {
                       <Input
                         value={profileForm.phone}
                         onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                        className="w-64"
+                        className="w-full sm:w-64"
                         placeholder="Telefone"
                       />
                     ) : (
@@ -287,7 +287,7 @@ export default function SettingsPage() {
 
                   {/* Booking URL / Slug */}
                   <div className={cn(
-                    "flex items-center justify-between py-3 border-b border-border/60",
+                    "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60",
                     editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
                   )}>
                     <div className="flex items-center gap-3">
@@ -295,18 +295,18 @@ export default function SettingsPage() {
                       <span className="font-medium">Link de Agendamento</span>
                     </div>
                     {editingField === 'profile' ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-sm">/agendar/</span>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-muted-foreground text-sm shrink-0">/agendar/</span>
                         <Input
                           value={profileForm.slug}
                           onChange={(e) => setProfileForm({ ...profileForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                          className="w-48"
+                          className="flex-1 sm:flex-none sm:w-48"
                           placeholder="minha-clinica"
                         />
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-primary">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <span className="text-primary text-sm break-all">
                           {typeof window !== 'undefined' ? window.location.origin : ''}/agendar/{clinic?.slug || clinic?.id?.slice(0, 8)}
                         </span>
                         <Button
@@ -383,7 +383,7 @@ export default function SettingsPage() {
                     <div
                       key={day}
                       className={cn(
-                        "flex items-center justify-between py-3 border-b border-border/60 last:border-0",
+                        "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60 last:border-0",
                         editingField === 'hours' && "bg-muted/30 px-3 rounded-lg my-1"
                       )}
                     >
@@ -529,7 +529,7 @@ export default function SettingsPage() {
                       <div
                         key={index}
                         className={cn(
-                          "flex items-center justify-between py-3 border-b border-border/60 last:border-0 gap-3",
+                          "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60 last:border-0 gap-3",
                           editingField === 'services' && "bg-muted/30 px-3 rounded-lg my-1"
                         )}
                       >

@@ -328,6 +328,7 @@ export default function AppointmentsPage() {
               }}
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -388,7 +389,7 @@ export default function AppointmentsPage() {
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <span className="sr-only">Menu</span>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
@@ -426,6 +427,7 @@ export default function AppointmentsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
