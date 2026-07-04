@@ -163,7 +163,7 @@ export function WhatsappConnectionWizard() {
               <MessageCircle className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Conecte o WhatsApp da sua clinica</h3>
+              <h3 className="font-bold text-foreground">Conecte o WhatsApp da sua clinica</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Voce vai escanear um QR code com o celular que usa o WhatsApp da clinica. A partir dai, o assistente de IA podera responder pacientes automaticamente.
               </p>
@@ -208,7 +208,7 @@ export function WhatsappConnectionWizard() {
       {/* Step: qrcode */}
       {step === 'qrcode' && qrCode && (
         <div className="rounded-card border border-border/60 bg-card p-6 flex flex-col items-center">
-          <h3 className="font-semibold text-foreground mb-1">Escaneie o QR Code</h3>
+          <h3 className="font-bold text-foreground mb-1">Escaneie o QR Code</h3>
           <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
             No WhatsApp do celular, va em <strong>Aparelhos conectados</strong> {'>'} <strong>Conectar aparelho</strong> e aponte a camera para o codigo abaixo.
           </p>
@@ -253,7 +253,7 @@ export function WhatsappConnectionWizard() {
           <div className="w-14 h-14 rounded-full bg-success/15 flex items-center justify-center mb-3">
             <CheckCircle2 className="h-7 w-7 text-success" />
           </div>
-          <h3 className="font-semibold text-foreground">WhatsApp conectado!</h3>
+          <h3 className="font-bold text-foreground">WhatsApp conectado!</h3>
           <p className="text-sm text-muted-foreground mt-1">
             {phoneNumber
               ? `Numero conectado: +${phoneNumber}`
