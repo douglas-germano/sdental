@@ -143,7 +143,7 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="name">
-              Nome <span className="text-red-500">*</span>
+              Nome <span className="text-destructive">*</span>
             </Label>
             <Input
               id="name"
@@ -156,7 +156,7 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
 
           <div className="space-y-2">
             <Label htmlFor="phone">
-              Telefone <span className="text-red-500">*</span>
+              Telefone <span className="text-destructive">*</span>
             </Label>
             <Input
               id="phone"
@@ -181,7 +181,7 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
 
           <div className="space-y-2">
             <Label htmlFor="stageId">
-              Estágio Inicial <span className="text-red-500">*</span>
+              Estágio Inicial <span className="text-destructive">*</span>
             </Label>
             <Select
               id="stageId"

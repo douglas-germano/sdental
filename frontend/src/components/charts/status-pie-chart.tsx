@@ -8,10 +8,10 @@ interface StatusPieChartProps {
 }
 
 const COLORS = {
-  completed: 'hsl(160, 84%, 39%)',
-  cancelled: 'hsl(350, 89%, 60%)',
+  completed: 'hsl(var(--success))',
+  cancelled: 'hsl(var(--destructive))',
   no_shows: 'hsl(var(--muted-foreground))',
-  upcoming: 'hsl(238, 84%, 67%)',
+  upcoming: 'hsl(var(--primary))',
 }
 
 export function StatusPieChart({ overview }: StatusPieChartProps) {
@@ -59,9 +59,9 @@ export function StatusPieChart({ overview }: StatusPieChartProps) {
           contentStyle={{
             backgroundColor: 'hsl(var(--background))',
             border: '1px solid hsl(var(--border))',
-            borderRadius: '12px',
+            borderRadius: '6px',
             fontSize: '12px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            boxShadow: 'none',
           }}
         />
         <Legend

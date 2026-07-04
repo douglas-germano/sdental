@@ -21,15 +21,18 @@ interface PageHeaderProps {
 export function PageHeader({ title, description, children, className }: PageHeaderProps) {
   return (
     <div className={cn('flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4', className)}>
-      <div className="min-w-0">
-        <h1 className="text-[22px] font-semibold tracking-tight text-foreground">
-          {title}
-        </h1>
-        {description && (
-          <p className="text-sm text-muted-foreground mt-1">
-            {description}
-          </p>
-        )}
+      <div className="min-w-0 flex items-start gap-3">
+        <span className="mt-1.5 h-5 w-1 shrink-0 bg-primary" aria-hidden="true" />
+        <div className="min-w-0">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+            {title}
+          </h1>
+          {description && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {description}
+            </p>
+          )}
+        </div>
       </div>
       {children && (
         <div className="flex items-center gap-3 flex-wrap shrink-0">

@@ -95,17 +95,17 @@ export default function DashboardLayout({
               'flex items-center gap-2.5 group',
               sidebarCollapsed && 'lg:gap-0'
             )}>
-              <div className="shrink-0 transition-transform hover:scale-105 duration-200">
+              <div className="shrink-0 rounded-full overflow-hidden ring-1 ring-border">
                 <Image
                   src="/icon.png"
                   alt="SDental Logo"
                   width={32}
                   height={32}
-                  className="w-8 h-8 rounded-lg"
+                  className="w-8 h-8"
                 />
               </div>
               <span className={cn(
-                'text-base font-semibold text-foreground transition-all duration-300',
+                'text-base font-extrabold uppercase tracking-tight text-foreground transition-all duration-300',
                 sidebarCollapsed ? 'lg:hidden' : 'lg:block'
               )}>
                 SDental
@@ -147,10 +147,10 @@ export default function DashboardLayout({
           {/* Clinic identity */}
           <div className={cn('px-3 pt-3', sidebarCollapsed && 'lg:px-2')}>
             <div className={cn(
-              'flex items-center gap-2.5 rounded-xl bg-muted/40 border border-border/40 p-2.5',
+              'flex items-center gap-2.5 rounded-card bg-muted/40 border border-border/40 p-2.5',
               sidebarCollapsed && 'lg:justify-center lg:p-1.5'
             )}>
-              <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center text-white text-xs font-semibold shrink-0">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
                 {clinic.name.charAt(0).toUpperCase()}
               </div>
               <div className={cn('min-w-0', sidebarCollapsed && 'lg:hidden')}>
@@ -175,10 +175,10 @@ export default function DashboardLayout({
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'relative flex items-center gap-3 text-[13px] font-medium rounded-lg transition-all duration-150',
+                    'relative flex items-center gap-3 text-xs font-bold uppercase tracking-wide rounded-button transition-colors duration-150',
                     sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-2' : 'px-3 py-2',
                     isActive
-                      ? 'bg-primary text-primary-foreground font-semibold shadow-soft'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   )}
                   onClick={() => setSidebarOpen(false)}
@@ -234,7 +234,7 @@ export default function DashboardLayout({
             no page padding on mobile and docks a composer at the very bottom. */}
         <button
           className={cn(
-            'lg:hidden fixed left-4 z-40 p-3 bg-card border border-border/60 rounded-xl shadow-soft-md hover:shadow-soft-lg hover:bg-muted transition-all duration-200',
+            'lg:hidden fixed left-4 z-40 p-3 bg-card border border-border/60 rounded-card hover:bg-muted transition-colors duration-200',
             pathname.startsWith('/conversations') ? 'bottom-20' : 'bottom-4'
           )}
           onClick={() => setSidebarOpen(true)}

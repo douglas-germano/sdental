@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { EnvelopeSimple as Mail, Sparkle as Sparkles, ArrowLeft, EnvelopeOpen as MailCheck } from '@phosphor-icons/react'
+import { EnvelopeSimple as Mail, ChatCircleDots, ArrowLeft, EnvelopeOpen as MailCheck } from '@phosphor-icons/react'
 
 export default function ForgotPasswordPage() {
   const [error, setError] = useState('')
@@ -43,20 +43,20 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-white" />
+          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+            <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
           </div>
-          <span className="text-xl font-semibold">SDental</span>
+          <span className="text-xl font-extrabold uppercase">SDental</span>
         </div>
 
-        <Card className="border-border/40 shadow-soft-md">
+        <Card>
           {sent ? (
             <>
               <CardHeader className="space-y-3 pb-4 items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <MailCheck className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle className="text-xl font-semibold">Verifique seu e-mail</CardTitle>
+                <CardTitle className="text-xl">Verifique seu e-mail</CardTitle>
                 <CardDescription className="text-sm">
                   Se o e-mail informado estiver cadastrado, voce recebera um link para redefinir sua senha em instantes.
                 </CardDescription>
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-xl font-semibold text-center">Esqueceu sua senha?</CardTitle>
+                <CardTitle className="text-xl text-center">Esqueceu sua senha?</CardTitle>
                 <CardDescription className="text-center text-sm">
                   Informe seu e-mail e enviaremos um link para redefinir sua senha
                 </CardDescription>
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleSubmit(onSubmit)}>
                 <CardContent className="space-y-4">
                   {error && (
-                    <div className="bg-destructive/8 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 border border-destructive/10">
+                    <div className="bg-destructive/8 text-destructive p-3 rounded-button text-sm flex items-center gap-2 border border-destructive/20">
                       {error}
                     </div>
                   )}

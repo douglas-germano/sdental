@@ -139,7 +139,7 @@ export function ConversationsSidebar() {
                     <div className="relative shrink-0">
                       <div className={cn(
                         'h-11 w-11 rounded-full flex items-center justify-center text-white font-semibold text-sm',
-                        conv.urgent ? 'bg-destructive' : isUrgent(conv) ? 'bg-warning' : 'bg-gradient-primary'
+                        conv.urgent ? 'bg-destructive' : isUrgent(conv) ? 'bg-warning' : 'bg-primary'
                       )}>
                         {conv.patient?.name?.charAt(0).toUpperCase() || '?'}
                       </div>

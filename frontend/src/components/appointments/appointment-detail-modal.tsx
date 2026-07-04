@@ -98,7 +98,7 @@ export function AppointmentDetailModal({
 
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-lg">
+            <div className="h-12 w-12 rounded-card bg-primary flex items-center justify-center">
               <Calendar className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 min-w-0">
@@ -123,7 +123,7 @@ export function AppointmentDetailModal({
               Paciente
             </div>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-semibold">
+              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-white font-semibold">
                 {appointment.patient?.name?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">

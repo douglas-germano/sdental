@@ -221,7 +221,7 @@ export default function AppointmentsPage() {
         >
           <CardTitle className="text-lg flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <Filter className="h-4 w-4 text-white" />
               </div>
               Filtros
@@ -345,7 +345,7 @@ export default function AppointmentsPage() {
                   <TableRow key={apt.id} className="group">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-medium">
+                        <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-white text-sm font-medium">
                           {apt.patient?.name?.charAt(0).toUpperCase() || '?'}
                         </div>
                         <div>
@@ -415,7 +415,7 @@ export default function AppointmentsPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => handleCancel(apt.id)}
-                            className="text-red-600 focus:text-red-600"
+                            className="text-destructive focus:text-destructive"
                           >
                             <Ban className="mr-2 h-4 w-4" />
                             Cancelar

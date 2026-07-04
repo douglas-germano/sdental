@@ -4,96 +4,105 @@
 
 @layer base {
   :root {
-    /* Background & Foreground - Warmer neutrals */
-    --background: 0 0% 99%;
-    --foreground: 240 10% 6%;
+    /* Background & Foreground - Vodafone editorial canvas */
+    --background: 0 0% 100%;
+    --foreground: 210 7% 16%;
 
-    /* Card - Clean white with warmth */
+    /* Card - Canvas white, definition comes from a hairline border, never a shadow */
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 6%;
+    --card-foreground: 210 7% 16%;
 
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 6%;
+    --popover-foreground: 210 7% 16%;
 
-    /* Primary - Rich Indigo */
-    --primary: 238 76% 60%;
+    /* Primary - Vodafone Red (#e60000): the single dominant brand accent */
+    --primary: 0 100% 45%;
     --primary-foreground: 0 0% 100%;
+    --primary-shade: 5 78% 39%; /* Deep Brand Red Shade #ac1811 - quiet tag chips */
 
-    /* Secondary - Warm gray */
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 40%;
+    /* Secondary - Light Neutral (#f2f2f2) */
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 210 7% 16%;
 
     /* Muted */
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 49%; /* Secondary Body Grey #7e7e7e */
 
-    /* Accent - Violet */
-    --accent: 262 83% 58%;
+    /* Accent - Signal Blue (#3860be): reserved for inline links, never a rival brand hue */
+    --accent: 222 55% 48%;
     --accent-foreground: 0 0% 100%;
 
-    /* Destructive - Soft Red */
-    --destructive: 0 72% 51%;
+    /* Destructive - a burnt orange, kept distinct from Vodafone Red which is the brand accent */
+    --destructive: 20 90% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Success - Teal */
-    --success: 160 84% 39%;
+    /* Success - operational green, unrelated to the single-brand-hue rule (status only) */
+    --success: 160 84% 33%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning - Warm Amber */
-    --warning: 38 92% 50%;
-    --warning-foreground: 38 92% 14%;
+    /* Warning - amber gold */
+    --warning: 42 93% 47%;
+    --warning-foreground: 42 93% 14%;
 
-    /* Border & Input - Subtle, refined */
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 238 76% 60%;
+    /* Border & Input - hairline neutral */
+    --border: 0 0% 90%;
+    --input: 0 0% 85%;
+    --ring: 0 100% 45%;
 
-    /* Radius - Tighter, more geometric (new design system) */
-    --radius: 0.625rem;
+    /* Radius base - 6px "card" radius is the system default */
+    --radius: 6px;
 
     /* Sidebar */
-    --sidebar-bg: 240 6% 97%;
-    --sidebar-border: 240 6% 92%;
+    --sidebar-bg: 0 0% 100%;
+    --sidebar-border: 0 0% 91%;
+
+    /* Charcoal Institutional Panel (#25282b) - footer, share-ticker, data panels */
+    --charcoal: 210 7% 16%;
+    --charcoal-foreground: 0 0% 100%;
   }
 
   .dark {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 95%;
+    --background: 210 7% 10%;
+    --foreground: 0 0% 96%;
 
-    --card: 240 10% 7%;
-    --card-foreground: 0 0% 95%;
+    --card: 210 7% 13%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 240 10% 7%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 210 7% 13%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 238 76% 65%;
+    --primary: 0 100% 52%;
     --primary-foreground: 0 0% 100%;
+    --primary-shade: 5 70% 50%;
 
-    --secondary: 240 5% 13%;
-    --secondary-foreground: 0 0% 85%;
+    --secondary: 210 6% 18%;
+    --secondary-foreground: 0 0% 88%;
 
-    --muted: 240 5% 13%;
-    --muted-foreground: 240 4% 55%;
+    --muted: 210 6% 18%;
+    --muted-foreground: 0 0% 62%;
 
-    --accent: 262 83% 65%;
+    --accent: 222 60% 62%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 55%;
+    --destructive: 20 90% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 84% 45%;
+    --success: 160 70% 42%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 55%;
-    --warning-foreground: 38 92% 10%;
+    --warning: 42 93% 55%;
+    --warning-foreground: 42 93% 12%;
 
-    --border: 240 5% 16%;
-    --input: 240 5% 16%;
-    --ring: 238 76% 65%;
+    --border: 210 6% 22%;
+    --input: 210 6% 24%;
+    --ring: 0 100% 52%;
 
-    --sidebar-bg: 240 10% 5%;
-    --sidebar-border: 240 5% 12%;
+    --sidebar-bg: 210 8% 8%;
+    --sidebar-border: 210 6% 16%;
+
+    --charcoal: 210 8% 8%;
+    --charcoal-foreground: 0 0% 96%;
   }
 }
 
@@ -113,78 +122,69 @@
     scroll-behavior: smooth;
   }
 
-  /* Minimal, flat background - no heavy glow texture */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background: radial-gradient(ellipse 70% 45% at 50% -10%, hsl(var(--primary) / 0.025), transparent);
-    pointer-events: none;
-  }
+  /* Vodafone system is deliberately flat - no decorative background texture */
 
   /* Better focus for accessibility */
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 2px;
   }
 
   h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.015em;
+    font-weight: 700;
+  }
+
+  a {
+    color: hsl(var(--accent));
   }
 }
 
 @layer utilities {
-  /* Gradient backgrounds */
-  .bg-gradient-primary {
-    background: linear-gradient(125deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
-  }
-
+  /* No-gradient system: these utilities resolve to flat brand-red fills. Kept as
+     aliases so existing call sites don't need a rename, but nothing here ramps tone. */
+  .bg-gradient-primary,
   .bg-gradient-primary-reverse {
-    background: linear-gradient(125deg, hsl(var(--accent)) 0%, hsl(var(--primary)) 100%);
+    background: hsl(var(--primary));
   }
 
   .bg-gradient-subtle {
-    background: linear-gradient(125deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+    background: hsl(var(--secondary));
   }
 
-  /* Text gradients */
   .text-gradient-primary {
-    background: linear-gradient(125deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--primary));
   }
 
-  /* Small uppercase eyebrow label - new system signature */
+  /* Uppercase eyebrow label - Vodafone "Label Uppercase" / "Caption Uppercase" role */
   .text-kicker {
-    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+    @apply text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground;
   }
 
-  /* Glassmorphism (kept for callers, subtler blur) */
+  /* Full-width Vodafone Red divider band - the brand's "new chapter" signal */
+  .red-band {
+    @apply w-full bg-primary;
+    height: 64px;
+  }
+  @media (max-width: 600px) {
+    .red-band {
+      height: 40px;
+    }
+  }
+
+  /* Translucent glass pill - reserved for CTAs sitting on dark hero photography only */
   .glass {
-    background: rgba(255, 255, 255, 0.78);
-    backdrop-filter: blur(12px) saturate(160%);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .glass-dark {
-    background: rgba(15, 23, 42, 0.78);
-    backdrop-filter: blur(12px) saturate(160%);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    background: hsl(var(--charcoal) / 0.92);
   }
 
-  /* Hover elevation - snappier, flatter */
+  /* Flat system: hover communicates via color, not elevation */
   .hover-lift {
-    @apply transition-all duration-150 ease-out;
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-1px);
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.04),
-      0 6px 16px -4px rgba(0, 0, 0, 0.08);
+    @apply transition-colors duration-150 ease-out;
   }
 }
 
@@ -330,41 +330,19 @@
   color: hsl(var(--primary));
 }
 
-/* Flat, structured shadows - crisper than the previous soft/blurry system */
-.shadow-soft {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.shadow-soft-md {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.shadow-soft-lg {
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.03),
-    0 6px 16px rgba(0, 0, 0, 0.07);
-}
-
+/* Vodafone system is flat: no drop shadows anywhere. These classes are kept as
+   no-op aliases for existing call sites; elevation comes from color/surface only. */
+.shadow-soft,
+.shadow-soft-md,
+.shadow-soft-lg,
 .shadow-soft-xl {
-  box-shadow:
-    0 4px 6px rgba(0, 0, 0, 0.03),
-    0 12px 32px rgba(0, 0, 0, 0.09);
+  box-shadow: none;
 }
 
-/* Ring-based glow - flatter than the previous blurred glow */
-.shadow-glow {
-  box-shadow:
-    0 0 0 1px hsl(var(--primary) / 0.4),
-    0 4px 16px -4px hsl(var(--primary) / 0.35);
-}
-
+/* "Glow" resolves to the flat inset focus ring, the system's only depth cue */
+.shadow-glow,
 .shadow-glow-lg {
-  box-shadow:
-    0 0 0 1px hsl(var(--primary) / 0.3),
-    0 8px 24px -6px hsl(var(--primary) / 0.3),
-    0 0 28px -10px hsl(var(--accent) / 0.25);
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.4);
 }
 
 /* Scrollbar utilities */
@@ -378,16 +356,9 @@
 }
 .scrollbar-track-transparent::-webkit-scrollbar-track { background: transparent; }
 
-/* Interactive card styles */
+/* Interactive card styles - flat: hover shifts the border color, never elevation */
 .card-interactive {
-  @apply transition-all duration-150;
-}
-
-.card-interactive:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.03),
-    0 6px 16px rgba(0, 0, 0, 0.07);
+  @apply transition-colors duration-150 border-foreground/15;
 }
 
 /* Form field focus animation */
@@ -397,7 +368,7 @@
 
 .field-focus-effect::after {
   content: '';
-  @apply absolute inset-0 rounded-lg pointer-events-none;
+  @apply absolute inset-0 rounded pointer-events-none;
   @apply ring-2 ring-primary/0 transition-all duration-150;
 }
 

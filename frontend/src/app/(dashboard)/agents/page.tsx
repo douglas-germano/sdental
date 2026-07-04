@@ -386,7 +386,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                     <Card className="border-border/60">
                         <CardHeader className="pb-4">
                             <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-soft">
+                                <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-soft">
                                     <Bot className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
@@ -458,8 +458,8 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                     <Card className="border-border/60">
                         <CardHeader className="pb-4">
                             <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-soft">
-                                    <Sparkles className="h-5 w-5 text-white" />
+                                <div className="h-10 w-10 rounded-card bg-primary/10 flex items-center justify-center">
+                                    <Sparkles className="h-5 w-5 text-primary" />
                                 </div>
                                 <div>
                                     <CardTitle className="text-base">Modelo de Personalidade</CardTitle>
@@ -602,8 +602,8 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                         <CardHeader className="pb-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-soft">
-                                        <Brain className="h-5 w-5 text-white" />
+                                    <div className="h-10 w-10 rounded-card bg-accent/10 flex items-center justify-center">
+                                        <Brain className="h-5 w-5 text-accent" />
                                     </div>
                                     <div>
                                         <CardTitle className="text-base">Base de Conhecimento</CardTitle>
@@ -663,8 +663,8 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                         <CardHeader className="pb-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-soft">
-                                        <MessageSquare className="h-5 w-5 text-white" />
+                                    <div className="h-10 w-10 rounded-card bg-success/10 flex items-center justify-center">
+                                        <MessageSquare className="h-5 w-5 text-success" />
                                     </div>
                                     <div>
                                         <CardTitle className="text-base">Testar Agente</CardTitle>
@@ -685,7 +685,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                                 <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                                     {testMessages.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                                            <div className="h-14 w-14 rounded-2xl bg-muted/50 border border-border/40 flex items-center justify-center mb-4">
+                                            <div className="h-14 w-14 rounded-card bg-muted/50 border border-border/40 flex items-center justify-center mb-4">
                                                 <Bot className="h-7 w-7 text-muted-foreground/40" />
                                             </div>
                                             <p className="font-medium text-foreground mb-1">Teste seu agente</p>
@@ -719,7 +719,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                                                     className={cn(
                                                         "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
                                                         msg.role === 'user'
-                                                            ? 'bg-gradient-primary text-white'
+                                                            ? 'bg-primary text-white'
                                                             : 'bg-muted border border-border/40'
                                                     )}
                                                 >
@@ -733,7 +733,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                                                     className={cn(
                                                         "max-w-[75%] rounded-2xl px-4 py-2.5",
                                                         msg.role === 'user'
-                                                            ? 'bg-gradient-primary text-white rounded-tr-md'
+                                                            ? 'bg-primary text-white rounded-tr-md'
                                                             : 'bg-background border border-border/60 rounded-tl-md'
                                                     )}
                                                 >

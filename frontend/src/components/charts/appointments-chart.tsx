@@ -70,12 +70,12 @@ export function AppointmentsChart() {
       >
         <defs>
           <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="hsl(238, 84%, 67%)" stopOpacity={0.4} />
-            <stop offset="95%" stopColor="hsl(238, 84%, 67%)" stopOpacity={0} />
+            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.4} />
-            <stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} />
+            <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.4} />
+            <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
@@ -95,16 +95,16 @@ export function AppointmentsChart() {
           contentStyle={{
             backgroundColor: 'hsl(var(--background))',
             border: '1px solid hsl(var(--border))',
-            borderRadius: '12px',
+            borderRadius: '6px',
             fontSize: '12px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            boxShadow: 'none',
           }}
         />
         <Area
           type="monotone"
           dataKey="total"
           name="Total"
-          stroke="hsl(238, 84%, 67%)"
+          stroke="hsl(var(--primary))"
           strokeWidth={2}
           fillOpacity={1}
           fill="url(#colorTotal)"
@@ -113,7 +113,7 @@ export function AppointmentsChart() {
           type="monotone"
           dataKey="completed"
           name="Concluidos"
-          stroke="hsl(160, 84%, 39%)"
+          stroke="hsl(var(--success))"
           strokeWidth={2}
           fillOpacity={1}
           fill="url(#colorCompleted)"
