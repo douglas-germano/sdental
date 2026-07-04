@@ -37,6 +37,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     context = db.Column(JSONB, default=dict)  # Context for Claude
     status = db.Column(db.String(30), default=ConversationStatus.ACTIVE)
     last_message_at = db.Column(db.DateTime, default=datetime.utcnow)
+    urgent = db.Column(db.Boolean, default=False, nullable=False)
 
     # Relationships
     bot_transfers = db.relationship('BotTransfer', backref='conversation', lazy='dynamic')
@@ -172,6 +173,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             'patient': self.patient.to_dict() if self.patient else None,
             'phone_number': self.phone_number,
             'status': self.status,
+            'urgent': self.urgent,
             'last_message_at': self.last_message_at.isoformat() + 'Z' if self.last_message_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,

@@ -28,6 +28,7 @@ class Appointment(db.Model, SoftDeleteMixin, TimestampMixin):
     status = db.Column(db.String(20), default=AppointmentStatus.PENDING)
     notes = db.Column(db.Text, nullable=True)
     cancelled_at = db.Column(db.DateTime, nullable=True)
+    patient_confirmed_at = db.Column(db.DateTime, nullable=True)
 
     __table_args__ = (
         db.CheckConstraint('duration_minutes > 0 AND duration_minutes <= 1440', name='check_duration_range'),
@@ -73,12 +74,18 @@ class Appointment(db.Model, SoftDeleteMixin, TimestampMixin):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None,
+            'patient_confirmed_at': self.patient_confirmed_at.isoformat() if self.patient_confirmed_at else None,
             'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None
         }
 
     def cancel(self) -> None:
         self.status = AppointmentStatus.CANCELLED
         self.cancelled_at = datetime.utcnow()
+
+    def confirm_by_patient(self) -> None:
+        """Record that the patient themselves confirmed attendance (e.g. via WhatsApp)."""
+        self.status = AppointmentStatus.CONFIRMED
+        self.patient_confirmed_at = datetime.utcnow()
 
     def __repr__(self) -> str:
         return f'<Appointment {self.id} - {self.service_name}>'

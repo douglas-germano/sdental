@@ -255,6 +255,16 @@ class AppointmentService:
 
         return None
 
+    def find_professional_by_name(self, name: str) -> Optional[Professional]:
+        """Find an active professional by name (case-insensitive, partial match)."""
+        if not name:
+            return None
+        return Professional.query.filter(
+            Professional.clinic_id == self.clinic.id,
+            Professional.active.is_(True),
+            Professional.name.ilike(f'%{name}%')
+        ).first()
+
     def create_appointment(
         self,
         patient_name: str,
@@ -263,7 +273,8 @@ class AppointmentService:
         service_name: str,
         duration_minutes: int = 30,
         notes: Optional[str] = None,
-        professional_id: Optional[UUID] = None
+        professional_id: Optional[UUID] = None,
+        consent_source: Optional[str] = None
     ) -> tuple[Optional[Appointment], Optional[str]]:
         """
         Create an appointment, creating patient if needed.
@@ -277,6 +288,8 @@ class AppointmentService:
             notes: Optional notes
             professional_id: Optional professional to assign. If None and clinic has professionals,
                             will try to find any available professional.
+            consent_source: If a new patient record is created here, records LGPD consent
+                            with this source (e.g. 'whatsapp', 'public_booking').
 
         Returns:
             Tuple of (Appointment, error_message)
@@ -316,6 +329,8 @@ class AppointmentService:
                 name=patient_name,
                 phone=phone
             )
+            if consent_source:
+                patient.set_data_consent(consent_source)
             db.session.add(patient)
             db.session.flush()
 
@@ -385,6 +400,60 @@ class AppointmentService:
             logger.error('Failed to cancel reminders: %s', str(e))
 
         return True, None
+
+    def reschedule_appointment(
+        self,
+        appointment_id: UUID,
+        new_datetime: datetime
+    ) -> tuple[Optional[Appointment], Optional[str]]:
+        """
+        Move an existing appointment to a new date/time, keeping the same
+        patient, service and professional. Re-schedules reminders for the
+        new time.
+
+        Args:
+            appointment_id: The appointment to reschedule
+            new_datetime: The new scheduled datetime
+
+        Returns:
+            Tuple of (Appointment, error_message)
+        """
+        appointment = Appointment.query.filter_by(
+            id=appointment_id,
+            clinic_id=self.clinic.id
+        ).first()
+
+        if not appointment:
+            return None, 'Agendamento não encontrado'
+
+        if appointment.status == AppointmentStatus.CANCELLED:
+            return None, 'Não é possível reagendar um agendamento cancelado'
+
+        if not self.is_slot_available(
+            new_datetime,
+            appointment.duration_minutes,
+            exclude_appointment_id=appointment.id,
+            professional_id=appointment.professional_id
+        ):
+            return None, 'Horário não disponível'
+
+        appointment.scheduled_datetime = new_datetime
+        appointment.status = AppointmentStatus.CONFIRMED
+        appointment.patient_confirmed_at = None
+        db.session.commit()
+
+        logger.info('Appointment rescheduled: %s to %s', appointment_id, new_datetime)
+
+        # Cancel old reminders and schedule new ones for the updated time
+        try:
+            from app.services.reminder_service import ReminderService
+            reminder_service = ReminderService(self.clinic)
+            reminder_service.cancel_reminders_for_appointment(appointment_id)
+            reminder_service.schedule_reminders_for_appointment(appointment)
+        except Exception as e:
+            logger.error('Failed to reschedule reminders: %s', str(e))
+
+        return appointment, None
 
     def get_patient_appointments(
         self,

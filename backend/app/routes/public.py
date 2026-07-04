@@ -266,7 +266,8 @@ def create_booking(slug: str):
         service_name=data['service'],
         duration_minutes=duration,
         notes=data.get('notes'),
-        professional_id=professional_id
+        professional_id=professional_id,
+        consent_source='public_booking'
     )
 
     if error:

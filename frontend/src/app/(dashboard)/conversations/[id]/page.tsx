@@ -293,7 +293,10 @@ export default function ConversationDetailPage() {
           onClick={() => setShowInfo((v) => !v)}
           className="flex items-center gap-3 flex-1 min-w-0 text-left"
         >
-          <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm">
+          <div className={cn(
+            'h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-white font-semibold text-sm',
+            conversation.urgent ? 'bg-destructive' : 'bg-gradient-primary'
+          )}>
             {conversation.patient?.name?.charAt(0).toUpperCase() || '?'}
           </div>
           <div className="min-w-0">
@@ -318,6 +321,9 @@ export default function ConversationDetailPage() {
               {conversation.status === 'active' ? 'IA Ativa' : 'IA Pausada'}
             </Label>
           </div>
+          {conversation.urgent && (
+            <Badge variant="destructive" size="sm" dot>Urgente</Badge>
+          )}
           <Badge className={cn(getStatusColor(conversation.status))} size="sm">
             {getStatusLabel(conversation.status)}
           </Badge>
@@ -329,11 +335,16 @@ export default function ConversationDetailPage() {
 
       {/* Transferred alert / resolve bar */}
       {conversation.status === 'transferred_to_human' && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-warning/5 border-b border-warning/20 shrink-0">
+        <div className={cn(
+          'flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 border-b shrink-0',
+          conversation.urgent ? 'bg-destructive/5 border-destructive/20' : 'bg-warning/5 border-warning/20'
+        )}>
           <div className="flex items-center gap-2.5">
-            <AlertCircle className="h-4 w-4 text-warning shrink-0" />
+            <AlertCircle className={cn('h-4 w-4 shrink-0', conversation.urgent ? 'text-destructive' : 'text-warning')} />
             <div>
-              <p className="font-semibold text-warning text-xs">Aguardando Atencao Humana</p>
+              <p className={cn('font-semibold text-xs', conversation.urgent ? 'text-destructive' : 'text-warning')}>
+                {conversation.urgent ? 'Urgencia - Atencao Imediata' : 'Aguardando Atencao Humana'}
+              </p>
               {conversation.transfers && conversation.transfers.length > 0 && (
                 <p className="text-[11px] text-muted-foreground">Motivo: {conversation.transfers[0].reason}</p>
               )}
