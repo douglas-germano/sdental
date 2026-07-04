@@ -12,6 +12,7 @@ import { CalendarBlank as Calendar, Users, Chat as MessageSquare, TrendUp as Tre
 import { AppointmentsChart } from '@/components/charts/appointments-chart'
 import { StatusPieChart } from '@/components/charts/status-pie-chart'
 import { StatsCard } from '@/components/dashboard/stats-card'
+import { AskAI } from '@/components/dashboard/ask-ai'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
@@ -275,6 +276,9 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Natural-language analytics */}
+      <AskAI />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming Appointments */}

@@ -15,6 +15,27 @@ export interface Clinic {
   evolution_instance_name?: string
   has_evolution_key?: boolean
   has_claude_key?: boolean
+  // Autonomous / proactive AI
+  proactive_outreach_enabled?: boolean
+  noshow_recovery_enabled?: boolean
+  waitlist_enabled?: boolean
+  recall_enabled?: boolean
+  recall_inactive_days?: number
+  funnel_automation_enabled?: boolean
+  weekly_report_enabled?: boolean
+}
+
+export interface AgentAction {
+  id: string
+  patient_id: string | null
+  conversation_id: string | null
+  appointment_id: string | null
+  action_type: string
+  channel: string | null
+  status: string
+  detail: string | null
+  meta: Record<string, unknown>
+  created_at: string
 }
 
 export interface BusinessHour {

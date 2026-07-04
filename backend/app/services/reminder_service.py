@@ -281,6 +281,13 @@ class ReminderService:
         elif reminder.reminder_type == ReminderType.REMINDER_1H:
             template = clinic.reminder_1h_message or DEFAULT_REMINDER_1H
         elif reminder.reminder_type == ReminderType.FOLLOW_UP:
+            # When proactive AI is on, personalize the post-appointment follow-up
+            # so it feels human and invites a real reply (best-effort; falls back
+            # to the template on any failure).
+            if getattr(clinic, 'proactive_outreach_enabled', False):
+                personalized = self._ai_follow_up_message(appointment, patient, clinic)
+                if personalized:
+                    return personalized
             template = DEFAULT_FOLLOW_UP
         else:
             template = DEFAULT_REMINDER_24H
@@ -299,6 +306,23 @@ class ReminderService:
             clinic_name=clinic.name,
             clinic_phone=clinic.phone
         )
+
+    def _ai_follow_up_message(self, appointment, patient, clinic) -> Optional[str]:
+        """AI-personalized post-appointment follow-up, or None to fall back to the template."""
+        try:
+            from app.services.claude_service import ClaudeService
+            first_name = patient.name.split()[0] if patient.name else None
+            return ClaudeService(clinic).generate_proactive_message(
+                objective=(
+                    'acompanhar o paciente depois da consulta, perguntando de forma calorosa '
+                    'como ele está se sentindo e se ficou com alguma dúvida ou precisa de algo'
+                ),
+                patient_first_name=first_name,
+                extra_context=f"Serviço realizado: {appointment.service_name}.",
+            )
+        except Exception:
+            logger.exception('AI follow-up generation failed, using template')
+            return None
 
     def retry_failed_reminders(self, max_attempts: int = 3) -> dict:
         """

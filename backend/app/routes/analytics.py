@@ -1,10 +1,16 @@
+import logging
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 from sqlalchemy import func
 
 from app import db
-from app.models import Appointment, Patient, Conversation, AppointmentStatus, ConversationStatus
+from app.models import (
+    Appointment, Patient, Conversation, AppointmentStatus, ConversationStatus,
+    AgentAction,
+)
 from app.utils.auth import clinic_required
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('analytics', __name__, url_prefix='/api/analytics')
 
@@ -206,4 +212,71 @@ def services_summary(current_clinic):
     return jsonify({
         'services': [{'name': r[0], 'count': r[1]} for r in results],
         'period_days': days
+    })
+
+
+@bp.route('/ask', methods=['POST'])
+@clinic_required
+def ask(current_clinic):
+    """
+    Natural-language analytics: the clinic owner asks a question about their own
+    metrics and the AI answers using only real data from their clinic.
+    """
+    data = request.get_json() or {}
+    question = (data.get('question') or '').strip()
+    if not question:
+        return jsonify({'error': 'A pergunta é obrigatória'}), 400
+    if len(question) > 500:
+        return jsonify({'error': 'Pergunta muito longa'}), 400
+
+    from app.services.automation_service import collect_metrics
+    from app.services.claude_service import ClaudeService
+
+    days = request.args.get('days', 90, type=int)
+    metrics = collect_metrics(current_clinic, days=days)
+
+    try:
+        answer = ClaudeService(current_clinic).answer_business_question(question, metrics)
+    except ValueError as e:
+        # Claude API key not configured
+        return jsonify({'error': str(e)}), 400
+    except Exception:
+        logger.exception('Analytics ask failed')
+        return jsonify({'error': 'Não foi possível gerar a resposta agora.'}), 500
+
+    return jsonify({'answer': answer, 'metrics': metrics})
+
+
+@bp.route('/agent-actions', methods=['GET'])
+@clinic_required
+def agent_actions(current_clinic):
+    """
+    Audit feed of what the autonomous agent has done on its own initiative
+    (proactive outreach, funnel moves, reports). Transparency for the clinic.
+    """
+    limit = min(request.args.get('limit', 50, type=int), 200)
+    action_type = request.args.get('type')
+
+    query = AgentAction.query.filter_by(clinic_id=current_clinic.id)
+    if action_type:
+        query = query.filter(AgentAction.action_type == action_type)
+
+    actions = query.order_by(AgentAction.created_at.desc()).limit(limit).all()
+
+    # Small summary of sent actions in the last 30 days, for a headline stat.
+    since = datetime.utcnow() - timedelta(days=30)
+    summary = dict(
+        db.session.query(AgentAction.action_type, func.count(AgentAction.id))
+        .filter(
+            AgentAction.clinic_id == current_clinic.id,
+            AgentAction.status == 'sent',
+            AgentAction.created_at >= since,
+        )
+        .group_by(AgentAction.action_type)
+        .all()
+    )
+
+    return jsonify({
+        'actions': [a.to_dict() for a in actions],
+        'summary_30d': summary,
     })

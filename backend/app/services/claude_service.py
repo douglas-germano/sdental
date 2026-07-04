@@ -48,9 +48,14 @@ DADOS DO PACIENTE:
 - Exemplo: "Para confirmar seu agendamento, preciso de algumas informações. Qual o seu nome completo?"
 - Se o paciente mencionar naturalmente informações novas (email, endereço, alergias, observações), use a função update_patient_info para salvar - não precisa perguntar tudo de uma vez
 
-EMERGÊNCIAS E URGÊNCIA:
-- Se o paciente relatar dor intensa, sangramento, trauma dental, inchaço súbito ou outro sinal de emergência odontológica, use IMEDIATAMENTE a função transfer_to_human com urgent=true, mesmo no meio de outro fluxo
-- Nesses casos, oriente o paciente a procurar atendimento de urgência caso a situação pareça grave, além de transferir a conversa
+EMERGÊNCIAS E URGÊNCIA (TRIAGEM):
+- Se o paciente relatar dor, sangramento, trauma dental, inchaço súbito ou outro sinal de emergência odontológica, faça uma TRIAGEM RÁPIDA antes de transferir, com no máximo 1-2 perguntas objetivas:
+  * Intensidade da dor de 0 a 10
+  * Há quanto tempo começou
+  * Sintomas principais (ex: inchaço, sangramento, febre, trauma)
+- Depois use transfer_to_human com urgent=true, preenchendo os campos pain_level e symptoms com o que o paciente relatou, para a recepção já receber a conversa priorizada e com o quadro resumido
+- Se o quadro parecer grave (dor 8+, sangramento intenso, trauma, dificuldade de respirar/engolir), oriente o paciente a procurar um pronto-socorro imediatamente, além de transferir
+- Não faça a triagem virar interrogatório: se o paciente já deu as informações, transfira direto
 
 REGRAS IMPORTANTES:
 - Sempre seja educado e profissional
@@ -278,6 +283,14 @@ class ClaudeService:
                         "urgent": {
                             "type": "boolean",
                             "description": "true se for uma emergência odontológica (dor intensa, sangramento, trauma, inchaço súbito) que precisa de atenção prioritária"
+                        },
+                        "pain_level": {
+                            "type": "integer",
+                            "description": "Em emergências, intensidade da dor relatada pelo paciente de 0 a 10, se informada"
+                        },
+                        "symptoms": {
+                            "type": "string",
+                            "description": "Em emergências, resumo curto dos sintomas relatados (ex: 'inchaço na gengiva há 2 dias, dor 8, sem febre')"
                         }
                     },
                     "required": ["reason"]
@@ -646,11 +659,35 @@ class ClaudeService:
 
         elif tool_name == "transfer_to_human":
             try:
-                self.conversation_service.transfer_to_human(
-                    conversation,
-                    tool_input.get('reason', 'Solicitação do paciente'),
-                    urgent=bool(tool_input.get('urgent', False))
+                reason = tool_input.get('reason', 'Solicitação do paciente')
+                urgent = bool(tool_input.get('urgent', False))
+
+                # For emergencies, prepend the structured triage to the reason so
+                # reception sees the clinical picture at a glance.
+                pain_level = tool_input.get('pain_level')
+                symptoms = tool_input.get('symptoms')
+                if urgent and (pain_level is not None or symptoms):
+                    triage_parts = []
+                    if pain_level is not None:
+                        triage_parts.append(f"dor {pain_level}/10")
+                    if symptoms:
+                        triage_parts.append(symptoms)
+                    reason = f"[TRIAGEM] {' - '.join(triage_parts)} | {reason}"
+
+                # Generate an AI summary so the human agent doesn't have to read
+                # the whole thread (best-effort; never blocks the transfer).
+                summary = None
+                try:
+                    summary = self.summarize_conversation_for_handoff(conversation)
+                except Exception:
+                    logger.exception('Failed to generate handoff summary')
+
+                transfer = self.conversation_service.transfer_to_human(
+                    conversation, reason, urgent=urgent
                 )
+                if summary and transfer is not None:
+                    transfer.summary = summary
+                    db.session.commit()
                 return "Conversa transferida para atendimento humano."
             except Exception as e:
                 logger.error('Error transferring to human: %s', str(e))
@@ -669,6 +706,147 @@ class ClaudeService:
                 return f"Erro ao gerar link: {str(e)}"
 
         return "Ferramenta não reconhecida."
+
+    # ------------------------------------------------------------------ #
+    # Autonomous / proactive capabilities                                #
+    # These do NOT use tools: they only compose text. Any action that    #
+    # changes data (booking, rescheduling) still happens through the     #
+    # normal reactive flow when the patient replies - keeping the agent  #
+    # from taking irreversible actions on its own initiative.            #
+    # ------------------------------------------------------------------ #
+
+    def _complete(self, system: str, user: str, max_tokens: int = 600,
+                  temperature: Optional[float] = None) -> str:
+        """Single-shot Claude completion returning plain text (no tools)."""
+        if temperature is None:
+            temperature = self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7
+        response = self.client.messages.create(
+            model=current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
+            max_tokens=max_tokens,
+            temperature=temperature,
+            system=system,
+            messages=[{"role": "user", "content": user}]
+        )
+        parts = [block.text for block in response.content if getattr(block, 'type', None) == 'text']
+        return "".join(parts).strip()
+
+    def _clinic_context_block(self) -> str:
+        """Short clinic description reused across proactive prompts."""
+        return (
+            f"Clínica: {self.clinic.name}\n"
+            f"Serviços: {self._format_services()}\n"
+            f"Profissionais: {self._format_professionals()}\n"
+            f"Horários: {self._format_business_hours()}"
+        )
+
+    def generate_proactive_message(
+        self,
+        objective: str,
+        patient_first_name: Optional[str] = None,
+        extra_context: Optional[str] = None,
+    ) -> str:
+        """
+        Compose a WhatsApp opening message the clinic sends on its OWN
+        initiative (no-show recovery, recall, waitlist offer...). The message
+        must feel human, be short, and invite a reply - the actual booking
+        happens reactively when the patient answers.
+        """
+        system = (
+            "Você é o assistente de uma clínica odontológica escrevendo uma mensagem "
+            "de WhatsApp para INICIAR uma conversa com um paciente (mensagem proativa). "
+            "Regras:\n"
+            "- Seja caloroso, humano e MUITO conciso (2 a 4 linhas).\n"
+            "- Escreva em português do Brasil, tom informal e respeitoso.\n"
+            "- Não use markdown. Emojis com moderação (no máximo 1).\n"
+            "- Faça uma única pergunta clara que convide o paciente a responder.\n"
+            "- Nunca invente horários, preços ou dados que não foram fornecidos.\n"
+            "- Não se apresente como robô nem diga que é uma IA.\n\n"
+            f"{self._clinic_context_block()}"
+        )
+        greeting = f"O primeiro nome do paciente é {patient_first_name}. " if patient_first_name else ""
+        user = (
+            f"{greeting}Objetivo desta mensagem: {objective}."
+            + (f"\n\nContexto adicional: {extra_context}" if extra_context else "")
+            + "\n\nEscreva APENAS o texto da mensagem, pronto para enviar."
+        )
+        return self._complete(system, user, max_tokens=400)
+
+    def summarize_conversation_for_handoff(self, conversation: Conversation) -> str:
+        """Summarize the conversation so a human taking over is instantly up to speed."""
+        history = self.conversation_service.get_message_history_for_claude(conversation, max_messages=40)
+        if not history:
+            return ""
+        transcript = "\n".join(
+            f"{'Paciente' if m['role'] == 'user' else 'Assistente'}: {m['content']}"
+            for m in history
+        )
+        system = (
+            "Você resume conversas de atendimento de uma clínica para que um "
+            "atendente humano assuma sem precisar ler tudo. Produza um resumo "
+            "telegráfico em português do Brasil, com no máximo 4 tópicos curtos, "
+            "cobrindo: o que o paciente quer, informações já coletadas, pendências "
+            "e nível de urgência. Não invente nada."
+        )
+        user = f"Transcrição:\n{transcript}\n\nResuma para o atendente."
+        return self._complete(system, user, max_tokens=350, temperature=0.3)
+
+    def classify_conversation_funnel(self, conversation: Conversation, stage_names: list) -> Optional[dict]:
+        """
+        Classify a conversation into one of the clinic's CRM stages and produce
+        a short note. Returns {'stage_name': str, 'note': str} or None.
+        """
+        history = self.conversation_service.get_message_history_for_claude(conversation, max_messages=30)
+        if not history:
+            return None
+        transcript = "\n".join(
+            f"{'Paciente' if m['role'] == 'user' else 'Assistente'}: {m['content']}"
+            for m in history
+        )
+        system = (
+            "Você classifica leads de uma clínica odontológica no funil de CRM. "
+            "Responda SOMENTE com um JSON válido no formato "
+            '{"stage_name": "<um dos estágios>", "note": "<observação curta, máx 120 caracteres>"}. '
+            f"Estágios permitidos (use exatamente um destes nomes): {', '.join(stage_names)}. "
+            "A 'note' deve resumir o interesse/temperatura do lead. "
+            "Se não houver sinal suficiente, use o primeiro estágio da lista."
+        )
+        user = f"Conversa:\n{transcript}"
+        raw = self._complete(system, user, max_tokens=200, temperature=0.2)
+        try:
+            start = raw.index('{')
+            end = raw.rindex('}') + 1
+            data = json.loads(raw[start:end])
+            if data.get('stage_name'):
+                return {'stage_name': data['stage_name'], 'note': (data.get('note') or '')[:120]}
+        except (ValueError, KeyError, json.JSONDecodeError):
+            logger.warning('Could not parse funnel classification: %s', raw[:120])
+        return None
+
+    def answer_business_question(self, question: str, metrics: dict) -> str:
+        """Answer a clinic owner's natural-language question about their own metrics."""
+        system = (
+            "Você é um analista de dados da clínica odontológica. Responda à pergunta "
+            "do gestor em português do Brasil, de forma direta e objetiva, usando SOMENTE "
+            "os dados fornecidos. Se algo não estiver nos dados, diga que não tem essa "
+            "informação. Traga números concretos e, quando fizer sentido, 1 recomendação prática. "
+            "Não use markdown pesado; pode usar listas simples."
+        )
+        user = (
+            f"Dados da clínica (JSON):\n{json.dumps(metrics, ensure_ascii=False, default=str)}\n\n"
+            f"Pergunta do gestor: {question}"
+        )
+        return self._complete(system, user, max_tokens=700, temperature=0.4)
+
+    def generate_report_digest(self, metrics: dict) -> str:
+        """Compose a short proactive weekly performance digest for the clinic owner."""
+        system = (
+            "Você escreve um resumo semanal de desempenho para o dono de uma clínica "
+            "odontológica, enviado por WhatsApp. Seja conciso e útil: destaque os números "
+            "que importam, uma tendência e uma sugestão prática. Português do Brasil, "
+            "tom profissional e amigável, sem markdown pesado, no máximo 8 linhas."
+        )
+        user = f"Métricas da semana (JSON):\n{json.dumps(metrics, ensure_ascii=False, default=str)}\n\nEscreva o resumo."
+        return self._complete(system, user, max_tokens=500, temperature=0.5)
 
     def process_message(
         self,

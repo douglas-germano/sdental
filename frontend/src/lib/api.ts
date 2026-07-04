@@ -90,7 +90,12 @@ export const authApi = {
 export const clinicsApi = {
   getProfile: () => api.get('/clinics/profile'),
 
-  updateProfile: (data: { name?: string; phone?: string; slug?: string; agent_enabled?: boolean }) =>
+  updateProfile: (data: {
+    name?: string; phone?: string; slug?: string; agent_enabled?: boolean;
+    proactive_outreach_enabled?: boolean; noshow_recovery_enabled?: boolean;
+    waitlist_enabled?: boolean; recall_enabled?: boolean; recall_inactive_days?: number;
+    funnel_automation_enabled?: boolean; weekly_report_enabled?: boolean;
+  }) =>
     api.put('/clinics/profile', data),
 
   createEvolutionInstance: () => api.post('/clinics/evolution/instance', {}),
@@ -251,7 +256,13 @@ export const analyticsApi = {
     api.get('/analytics/conversion-rate', { params: { days } }),
 
   servicesSummary: (days?: number) =>
-    api.get('/analytics/services-summary', { params: { days } })
+    api.get('/analytics/services-summary', { params: { days } }),
+
+  ask: (question: string) =>
+    api.post('/analytics/ask', { question }),
+
+  agentActions: (params?: { limit?: number; type?: string }) =>
+    api.get('/analytics/agent-actions', { params })
 }
 
 // Agents API
