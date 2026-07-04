@@ -153,9 +153,14 @@ def evolution_webhook():
             # the already-updated status - otherwise the open chat UI shows a
             # stale "active" status until the page is reloaded.
             if conversation.status != ConversationStatus.TRANSFERRED_TO_HUMAN:
+                # Images are the realistic way a patient conveys a dental
+                # emergency (bleeding, trauma, swelling) without describing it
+                # in text, so treat them as urgent like the agent's own
+                # emergency-detection does for text messages.
                 conversation_service.transfer_to_human(
                     conversation,
-                    f'Paciente enviou {media_type} - requer atendimento humano'
+                    f'Paciente enviou {media_type} - requer atendimento humano',
+                    urgent=(media_type == 'image')
                 )
 
             # Content is never left empty: an empty string here would later be

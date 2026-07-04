@@ -9,6 +9,7 @@ from app.models.clinic import Clinic
 from app.models.patient import Patient
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.professional import Professional
+from app.utils.validators import normalize_phone
 
 bp = Blueprint('public', __name__, url_prefix='/api/public')
 
@@ -215,10 +216,8 @@ def create_booking(slug: str):
         return jsonify({'error': 'Não é possível agendar em horários passados'}), 400
     
     # Normalize phone
-    phone = data['phone'].replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-    if not phone.startswith('55'):
-        phone = '55' + phone
-    
+    phone = normalize_phone(data['phone'])
+
     # Find or create patient
     patient = Patient.query.filter_by(
         clinic_id=clinic.id,
@@ -267,7 +266,7 @@ def create_booking(slug: str):
         duration_minutes=duration,
         notes=data.get('notes'),
         professional_id=professional_id,
-        consent_source='public_booking'
+        patient_id=patient.id
     )
 
     if error:

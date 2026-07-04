@@ -112,7 +112,7 @@ class ReminderService:
 
         # Schedule post-appointment follow-up
         follow_up_time = scheduled_dt + timedelta(minutes=appointment.duration_minutes) + FOLLOW_UP_DELAY_AFTER_APPOINTMENT
-        if follow_up_time > now:
+        if clinic.reminder_follow_up_enabled and follow_up_time > now:
             reminder = AppointmentReminder(
                 appointment_id=appointment.id,
                 reminder_type=ReminderType.FOLLOW_UP,

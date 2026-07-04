@@ -255,15 +255,39 @@ class AppointmentService:
 
         return None
 
-    def find_professional_by_name(self, name: str) -> Optional[Professional]:
-        """Find an active professional by name (case-insensitive, partial match)."""
+    def find_professional_by_name(self, name: str) -> tuple[Optional[Professional], Optional[str]]:
+        """
+        Find an active professional by name.
+
+        Tries an exact (case-insensitive) match first. If none exists, falls
+        back to a partial match, but only when it uniquely identifies one
+        professional - a partial match with multiple hits (e.g. "Ana" matching
+        both "Ana Souza" and "Mariana Costa") is reported as an ambiguity
+        error instead of silently picking one.
+
+        Returns:
+            Tuple of (Professional, error_message). Both None if nothing matches.
+        """
         if not name:
-            return None
-        return Professional.query.filter(
+            return None, None
+
+        base_query = Professional.query.filter(
             Professional.clinic_id == self.clinic.id,
-            Professional.active.is_(True),
-            Professional.name.ilike(f'%{name}%')
-        ).first()
+            Professional.active.is_(True)
+        )
+
+        exact = base_query.filter(db.func.lower(Professional.name) == name.strip().lower()).first()
+        if exact:
+            return exact, None
+
+        matches = base_query.filter(Professional.name.ilike(f'%{name}%')).all()
+        if not matches:
+            return None, None
+        if len(matches) > 1:
+            names = ", ".join(p.name for p in matches)
+            return None, f"Encontrei mais de um profissional para '{name}' ({names}). Peça o nome completo para confirmar."
+
+        return matches[0], None
 
     def create_appointment(
         self,
@@ -274,7 +298,8 @@ class AppointmentService:
         duration_minutes: int = 30,
         notes: Optional[str] = None,
         professional_id: Optional[UUID] = None,
-        consent_source: Optional[str] = None
+        consent_source: Optional[str] = None,
+        patient_id: Optional[UUID] = None
     ) -> tuple[Optional[Appointment], Optional[str]]:
         """
         Create an appointment, creating patient if needed.
@@ -289,7 +314,12 @@ class AppointmentService:
             professional_id: Optional professional to assign. If None and clinic has professionals,
                             will try to find any available professional.
             consent_source: If a new patient record is created here, records LGPD consent
-                            with this source (e.g. 'whatsapp', 'public_booking').
+                            with this source (e.g. 'whatsapp', 'public_booking'). Ignored
+                            when patient_id is given, since that patient already exists.
+            patient_id: If the caller already resolved/created the patient (e.g. the public
+                        booking form), pass its id here to reuse it directly instead of
+                        re-running find-or-create against patient_phone - avoids duplicate
+                        patients from divergent phone-normalization between callers.
 
         Returns:
             Tuple of (Appointment, error_message)
@@ -317,22 +347,27 @@ class AppointmentService:
         if not self.is_slot_available(scheduled_datetime, duration_minutes, professional_id=assigned_professional_id):
             return None, 'Horário não disponível'
 
-        # Find or create patient
-        patient = Patient.query.filter_by(
-            clinic_id=self.clinic.id,
-            phone=phone
-        ).first()
-
-        if not patient:
-            patient = Patient(
+        # Reuse the caller's already-resolved patient, or find/create by phone
+        if patient_id:
+            patient = Patient.query.filter_by(id=patient_id, clinic_id=self.clinic.id).first()
+            if not patient:
+                return None, 'Paciente não encontrado'
+        else:
+            patient = Patient.query.filter_by(
                 clinic_id=self.clinic.id,
-                name=patient_name,
                 phone=phone
-            )
-            if consent_source:
-                patient.set_data_consent(consent_source)
-            db.session.add(patient)
-            db.session.flush()
+            ).first()
+
+            if not patient:
+                patient = Patient(
+                    clinic_id=self.clinic.id,
+                    name=patient_name,
+                    phone=phone
+                )
+                if consent_source:
+                    patient.set_data_consent(consent_source)
+                db.session.add(patient)
+                db.session.flush()
 
         # Create appointment
         appointment = Appointment(
@@ -365,20 +400,24 @@ class AppointmentService:
 
         return appointment, None
 
-    def cancel_appointment(self, appointment_id: UUID) -> tuple[bool, Optional[str]]:
+    def cancel_appointment(self, appointment_id: UUID, patient_id: Optional[UUID] = None) -> tuple[bool, Optional[str]]:
         """
         Cancel an appointment.
 
         Args:
             appointment_id: The appointment ID to cancel
+            patient_id: If given, the appointment must belong to this patient
 
         Returns:
             Tuple of (success, error_message)
         """
-        appointment = Appointment.query.filter_by(
+        query = Appointment.query.filter_by(
             id=appointment_id,
             clinic_id=self.clinic.id
-        ).first()
+        )
+        if patient_id:
+            query = query.filter_by(patient_id=patient_id)
+        appointment = query.first()
 
         if not appointment:
             return False, 'Agendamento não encontrado'
@@ -404,7 +443,8 @@ class AppointmentService:
     def reschedule_appointment(
         self,
         appointment_id: UUID,
-        new_datetime: datetime
+        new_datetime: datetime,
+        patient_id: Optional[UUID] = None
     ) -> tuple[Optional[Appointment], Optional[str]]:
         """
         Move an existing appointment to a new date/time, keeping the same
@@ -414,20 +454,24 @@ class AppointmentService:
         Args:
             appointment_id: The appointment to reschedule
             new_datetime: The new scheduled datetime
+            patient_id: If given, the appointment must belong to this patient
 
         Returns:
             Tuple of (Appointment, error_message)
         """
-        appointment = Appointment.query.filter_by(
+        query = Appointment.query.filter_by(
             id=appointment_id,
             clinic_id=self.clinic.id
-        ).first()
+        )
+        if patient_id:
+            query = query.filter_by(patient_id=patient_id)
+        appointment = query.first()
 
         if not appointment:
             return None, 'Agendamento não encontrado'
 
-        if appointment.status == AppointmentStatus.CANCELLED:
-            return None, 'Não é possível reagendar um agendamento cancelado'
+        if appointment.status in (AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED):
+            return None, 'Não é possível reagendar um agendamento cancelado ou já concluído'
 
         if not self.is_slot_available(
             new_datetime,

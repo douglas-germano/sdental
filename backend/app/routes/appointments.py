@@ -205,6 +205,17 @@ def update_appointment(appointment_id, current_clinic):
         else:
             appointment.status = data['status']
 
+        # A cancelled or no-show appointment is never coming back to its
+        # scheduled time, so its pending 24h/1h/follow-up reminders (which
+        # would otherwise be silently orphaned - never sent, never cleaned up)
+        # must be cancelled too.
+        if data['status'] in (AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW):
+            from app.services.reminder_service import ReminderService
+            try:
+                ReminderService(current_clinic).cancel_reminders_for_appointment(appointment.id)
+            except Exception:
+                bp_logger.exception('Failed to cancel reminders for appointment %s', appointment.id)
+
     if 'notes' in data:
         appointment.notes = data['notes']
 

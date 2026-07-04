@@ -191,6 +191,17 @@ def reactivate_conversation(conversation_id, current_clinic):
     conversation.status = ConversationStatus.ACTIVE
     conversation.urgent = False
 
+    # Resolve any pending transfers, same as resolve_conversation - otherwise
+    # the BotTransfer audit row (and any urgent flag on it) is left
+    # permanently unresolved even though it's no longer visible in the UI.
+    pending_transfers = BotTransfer.query.filter_by(
+        conversation_id=conversation.id,
+        resolved=False
+    ).all()
+
+    for transfer in pending_transfers:
+        transfer.resolve()
+
     db.session.commit()
 
     return jsonify({

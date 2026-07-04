@@ -302,7 +302,7 @@ class ClaudeService:
         parts = []
         for s in services:
             entry = f"{s.get('name')} ({s.get('duration', 30)} min"
-            if s.get('price'):
+            if s.get('price') is not None:
                 entry += f", R$ {s['price']}"
             entry += ")"
             parts.append(entry)
@@ -373,7 +373,9 @@ class ClaudeService:
                 professional_id = None
                 professional_name = tool_input.get('professional_name')
                 if professional_name:
-                    professional = self.appointment_service.find_professional_by_name(professional_name)
+                    professional, prof_error = self.appointment_service.find_professional_by_name(professional_name)
+                    if prof_error:
+                        return prof_error
                     if not professional:
                         return f"Não encontrei o profissional '{professional_name}'. Use list_professionals para ver os disponíveis."
                     professional_id = professional.id
@@ -411,7 +413,9 @@ class ClaudeService:
                 professional_id = None
                 professional_name = tool_input.get('professional_name')
                 if professional_name:
-                    professional = self.appointment_service.find_professional_by_name(professional_name)
+                    professional, prof_error = self.appointment_service.find_professional_by_name(professional_name)
+                    if prof_error:
+                        return prof_error
                     if not professional:
                         return f"Não encontrei o profissional '{professional_name}'. Use list_professionals para ver os disponíveis."
                     professional_id = professional.id
@@ -443,10 +447,15 @@ class ClaudeService:
                 )
             except Exception as e:
                 logger.error('Error creating appointment: %s', str(e))
+                db.session.rollback()
                 return f"Erro ao criar agendamento: {str(e)}"
 
         elif tool_name == "reschedule_appointment":
             try:
+                patient = self._resolve_patient(conversation)
+                if not patient:
+                    return "Não conseguimos localizar seu cadastro para confirmar este agendamento."
+
                 new_dt = datetime.fromisoformat(tool_input['new_datetime'])
 
                 now = datetime.now(ZoneInfo('America/Sao_Paulo'))
@@ -455,7 +464,8 @@ class ClaudeService:
 
                 appointment, error = self.appointment_service.reschedule_appointment(
                     tool_input['appointment_id'],
-                    new_dt
+                    new_dt,
+                    patient_id=patient.id
                 )
                 if error:
                     return f"Não foi possível remarcar: {error}"
@@ -467,13 +477,19 @@ class ClaudeService:
                 )
             except Exception as e:
                 logger.error('Error rescheduling appointment: %s', str(e))
+                db.session.rollback()
                 return f"Erro ao remarcar agendamento: {str(e)}"
 
         elif tool_name == "confirm_appointment":
             try:
+                patient = self._resolve_patient(conversation)
+                if not patient:
+                    return "Não conseguimos localizar seu cadastro para confirmar este agendamento."
+
                 appointment = Appointment.query.filter_by(
                     id=tool_input['appointment_id'],
-                    clinic_id=self.clinic.id
+                    clinic_id=self.clinic.id,
+                    patient_id=patient.id
                 ).first()
                 if not appointment:
                     return "Agendamento não encontrado."
@@ -484,6 +500,7 @@ class ClaudeService:
                 return "Presença confirmada, obrigado!"
             except Exception as e:
                 logger.error('Error confirming appointment: %s', str(e))
+                db.session.rollback()
                 return f"Erro ao confirmar agendamento: {str(e)}"
 
         elif tool_name == "list_professionals":
@@ -526,14 +543,20 @@ class ClaudeService:
 
         elif tool_name == "cancel_appointment":
             try:
+                patient = self._resolve_patient(conversation)
+                if not patient:
+                    return "Não conseguimos localizar seu cadastro para confirmar este agendamento."
+
                 success, error = self.appointment_service.cancel_appointment(
-                    tool_input['appointment_id']
+                    tool_input['appointment_id'],
+                    patient_id=patient.id
                 )
                 if not success:
                     return f"Não foi possível cancelar: {error}"
                 return "Agendamento cancelado com sucesso."
             except Exception as e:
                 logger.error('Error cancelling appointment: %s', str(e))
+                db.session.rollback()
                 return f"Erro ao cancelar agendamento: {str(e)}"
 
         elif tool_name == "update_patient_info":
@@ -559,6 +582,7 @@ class ClaudeService:
                 return "Dados do paciente atualizados com sucesso."
             except Exception as e:
                 logger.error('Error updating patient info: %s', str(e))
+                db.session.rollback()
                 return f"Erro ao atualizar dados do paciente: {str(e)}"
 
         elif tool_name == "update_pipeline_stage":
@@ -580,6 +604,7 @@ class ClaudeService:
                 return f"Paciente movido para o estágio '{stage.name}'."
             except Exception as e:
                 logger.error('Error updating pipeline stage: %s', str(e))
+                db.session.rollback()
                 return f"Erro ao mover estágio: {str(e)}"
 
         elif tool_name == "resend_reminder":
@@ -654,6 +679,7 @@ class ClaudeService:
                 return "Conversa transferida para atendimento humano."
             except Exception as e:
                 logger.error('Error transferring to human: %s', str(e))
+                db.session.rollback()
                 return f"Erro ao transferir: {str(e)}"
 
         elif tool_name == "send_booking_link":

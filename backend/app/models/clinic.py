@@ -49,6 +49,7 @@ class Clinic(db.Model, TimestampMixin):
     reminders_enabled = db.Column(db.Boolean, default=True)
     reminder_24h_enabled = db.Column(db.Boolean, default=True)
     reminder_1h_enabled = db.Column(db.Boolean, default=True)
+    reminder_follow_up_enabled = db.Column(db.Boolean, default=True)
     reminder_24h_message = db.Column(db.Text, nullable=True)  # Custom template
     reminder_1h_message = db.Column(db.Text, nullable=True)   # Custom template
 
