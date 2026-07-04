@@ -10,12 +10,12 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { clinicsApi } from '@/lib/api'
 import { getDayName } from '@/lib/utils'
-import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil } from '@phosphor-icons/react'
+import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'
 
-type Section = 'profile' | 'whatsapp' | 'hours' | 'services'
+type Section = 'profile' | 'whatsapp' | 'hours' | 'services' | 'automacao'
 
 export default function SettingsPage() {
   const { clinic, refreshClinic } = useAuth()
@@ -44,7 +44,43 @@ export default function SettingsPage() {
     { id: 'whatsapp' as Section, label: 'WhatsApp / Evolution', icon: Wifi },
     { id: 'hours' as Section, label: 'Horários de Funcionamento', icon: Clock },
     { id: 'services' as Section, label: 'Serviços / Procedimentos', icon: Stethoscope },
+    { id: 'automacao' as Section, label: 'Automação (IA proativa)', icon: Sparkle },
   ]
+
+  const handleToggleAutomation = async (
+    field:
+      | 'proactive_outreach_enabled'
+      | 'noshow_recovery_enabled'
+      | 'waitlist_enabled'
+      | 'recall_enabled'
+      | 'funnel_automation_enabled'
+      | 'weekly_report_enabled',
+    value: boolean
+  ) => {
+    setSaving(field)
+    try {
+      await clinicsApi.updateProfile({ [field]: value })
+      await refreshClinic()
+      showMessage('success', 'Configuração de automação salva!')
+    } catch {
+      showMessage('error', 'Erro ao salvar configuração.')
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const handleSaveRecallDays = async (days: number) => {
+    setSaving('recall_inactive_days')
+    try {
+      await clinicsApi.updateProfile({ recall_inactive_days: days })
+      await refreshClinic()
+      showMessage('success', 'Período de recall atualizado!')
+    } catch {
+      showMessage('error', 'Erro ao salvar período.')
+    } finally {
+      setSaving(null)
+    }
+  }
 
   const showMessage = (type: 'success' | 'error', message: string) => {
     if (type === 'success') {
@@ -567,6 +603,140 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Automation Section */}
+            {activeSection === 'automacao' && (
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Sparkle className="h-5 w-5 text-primary" />
+                    Automação com IA proativa
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Deixe a IA agir sozinha para recuperar faltas, reativar pacientes e
+                    qualificar leads — sempre com trilha de auditoria e opção de opt-out.
+                  </p>
+                </div>
+
+                {/* Warning about proactive messaging */}
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-warning/10 border border-warning/20">
+                  <Warning className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    O envio proativo dispara mensagens de WhatsApp por iniciativa da clínica.
+                    Use com responsabilidade: mensagens em excesso podem levar ao bloqueio do
+                    número. A IA respeita horário comercial, limite diário por paciente e o
+                    pedido de <strong>SAIR</strong> de cada paciente.
+                  </p>
+                </div>
+
+                {/* Master switch */}
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                  <div className="space-y-0.5 pr-4">
+                    <Label className="text-base">Envio proativo (interruptor geral)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Quando ativado, a IA pode iniciar conversas com pacientes por conta própria.
+                      Os recursos abaixo só funcionam com esta chave ligada.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={clinic?.proactive_outreach_enabled ?? false}
+                    onCheckedChange={(v) => handleToggleAutomation('proactive_outreach_enabled', v)}
+                    disabled={saving === 'proactive_outreach_enabled'}
+                  />
+                </div>
+
+                {/* Outreach sub-features */}
+                <div className={cn(
+                  'space-y-1 rounded-xl border border-border/60 divide-y divide-border/60 transition-opacity',
+                  !clinic?.proactive_outreach_enabled && 'opacity-50 pointer-events-none'
+                )}>
+                  {[
+                    {
+                      field: 'noshow_recovery_enabled' as const,
+                      title: 'Recuperação de faltas e cancelamentos',
+                      desc: 'Reabre a conversa com quem faltou ou cancelou e oferece remarcar.',
+                    },
+                    {
+                      field: 'waitlist_enabled' as const,
+                      title: 'Lista de espera inteligente',
+                      desc: 'Quando um horário abre, oferece a vaga a um paciente com consulta mais distante.',
+                    },
+                    {
+                      field: 'recall_enabled' as const,
+                      title: 'Reativação de pacientes inativos (recall)',
+                      desc: 'Convida pacientes sem consulta há muito tempo para um retorno.',
+                    },
+                  ].map((item) => (
+                    <div key={item.field} className="flex items-center justify-between p-4">
+                      <div className="space-y-0.5 pr-4">
+                        <Label className="text-sm font-medium">{item.title}</Label>
+                        <p className="text-xs text-muted-foreground">{item.desc}</p>
+                      </div>
+                      <Switch
+                        checked={(clinic?.[item.field] as boolean) ?? false}
+                        onCheckedChange={(v) => handleToggleAutomation(item.field, v)}
+                        disabled={saving === item.field || !clinic?.proactive_outreach_enabled}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Recall inactivity period */}
+                  <div className="flex items-center justify-between p-4 gap-3 flex-wrap">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-medium">Considerar inativo após</Label>
+                      <p className="text-xs text-muted-foreground">Dias sem consulta para acionar o recall.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={30}
+                        max={730}
+                        defaultValue={clinic?.recall_inactive_days ?? 180}
+                        className="w-24"
+                        onBlur={(e) => {
+                          const v = parseInt(e.target.value)
+                          if (!isNaN(v) && v !== (clinic?.recall_inactive_days ?? 180)) {
+                            handleSaveRecallDays(v)
+                          }
+                        }}
+                        disabled={!clinic?.proactive_outreach_enabled}
+                      />
+                      <span className="text-sm text-muted-foreground">dias</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Independent features (do not send patient messages / or message the owner) */}
+                <div className="space-y-1 rounded-xl border border-border/60 divide-y divide-border/60">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="space-y-0.5 pr-4">
+                      <Label className="text-sm font-medium">Qualificação automática do funil (CRM)</Label>
+                      <p className="text-xs text-muted-foreground">
+                        A IA classifica e move leads no funil com base nas conversas. Não envia mensagens.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={clinic?.funnel_automation_enabled ?? false}
+                      onCheckedChange={(v) => handleToggleAutomation('funnel_automation_enabled', v)}
+                      disabled={saving === 'funnel_automation_enabled'}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4">
+                    <div className="space-y-0.5 pr-4">
+                      <Label className="text-sm font-medium">Resumo semanal de desempenho</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Envia um resumo dos indicadores da clínica no seu WhatsApp, uma vez por semana.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={clinic?.weekly_report_enabled ?? false}
+                      onCheckedChange={(v) => handleToggleAutomation('weekly_report_enabled', v)}
+                      disabled={saving === 'weekly_report_enabled'}
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

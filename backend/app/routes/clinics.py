@@ -25,6 +25,23 @@ def update_profile(current_clinic):
         if field in data:
             setattr(current_clinic, field, data[field])
 
+    # Autonomous / proactive automation toggles
+    bool_automation_fields = [
+        'proactive_outreach_enabled', 'noshow_recovery_enabled', 'waitlist_enabled',
+        'recall_enabled', 'funnel_automation_enabled', 'weekly_report_enabled',
+    ]
+    for field in bool_automation_fields:
+        if field in data:
+            setattr(current_clinic, field, bool(data[field]))
+
+    if 'recall_inactive_days' in data:
+        try:
+            days = int(data['recall_inactive_days'])
+            # Clamp to a sane range (1 month to 2 years)
+            current_clinic.recall_inactive_days = max(30, min(730, days))
+        except (TypeError, ValueError):
+            return jsonify({'error': 'recall_inactive_days deve ser um número'}), 400
+
     db.session.commit()
 
     return jsonify({

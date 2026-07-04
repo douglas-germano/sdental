@@ -52,6 +52,20 @@ class Clinic(db.Model, TimestampMixin):
     reminder_24h_message = db.Column(db.Text, nullable=True)  # Custom template
     reminder_1h_message = db.Column(db.Text, nullable=True)   # Custom template
 
+    # Autonomous / proactive AI configuration.
+    # proactive_outreach_enabled is the MASTER switch: off by default so no
+    # clinic starts sending agent-initiated WhatsApp messages without opting in
+    # (proactive messaging on an unofficial WhatsApp gateway carries a ban risk
+    # and must be a deliberate choice). The per-feature flags below only take
+    # effect when the master switch is on.
+    proactive_outreach_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    noshow_recovery_enabled = db.Column(db.Boolean, default=True, nullable=False)
+    waitlist_enabled = db.Column(db.Boolean, default=True, nullable=False)
+    recall_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    recall_inactive_days = db.Column(db.Integer, default=180, nullable=False)
+    funnel_automation_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    weekly_report_enabled = db.Column(db.Boolean, default=False, nullable=False)
+
     active = db.Column(db.Boolean, default=True)
 
     # Password reset (hashed token, never store the raw token)
@@ -155,6 +169,13 @@ class Clinic(db.Model, TimestampMixin):
             'business_hours': self.business_hours,
             'services': self.services,
             'active': self.active,
+            'proactive_outreach_enabled': self.proactive_outreach_enabled,
+            'noshow_recovery_enabled': self.noshow_recovery_enabled,
+            'waitlist_enabled': self.waitlist_enabled,
+            'recall_enabled': self.recall_enabled,
+            'recall_inactive_days': self.recall_inactive_days,
+            'funnel_automation_enabled': self.funnel_automation_enabled,
+            'weekly_report_enabled': self.weekly_report_enabled,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

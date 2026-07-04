@@ -1,10 +1,11 @@
 import logging
 from flask import Blueprint, request, jsonify
 
-from app.models import Clinic, Conversation, ConversationStatus
+from app.models import Clinic, Conversation, ConversationStatus, Patient
 from app.services.claude_service import ClaudeService
 from app.services.evolution_service import EvolutionService
 from app.services.conversation_service import ConversationService
+from app.services.outreach_service import is_opt_out_message
 from app.services.realtime_service import publish_event
 from app.utils.validators import normalize_phone
 from app.utils.webhook_auth import webhook_auth_required
@@ -175,6 +176,29 @@ def evolution_webhook():
             return jsonify({'status': 'processed', 'reason': 'Media message routed to human'})
 
         logger.info('Received message from %s: %s', phone, message_text[:50])
+
+        # Opt-out handling. If the patient asks to stop proactive contact
+        # ("SAIR"), honour it immediately - independently of the agent being
+        # enabled - and confirm. Reactive replies keep working; only
+        # agent-initiated (proactive) messages are suppressed.
+        if is_opt_out_message(message_text):
+            conversation_service.add_message(
+                conversation, 'user', message_text, evolution_id=evolution_message_id
+            )
+            patient = conversation.patient or Patient.query.filter_by(
+                clinic_id=clinic.id, phone=phone
+            ).first()
+            if patient and not patient.whatsapp_opt_out:
+                from app import db
+                patient.opt_out_whatsapp()
+                db.session.commit()
+            opt_out_reply = (
+                'Pronto! Você não receberá mais mensagens automáticas nossas. '
+                'Se precisar de algo, é só chamar por aqui. 😊'
+            )
+            conversation_service.add_message(conversation, 'assistant', opt_out_reply)
+            EvolutionService(clinic).send_message(phone, opt_out_reply)
+            return jsonify({'status': 'processed', 'reason': 'Opt-out recorded'})
 
         # Check if AI agent is enabled
         if not clinic.agent_enabled:

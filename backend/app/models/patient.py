@@ -25,6 +25,13 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
     data_consent_at = db.Column(db.DateTime, nullable=True)
     data_consent_source = db.Column(db.String(30), nullable=True)  # 'public_booking' | 'whatsapp' | 'manual'
 
+    # WhatsApp proactive-outreach opt-out. When the patient replies "SAIR"
+    # (or similar) to a proactive message, the AI must never contact them on
+    # its own initiative again. Reactive replies to inbound messages are still
+    # answered - this only blocks agent-initiated (proactive) messages.
+    whatsapp_opt_out = db.Column(db.Boolean, default=False, nullable=False)
+    whatsapp_opt_out_at = db.Column(db.DateTime, nullable=True)
+
     # Address
     address_zip_code = db.Column(db.String(9), nullable=True)
     address_street = db.Column(db.String(255), nullable=True)
@@ -78,6 +85,16 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
         self.data_consent_at = datetime.utcnow()
         self.data_consent_source = source
 
+    def opt_out_whatsapp(self) -> None:
+        """Record that the patient asked to stop receiving proactive messages."""
+        self.whatsapp_opt_out = True
+        self.whatsapp_opt_out_at = datetime.utcnow()
+
+    def opt_in_whatsapp(self) -> None:
+        """Re-enable proactive messaging (e.g. patient replies to opt back in)."""
+        self.whatsapp_opt_out = False
+        self.whatsapp_opt_out_at = None
+
     def anonymize(self) -> None:
         """
         LGPD right to erasure (Art. 18, VI) - irreversibly scrub personal data.
@@ -116,6 +133,7 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
             'pipeline_stage': self.pipeline_stage.to_dict() if self.pipeline_stage else None,
             'data_consent_at': self.data_consent_at.isoformat() + 'Z' if self.data_consent_at else None,
             'data_consent_source': self.data_consent_source,
+            'whatsapp_opt_out': self.whatsapp_opt_out,
             'address_zip_code': self.address_zip_code,
             'address_street': self.address_street,
             'address_number': self.address_number,

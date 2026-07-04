@@ -136,9 +136,35 @@ with a single Gunicorn worker.** The SSE stream authenticates via a
 `JWT_QUERY_STRING_NAME = 'token'`).
 
 **Background jobs (`scheduler.py`).** APScheduler runs reminder jobs
-(send pending / retry failed). Gated by `ENABLE_SCHEDULER` (default on) and
-disabled under `TESTING`. Note: with multiple Gunicorn workers this scheduler
-runs per-worker — keep that in mind for idempotency.
+(send pending / retry failed) **and the autonomous-agent jobs** (recovery +
+waitlist every 30 min, recall every 12h, funnel qualification every 2h, weekly
+report daily). Gated by `ENABLE_SCHEDULER` (default on) and disabled under
+`TESTING`. Note: with multiple Gunicorn workers this scheduler runs per-worker
+— keep that in mind for idempotency (the autonomous jobs dedupe via
+`agent_actions`).
+
+**Autonomous / proactive layer.** Beyond the reactive WhatsApp agent, the system
+can act on its own initiative:
+- `services/outreach_service.py` — the single guarded gateway for every
+  agent-initiated message. Enforces the guardrails (master switch
+  `Clinic.proactive_outreach_enabled` — **off by default**, per-patient opt-out
+  `Patient.whatsapp_opt_out` via replying "SAIR", quiet hours, a daily per-patient
+  cap, and never interrupting a human handoff) and writes every send/skip to the
+  `agent_actions` audit table (`models/agent_action.py`). Proactive messages only
+  *open* a conversation — the actual booking still happens reactively when the
+  patient replies, so the AI never takes an irreversible action unattended.
+- `services/automation_service.py` — the scheduled behaviours (no-show/
+  cancellation recovery, waitlist offers, recall of inactive patients, CRM funnel
+  qualification, weekly performance digest) plus `collect_metrics()`, shared with
+  the natural-language analytics endpoint.
+- `ClaudeService` also exposes non-tool completions used by this layer
+  (`generate_proactive_message`, `summarize_conversation_for_handoff`,
+  `classify_conversation_funnel`, `answer_business_question`,
+  `generate_report_digest`).
+- `POST /api/analytics/ask` answers a clinic owner's natural-language question
+  over their own metrics; `GET /api/analytics/agent-actions` is the audit feed.
+- Per-clinic toggles live on `Clinic` and are edited from the dashboard
+  **Configurações → Automação (IA proativa)** section.
 
 **Cross-cutting utils.** Rate limiting (`utils/rate_limiter.py`, e.g.
 `@limiter.limit("5 per minute")` on auth), caching (`utils/cache.py`),

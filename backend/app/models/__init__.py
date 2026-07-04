@@ -9,6 +9,7 @@ from .availability_slot import AvailabilitySlot
 from .bot_transfer import BotTransfer
 from .reminder import AppointmentReminder, ReminderStatus, ReminderType
 from .professional import Professional
+from .agent_action import AgentAction, AgentActionType, AgentActionStatus
 
 __all__ = [
     'Clinic',
@@ -24,5 +25,8 @@ __all__ = [
     'ReminderType',
     'PipelineStage',
     'PipelineStageHistory',
-    'Professional'
+    'Professional',
+    'AgentAction',
+    'AgentActionType',
+    'AgentActionStatus'
 ]

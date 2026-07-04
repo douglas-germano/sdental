@@ -12,6 +12,9 @@ class BotTransfer(db.Model, SoftDeleteMixin, TimestampMixin):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id = db.Column(UUID(as_uuid=True), db.ForeignKey('conversations.id'), nullable=False)
     reason = db.Column(db.Text, nullable=False)
+    # AI-generated summary of the conversation so far, so the human agent
+    # taking over doesn't have to read the whole thread.
+    summary = db.Column(db.Text, nullable=True)
     transferred_at = db.Column(db.DateTime, default=datetime.utcnow)
     resolved = db.Column(db.Boolean, default=False)
     resolved_at = db.Column(db.DateTime, nullable=True)
@@ -26,6 +29,7 @@ class BotTransfer(db.Model, SoftDeleteMixin, TimestampMixin):
             'id': str(self.id),
             'conversation_id': str(self.conversation_id),
             'reason': self.reason,
+            'summary': self.summary,
             'urgent': self.urgent,
             'transferred_at': self.transferred_at.isoformat() if self.transferred_at else None,
             'resolved': self.resolved,
