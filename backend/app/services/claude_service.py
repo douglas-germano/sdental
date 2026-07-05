@@ -364,11 +364,33 @@ class ClaudeService:
     def _resolve_patient(self, conversation: Conversation) -> Optional[Patient]:
         """Find the patient linked to this conversation, by id or by phone number."""
         if conversation.patient_id:
-            return Patient.query.get(conversation.patient_id)
+            return Patient.query.filter_by(
+                id=conversation.patient_id,
+                clinic_id=self.clinic.id
+            ).filter(Patient.deleted_at.is_(None)).first()
         return Patient.query.filter_by(
             clinic_id=self.clinic.id,
             phone=conversation.phone_number
-        ).first()
+        ).filter(Patient.deleted_at.is_(None)).first()
+
+    # Maps each tool name to its handler and the Portuguese action phrase
+    # used to compose "Erro ao <phrase>: <exception>" on failure.
+    _TOOL_HANDLERS = {
+        "check_availability": ("_tool_check_availability", "verificar disponibilidade"),
+        "create_appointment": ("_tool_create_appointment", "criar agendamento"),
+        "reschedule_appointment": ("_tool_reschedule_appointment", "remarcar agendamento"),
+        "confirm_appointment": ("_tool_confirm_appointment", "confirmar agendamento"),
+        "list_professionals": ("_tool_list_professionals", "listar profissionais"),
+        "list_appointments": ("_tool_list_appointments", "listar agendamentos"),
+        "cancel_appointment": ("_tool_cancel_appointment", "cancelar agendamento"),
+        "update_patient_info": ("_tool_update_patient_info", "atualizar dados do paciente"),
+        "update_pipeline_stage": ("_tool_update_pipeline_stage", "mover estágio"),
+        "resend_reminder": ("_tool_resend_reminder", "reenviar lembrete"),
+        "send_procedure_instructions": ("_tool_send_procedure_instructions", "enviar instruções"),
+        "get_current_datetime": ("_tool_get_current_datetime", "obter data/hora"),
+        "transfer_to_human": ("_tool_transfer_to_human", "transferir"),
+        "send_booking_link": ("_tool_send_booking_link", "gerar link"),
+    }
 
     def _execute_tool(
         self,
@@ -379,333 +401,289 @@ class ClaudeService:
         """Execute a tool and return the result."""
         logger.info('Executing tool: %s with input: %s', tool_name, tool_input)
 
-        if tool_name == "check_availability":
-            try:
-                date = datetime.strptime(tool_input['date'], '%Y-%m-%d').date()
+        handler_entry = self._TOOL_HANDLERS.get(tool_name)
+        if not handler_entry:
+            return "Ferramenta não reconhecida."
 
-                professional_id = None
-                professional_name = tool_input.get('professional_name')
-                if professional_name:
-                    professional = self.appointment_service.find_professional_by_name(professional_name)
-                    if not professional:
-                        return f"Não encontrei o profissional '{professional_name}'. Use list_professionals para ver os disponíveis."
-                    professional_id = professional.id
+        handler_name, action_phrase = handler_entry
+        try:
+            return getattr(self, handler_name)(tool_input, conversation)
+        except Exception as e:
+            logger.error('Error executing tool %s: %s', tool_name, str(e))
+            return f"Erro ao {action_phrase}: {str(e)}"
 
-                slots = self.appointment_service.get_available_slots(
-                    date,
-                    tool_input.get('service'),
-                    professional_id=professional_id
-                )
-                if not slots:
-                    return f"Não há horários disponíveis em {tool_input['date']}."
+    def _tool_check_availability(self, tool_input: dict, conversation: Conversation) -> str:
+        date = datetime.strptime(tool_input['date'], '%Y-%m-%d').date()
 
-                weekday = WEEKDAY_NAMES[date.weekday()]
+        professional_id = None
+        professional_name = tool_input.get('professional_name')
+        if professional_name:
+            professional = self.appointment_service.find_professional_by_name(professional_name)
+            if not professional:
+                return f"Não encontrei o profissional '{professional_name}'. Use list_professionals para ver os disponíveis."
+            professional_id = professional.id
 
-                slots_str = ", ".join([s['start_time'] for s in slots[:10]])
-                return f"Horários disponíveis para {weekday}, {date.strftime('%d/%m/%Y')}:\n{slots_str}"
-            except Exception as e:
-                logger.error('Error checking availability: %s', str(e))
-                return f"Erro ao verificar disponibilidade: {str(e)}"
+        slots = self.appointment_service.get_available_slots(
+            date,
+            tool_input.get('service'),
+            professional_id=professional_id
+        )
+        if not slots:
+            return f"Não há horários disponíveis em {tool_input['date']}."
 
-        elif tool_name == "create_appointment":
-            try:
-                dt = datetime.fromisoformat(tool_input['datetime'])
+        weekday = WEEKDAY_NAMES[date.weekday()]
 
-                # Validate date is in the future
-                now = datetime.now(ZoneInfo('America/Sao_Paulo'))
-                if dt.replace(tzinfo=None) <= now.replace(tzinfo=None):
-                    return "Não é possível agendar para uma data/hora que já passou. Por favor, escolha um horário futuro."
+        slots_str = ", ".join([s['start_time'] for s in slots[:10]])
+        return f"Horários disponíveis para {weekday}, {date.strftime('%d/%m/%Y')}:\n{slots_str}"
 
-                # Validate it's a business day
-                day_config = self.clinic.business_hours.get(str(dt.weekday()), {})
-                if not day_config.get('active', False):
-                    return f"A clínica não funciona às {WEEKDAY_NAMES[dt.weekday()]}s. Por favor, escolha outro dia."
+    def _tool_create_appointment(self, tool_input: dict, conversation: Conversation) -> str:
+        dt = datetime.fromisoformat(tool_input['datetime'])
 
-                professional_id = None
-                professional_name = tool_input.get('professional_name')
-                if professional_name:
-                    professional = self.appointment_service.find_professional_by_name(professional_name)
-                    if not professional:
-                        return f"Não encontrei o profissional '{professional_name}'. Use list_professionals para ver os disponíveis."
-                    professional_id = professional.id
+        # Validate date is in the future
+        now = datetime.now(ZoneInfo('America/Sao_Paulo'))
+        if dt.replace(tzinfo=None) <= now.replace(tzinfo=None):
+            return "Não é possível agendar para uma data/hora que já passou. Por favor, escolha um horário futuro."
 
-                appointment, error = self.appointment_service.create_appointment(
-                    patient_name=tool_input['patient_name'],
-                    patient_phone=conversation.phone_number,
-                    scheduled_datetime=dt,
-                    service_name=tool_input['service'],
-                    professional_id=professional_id,
-                    consent_source='whatsapp'
-                )
-                if error:
-                    return f"Não foi possível agendar: {error}"
+        # Validate it's a business day
+        day_config = self.clinic.business_hours.get(str(dt.weekday()), {})
+        if not day_config.get('active', False):
+            return f"A clínica não funciona às {WEEKDAY_NAMES[dt.weekday()]}s. Por favor, escolha outro dia."
 
-                # Link patient to conversation if not linked
-                if not conversation.patient_id and appointment:
-                    patient = Patient.query.get(appointment.patient_id)
-                    self.conversation_service.link_patient(conversation, patient)
+        professional_id = None
+        professional_name = tool_input.get('professional_name')
+        if professional_name:
+            professional = self.appointment_service.find_professional_by_name(professional_name)
+            if not professional:
+                return f"Não encontrei o profissional '{professional_name}'. Use list_professionals para ver os disponíveis."
+            professional_id = professional.id
 
-                weekday = WEEKDAY_NAMES[dt.weekday()]
+        appointment, error = self.appointment_service.create_appointment(
+            patient_name=tool_input['patient_name'],
+            patient_phone=conversation.phone_number,
+            scheduled_datetime=dt,
+            service_name=tool_input['service'],
+            professional_id=professional_id,
+            consent_source='whatsapp'
+        )
+        if error:
+            return f"Não foi possível agendar: {error}"
 
-                return (
-                    f"Agendamento confirmado!\n"
-                    f"Paciente: {tool_input['patient_name']}\n"
-                    f"Serviço: {tool_input['service']}\n"
-                    f"Data/Hora: {weekday}, {dt.strftime('%d/%m/%Y às %H:%M')}\n"
-                    f"ID: {appointment.id}"
-                )
-            except Exception as e:
-                logger.error('Error creating appointment: %s', str(e))
-                return f"Erro ao criar agendamento: {str(e)}"
+        # Link patient to conversation if not linked
+        if not conversation.patient_id and appointment:
+            patient = Patient.query.filter_by(
+                id=appointment.patient_id,
+                clinic_id=self.clinic.id
+            ).first()
+            self.conversation_service.link_patient(conversation, patient)
 
-        elif tool_name == "reschedule_appointment":
-            try:
-                new_dt = datetime.fromisoformat(tool_input['new_datetime'])
+        weekday = WEEKDAY_NAMES[dt.weekday()]
 
-                now = datetime.now(ZoneInfo('America/Sao_Paulo'))
-                if new_dt.replace(tzinfo=None) <= now.replace(tzinfo=None):
-                    return "Não é possível remarcar para uma data/hora que já passou. Por favor, escolha um horário futuro."
+        return (
+            f"Agendamento confirmado!\n"
+            f"Paciente: {tool_input['patient_name']}\n"
+            f"Serviço: {tool_input['service']}\n"
+            f"Data/Hora: {weekday}, {dt.strftime('%d/%m/%Y às %H:%M')}\n"
+            f"ID: {appointment.id}"
+        )
 
-                appointment, error = self.appointment_service.reschedule_appointment(
-                    tool_input['appointment_id'],
-                    new_dt
-                )
-                if error:
-                    return f"Não foi possível remarcar: {error}"
+    def _tool_reschedule_appointment(self, tool_input: dict, conversation: Conversation) -> str:
+        new_dt = datetime.fromisoformat(tool_input['new_datetime'])
 
-                weekday = WEEKDAY_NAMES[new_dt.weekday()]
-                return (
-                    f"Agendamento remarcado com sucesso!\n"
-                    f"Novo horário: {weekday}, {new_dt.strftime('%d/%m/%Y às %H:%M')}"
-                )
-            except Exception as e:
-                logger.error('Error rescheduling appointment: %s', str(e))
-                return f"Erro ao remarcar agendamento: {str(e)}"
+        now = datetime.now(ZoneInfo('America/Sao_Paulo'))
+        if new_dt.replace(tzinfo=None) <= now.replace(tzinfo=None):
+            return "Não é possível remarcar para uma data/hora que já passou. Por favor, escolha um horário futuro."
 
-        elif tool_name == "confirm_appointment":
-            try:
-                appointment = Appointment.query.filter_by(
-                    id=tool_input['appointment_id'],
-                    clinic_id=self.clinic.id
-                ).first()
-                if not appointment:
-                    return "Agendamento não encontrado."
-                if appointment.status == AppointmentStatus.CANCELLED:
-                    return "Esse agendamento está cancelado e não pode ser confirmado."
-                appointment.confirm_by_patient()
-                db.session.commit()
-                return "Presença confirmada, obrigado!"
-            except Exception as e:
-                logger.error('Error confirming appointment: %s', str(e))
-                return f"Erro ao confirmar agendamento: {str(e)}"
+        appointment, error = self.appointment_service.reschedule_appointment(
+            tool_input['appointment_id'],
+            new_dt
+        )
+        if error:
+            return f"Não foi possível remarcar: {error}"
 
-        elif tool_name == "list_professionals":
-            try:
-                professionals = Professional.query.filter_by(
-                    clinic_id=self.clinic.id,
-                    active=True
-                ).all()
-                if not professionals:
-                    return "Esta clínica não tem profissionais específicos cadastrados."
-                lines = ["Profissionais disponíveis:"]
-                for p in professionals:
-                    line = f"- {p.name}"
-                    if p.specialty:
-                        line += f" ({p.specialty})"
-                    lines.append(line)
-                return "\n".join(lines)
-            except Exception as e:
-                logger.error('Error listing professionals: %s', str(e))
-                return f"Erro ao listar profissionais: {str(e)}"
+        weekday = WEEKDAY_NAMES[new_dt.weekday()]
+        return (
+            f"Agendamento remarcado com sucesso!\n"
+            f"Novo horário: {weekday}, {new_dt.strftime('%d/%m/%Y às %H:%M')}"
+        )
 
-        elif tool_name == "list_appointments":
-            try:
-                appointments = self.appointment_service.get_patient_appointments(
-                    conversation.phone_number
-                )
-                if not appointments:
-                    return "Você não possui agendamentos futuros."
+    def _tool_confirm_appointment(self, tool_input: dict, conversation: Conversation) -> str:
+        appointment = Appointment.query.filter_by(
+            id=tool_input['appointment_id'],
+            clinic_id=self.clinic.id
+        ).first()
+        if not appointment:
+            return "Agendamento não encontrado."
+        if appointment.status == AppointmentStatus.CANCELLED:
+            return "Esse agendamento está cancelado e não pode ser confirmado."
+        appointment.confirm_by_patient()
+        db.session.commit()
+        return "Presença confirmada, obrigado!"
 
-                lines = ["Seus agendamentos:"]
-                for apt in appointments[:5]:
-                    lines.append(
-                        f"- {apt.scheduled_datetime.strftime('%d/%m/%Y %H:%M')} "
-                        f"- {apt.service_name} (ID: {apt.id})"
-                    )
-                return "\n".join(lines)
-            except Exception as e:
-                logger.error('Error listing appointments: %s', str(e))
-                return f"Erro ao listar agendamentos: {str(e)}"
+    def _tool_list_professionals(self, tool_input: dict, conversation: Conversation) -> str:
+        professionals = Professional.query.filter_by(
+            clinic_id=self.clinic.id,
+            active=True
+        ).all()
+        if not professionals:
+            return "Esta clínica não tem profissionais específicos cadastrados."
+        lines = ["Profissionais disponíveis:"]
+        for p in professionals:
+            line = f"- {p.name}"
+            if p.specialty:
+                line += f" ({p.specialty})"
+            lines.append(line)
+        return "\n".join(lines)
 
-        elif tool_name == "cancel_appointment":
-            try:
-                success, error = self.appointment_service.cancel_appointment(
-                    tool_input['appointment_id']
-                )
-                if not success:
-                    return f"Não foi possível cancelar: {error}"
-                return "Agendamento cancelado com sucesso."
-            except Exception as e:
-                logger.error('Error cancelling appointment: %s', str(e))
-                return f"Erro ao cancelar agendamento: {str(e)}"
+    def _tool_list_appointments(self, tool_input: dict, conversation: Conversation) -> str:
+        appointments = self.appointment_service.get_patient_appointments(
+            conversation.phone_number
+        )
+        if not appointments:
+            return "Você não possui agendamentos futuros."
 
-        elif tool_name == "update_patient_info":
-            try:
-                patient = self._resolve_patient(conversation)
-                if not patient:
-                    return "Ainda não temos um cadastro para este paciente. Colete o nome completo e crie um agendamento primeiro."
+        lines = ["Seus agendamentos:"]
+        for apt in appointments[:5]:
+            lines.append(
+                f"- {apt.scheduled_datetime.strftime('%d/%m/%Y %H:%M')} "
+                f"- {apt.service_name} (ID: {apt.id})"
+            )
+        return "\n".join(lines)
 
-                updatable_fields = [
-                    'email', 'notes', 'address_zip_code', 'address_street', 'address_number',
-                    'address_complement', 'address_neighborhood', 'address_city', 'address_state'
-                ]
-                updated = []
-                for field in updatable_fields:
-                    if tool_input.get(field):
-                        setattr(patient, field, tool_input[field])
-                        updated.append(field)
+    def _tool_cancel_appointment(self, tool_input: dict, conversation: Conversation) -> str:
+        success, error = self.appointment_service.cancel_appointment(
+            tool_input['appointment_id']
+        )
+        if not success:
+            return f"Não foi possível cancelar: {error}"
+        return "Agendamento cancelado com sucesso."
 
-                if not updated:
-                    return "Nenhuma informação para atualizar foi fornecida."
+    def _tool_update_patient_info(self, tool_input: dict, conversation: Conversation) -> str:
+        patient = self._resolve_patient(conversation)
+        if not patient:
+            return "Ainda não temos um cadastro para este paciente. Colete o nome completo e crie um agendamento primeiro."
 
-                db.session.commit()
-                return "Dados do paciente atualizados com sucesso."
-            except Exception as e:
-                logger.error('Error updating patient info: %s', str(e))
-                return f"Erro ao atualizar dados do paciente: {str(e)}"
+        updatable_fields = [
+            'email', 'notes', 'address_zip_code', 'address_street', 'address_number',
+            'address_complement', 'address_neighborhood', 'address_city', 'address_state'
+        ]
+        updated = []
+        for field in updatable_fields:
+            if tool_input.get(field):
+                setattr(patient, field, tool_input[field])
+                updated.append(field)
 
-        elif tool_name == "update_pipeline_stage":
-            try:
-                patient = self._resolve_patient(conversation)
-                if not patient:
-                    return "Ainda não temos um cadastro para este paciente."
+        if not updated:
+            return "Nenhuma informação para atualizar foi fornecida."
 
-                stage_name = tool_input['stage_name']
-                stage = PipelineStage.query.filter(
-                    PipelineStage.clinic_id == self.clinic.id,
-                    db.func.lower(PipelineStage.name) == stage_name.strip().lower()
-                ).first()
-                if not stage:
-                    return f"Estágio '{stage_name}' não encontrado. Estágios disponíveis: {self._format_pipeline_stages()}"
+        db.session.commit()
+        return "Dados do paciente atualizados com sucesso."
 
-                patient.pipeline_stage_id = stage.id
-                db.session.commit()
-                return f"Paciente movido para o estágio '{stage.name}'."
-            except Exception as e:
-                logger.error('Error updating pipeline stage: %s', str(e))
-                return f"Erro ao mover estágio: {str(e)}"
+    def _tool_update_pipeline_stage(self, tool_input: dict, conversation: Conversation) -> str:
+        patient = self._resolve_patient(conversation)
+        if not patient:
+            return "Ainda não temos um cadastro para este paciente."
 
-        elif tool_name == "resend_reminder":
-            try:
-                appointments = self.appointment_service.get_patient_appointments(conversation.phone_number)
-                if not appointments:
-                    return "Não há consultas futuras para lembrar."
+        stage_name = tool_input['stage_name']
+        stage = PipelineStage.query.filter(
+            PipelineStage.clinic_id == self.clinic.id,
+            db.func.lower(PipelineStage.name) == stage_name.strip().lower()
+        ).first()
+        if not stage:
+            return f"Estágio '{stage_name}' não encontrado. Estágios disponíveis: {self._format_pipeline_stages()}"
 
-                appointment = appointments[0]
-                patient = appointment.patient
-                weekday = WEEKDAY_NAMES[appointment.scheduled_datetime.weekday()]
-                message = (
-                    f"Olá {patient.name.split()[0]}! 👋\n\n"
-                    f"Passando para lembrar da sua consulta:\n\n"
-                    f"📅 Data: {weekday}, {appointment.scheduled_datetime.strftime('%d/%m/%Y')}\n"
-                    f"⏰ Horário: {appointment.scheduled_datetime.strftime('%H:%M')}\n"
-                    f"🏥 Serviço: {appointment.service_name}\n\n"
-                    f"Até lá! 😊"
-                )
-                result = EvolutionService(self.clinic).send_message(patient.phone, message)
-                if 'error' in result:
-                    return f"Não foi possível reenviar o lembrete: {result['error']}"
-                return "Lembrete reenviado com sucesso."
-            except Exception as e:
-                logger.error('Error resending reminder: %s', str(e))
-                return f"Erro ao reenviar lembrete: {str(e)}"
+        patient.pipeline_stage_id = stage.id
+        db.session.commit()
+        return f"Paciente movido para o estágio '{stage.name}'."
 
-        elif tool_name == "send_procedure_instructions":
-            try:
-                service = self._find_service(tool_input.get('service'))
-                if not service or not service.get('instructions'):
-                    return "Não há instruções cadastradas para este serviço."
+    def _tool_resend_reminder(self, tool_input: dict, conversation: Conversation) -> str:
+        appointments = self.appointment_service.get_patient_appointments(conversation.phone_number)
+        if not appointments:
+            return "Não há consultas futuras para lembrar."
 
-                patient = self._resolve_patient(conversation)
-                patient_first_name = patient.name.split()[0] if patient else ''
-                message = (
-                    f"Olá{' ' + patient_first_name if patient_first_name else ''}! 👋\n\n"
-                    f"Instruções para *{service.get('name')}*:\n\n"
-                    f"{service['instructions']}"
-                )
-                result = EvolutionService(self.clinic).send_message(conversation.phone_number, message)
-                if 'error' in result:
-                    return f"Não foi possível enviar as instruções: {result['error']}"
-                return "Instruções enviadas com sucesso."
-            except Exception as e:
-                logger.error('Error sending procedure instructions: %s', str(e))
-                return f"Erro ao enviar instruções: {str(e)}"
+        appointment = appointments[0]
+        patient = appointment.patient
+        weekday = WEEKDAY_NAMES[appointment.scheduled_datetime.weekday()]
+        message = (
+            f"Olá {patient.name.split()[0]}! 👋\n\n"
+            f"Passando para lembrar da sua consulta:\n\n"
+            f"📅 Data: {weekday}, {appointment.scheduled_datetime.strftime('%d/%m/%Y')}\n"
+            f"⏰ Horário: {appointment.scheduled_datetime.strftime('%H:%M')}\n"
+            f"🏥 Serviço: {appointment.service_name}\n\n"
+            f"Até lá! 😊"
+        )
+        result = EvolutionService(self.clinic).send_message(patient.phone, message)
+        if 'error' in result:
+            return f"Não foi possível reenviar o lembrete: {result['error']}"
+        return "Lembrete reenviado com sucesso."
 
-        elif tool_name == "get_current_datetime":
-            try:
-                now = datetime.now(ZoneInfo('America/Sao_Paulo'))
-                month_names = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
-                weekday = WEEKDAY_NAMES[now.weekday()]
-                month = month_names[now.month - 1]
+    def _tool_send_procedure_instructions(self, tool_input: dict, conversation: Conversation) -> str:
+        service = self._find_service(tool_input.get('service'))
+        if not service or not service.get('instructions'):
+            return "Não há instruções cadastradas para este serviço."
 
-                return (
-                    f"Data e hora atual:\n"
-                    f"{weekday}, {now.day} de {month} de {now.year}\n"
-                    f"Horário: {now.strftime('%H:%M')} (Horário de Brasília)"
-                )
-            except Exception as e:
-                logger.error('Error getting current datetime: %s', str(e))
-                return f"Erro ao obter data/hora: {str(e)}"
+        patient = self._resolve_patient(conversation)
+        patient_first_name = patient.name.split()[0] if patient else ''
+        message = (
+            f"Olá{' ' + patient_first_name if patient_first_name else ''}! 👋\n\n"
+            f"Instruções para *{service.get('name')}*:\n\n"
+            f"{service['instructions']}"
+        )
+        result = EvolutionService(self.clinic).send_message(conversation.phone_number, message)
+        if 'error' in result:
+            return f"Não foi possível enviar as instruções: {result['error']}"
+        return "Instruções enviadas com sucesso."
 
-        elif tool_name == "transfer_to_human":
-            try:
-                reason = tool_input.get('reason', 'Solicitação do paciente')
-                urgent = bool(tool_input.get('urgent', False))
+    def _tool_get_current_datetime(self, tool_input: dict, conversation: Conversation) -> str:
+        now = datetime.now(ZoneInfo('America/Sao_Paulo'))
+        month_names = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+        weekday = WEEKDAY_NAMES[now.weekday()]
+        month = month_names[now.month - 1]
 
-                # For emergencies, prepend the structured triage to the reason so
-                # reception sees the clinical picture at a glance.
-                pain_level = tool_input.get('pain_level')
-                symptoms = tool_input.get('symptoms')
-                if urgent and (pain_level is not None or symptoms):
-                    triage_parts = []
-                    if pain_level is not None:
-                        triage_parts.append(f"dor {pain_level}/10")
-                    if symptoms:
-                        triage_parts.append(symptoms)
-                    reason = f"[TRIAGEM] {' - '.join(triage_parts)} | {reason}"
+        return (
+            f"Data e hora atual:\n"
+            f"{weekday}, {now.day} de {month} de {now.year}\n"
+            f"Horário: {now.strftime('%H:%M')} (Horário de Brasília)"
+        )
 
-                # Generate an AI summary so the human agent doesn't have to read
-                # the whole thread (best-effort; never blocks the transfer).
-                summary = None
-                try:
-                    summary = self.summarize_conversation_for_handoff(conversation)
-                except Exception:
-                    logger.exception('Failed to generate handoff summary')
+    def _tool_transfer_to_human(self, tool_input: dict, conversation: Conversation) -> str:
+        reason = tool_input.get('reason', 'Solicitação do paciente')
+        urgent = bool(tool_input.get('urgent', False))
 
-                transfer = self.conversation_service.transfer_to_human(
-                    conversation, reason, urgent=urgent
-                )
-                if summary and transfer is not None:
-                    transfer.summary = summary
-                    db.session.commit()
-                return "Conversa transferida para atendimento humano."
-            except Exception as e:
-                logger.error('Error transferring to human: %s', str(e))
-                return f"Erro ao transferir: {str(e)}"
+        # For emergencies, prepend the structured triage to the reason so
+        # reception sees the clinical picture at a glance.
+        pain_level = tool_input.get('pain_level')
+        symptoms = tool_input.get('symptoms')
+        if urgent and (pain_level is not None or symptoms):
+            triage_parts = []
+            if pain_level is not None:
+                triage_parts.append(f"dor {pain_level}/10")
+            if symptoms:
+                triage_parts.append(symptoms)
+            reason = f"[TRIAGEM] {' - '.join(triage_parts)} | {reason}"
 
-        elif tool_name == "send_booking_link":
-            try:
-                base_url = current_app.config.get('BASE_URL', 'https://sdental.onrender.com')
-                slug = self.clinic.slug
-                if not slug:
-                    return "O agendamento online não está configurado para esta clínica."
-                booking_url = f"{base_url}/agendar/{slug}"
-                return f"Link de agendamento: {booking_url}"
-            except Exception as e:
-                logger.error('Error generating booking link: %s', str(e))
-                return f"Erro ao gerar link: {str(e)}"
+        # Generate an AI summary so the human agent doesn't have to read
+        # the whole thread (best-effort; never blocks the transfer).
+        summary = None
+        try:
+            summary = self.summarize_conversation_for_handoff(conversation)
+        except Exception:
+            logger.exception('Failed to generate handoff summary')
 
-        return "Ferramenta não reconhecida."
+        transfer = self.conversation_service.transfer_to_human(
+            conversation, reason, urgent=urgent
+        )
+        if summary and transfer is not None:
+            transfer.summary = summary
+            db.session.commit()
+        return "Conversa transferida para atendimento humano."
+
+    def _tool_send_booking_link(self, tool_input: dict, conversation: Conversation) -> str:
+        base_url = current_app.config.get('BASE_URL', 'https://sdental.onrender.com')
+        slug = self.clinic.slug
+        if not slug:
+            return "O agendamento online não está configurado para esta clínica."
+        booking_url = f"{base_url}/agendar/{slug}"
+        return f"Link de agendamento: {booking_url}"
 
     # ------------------------------------------------------------------ #
     # Autonomous / proactive capabilities                                #

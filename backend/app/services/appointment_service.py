@@ -183,7 +183,10 @@ class AppointmentService:
         # Get business hours (professional-specific or clinic-wide)
         business_hours = self.clinic.business_hours or {}
         if professional_id:
-            professional = Professional.query.get(professional_id)
+            professional = Professional.query.filter_by(
+                id=professional_id,
+                clinic_id=self.clinic.id
+            ).first()
             if professional and professional.business_hours:
                 business_hours = professional.business_hours
 
@@ -475,7 +478,7 @@ class AppointmentService:
         patient = Patient.query.filter_by(
             clinic_id=self.clinic.id,
             phone=phone
-        ).first()
+        ).filter(Patient.deleted_at.is_(None)).first()
 
         if not patient:
             return []

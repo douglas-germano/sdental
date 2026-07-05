@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import type { PipelineStage } from '@/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
@@ -287,13 +288,38 @@ export const pipelineApi = {
 
   getStages: () => api.get('/pipeline/stages'),
 
-  updateStages: (stages: any[]) => api.post('/pipeline/stages', stages),
+  updateStages: (stages: Array<Partial<Pick<PipelineStage, 'id' | 'name' | 'color' | 'order' | 'description' | 'is_default'>>>) =>
+    api.post('/pipeline/stages', stages),
 
   movePatient: (patientId: string, stageId: string) =>
     api.put('/pipeline/move', { patient_id: patientId, stage_id: stageId }),
 
   getPatientHistory: (patientId: string) =>
     api.get(`/pipeline/patients/${patientId}/history`)
+}
+
+// Public booking API (no auth required - used by the public /agendar/[slug] page)
+export const publicApi = {
+  getClinic: (slug: string) => api.get(`/public/clinic/${slug}`),
+
+  getCalendar: (slug: string) => api.get(`/public/clinic/${slug}/calendar`),
+
+  getAvailability: (slug: string, date: string, service?: string, professionalId?: string) =>
+    api.get(`/public/clinic/${slug}/availability`, {
+      params: { date, service, professional_id: professionalId }
+    }),
+
+  book: (slug: string, data: {
+    service: string
+    date: string
+    time: string
+    name: string
+    phone: string
+    email?: string
+    notes?: string
+    professional_id?: string
+    consent: boolean
+  }) => api.post(`/public/clinic/${slug}/book`, data)
 }
 
 export default api
