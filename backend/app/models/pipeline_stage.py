@@ -22,6 +22,10 @@ class PipelineStage(db.Model, TimestampMixin):
     # Relationships
     patients = db.relationship('Patient', backref='pipeline_stage', lazy='dynamic')
 
+    __table_args__ = (
+        db.UniqueConstraint('clinic_id', 'name', name='uq_pipeline_stage_clinic_name'),
+    )
+
     @validates('color')
     def validate_color(self, key, color):
         """Validate that color is a valid hex color code."""

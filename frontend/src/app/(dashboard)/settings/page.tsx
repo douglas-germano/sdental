@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { clinicsApi, billingApi } from '@/lib/api'
-import { getDayName } from '@/lib/utils'
+import { getDayName, formatPhone } from '@/lib/utils'
 import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning, CreditCard, ArrowSquareOut } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
@@ -337,7 +337,7 @@ export default function SettingsPage() {
                         placeholder="Telefone"
                       />
                     ) : (
-                      <span className="text-muted-foreground">{clinic?.phone || '-'}</span>
+                      <span className="text-muted-foreground">{clinic?.phone ? formatPhone(clinic.phone) : '-'}</span>
                     )}
                   </div>
 

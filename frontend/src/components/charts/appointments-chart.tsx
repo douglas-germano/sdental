@@ -20,6 +20,12 @@ interface ChartData {
   cancelled: number
 }
 
+function formatChartDate(dateStr: string): string {
+  const date = new Date(`${dateStr}T00:00:00`)
+  if (isNaN(date.getTime())) return dateStr
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
 export function AppointmentsChart() {
   const [data, setData] = useState<ChartData[]>([])
   const [loading, setLoading] = useState(true)
@@ -81,6 +87,7 @@ export function AppointmentsChart() {
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
         <XAxis
           dataKey="date"
+          tickFormatter={formatChartDate}
           tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
           tickLine={false}
           axisLine={false}
@@ -92,6 +99,7 @@ export function AppointmentsChart() {
           allowDecimals={false}
         />
         <Tooltip
+          labelFormatter={formatChartDate}
           contentStyle={{
             backgroundColor: 'hsl(var(--background))',
             border: '1px solid hsl(var(--border))',
