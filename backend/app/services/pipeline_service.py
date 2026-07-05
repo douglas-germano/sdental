@@ -3,6 +3,8 @@ import re
 from typing import List, Optional
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
+
 from app import db
 from app.models import PipelineStage, Patient
 
@@ -20,8 +22,11 @@ class PipelineService:
         Ensure default pipeline stages exist for the clinic.
         If stages already exist, returns them. Otherwise creates default stages.
 
-        This method is thread-safe and prevents race conditions by using
-        a database-level check.
+        The initial existence check is a plain SELECT (not itself race-free),
+        but the unique constraint on (clinic_id, name) makes the follow-up
+        INSERT atomic: if two requests lose this race concurrently, the
+        loser's commit raises IntegrityError and re-fetches the stages the
+        winner just created instead of leaving duplicates behind.
 
         Returns:
             List of PipelineStage objects
@@ -60,11 +65,12 @@ class PipelineService:
             logger.info(f"Created {len(stages)} default pipeline stages for clinic {self.clinic.id}")
             return stages
 
-        except Exception as e:
+        except IntegrityError:
             db.session.rollback()
-            logger.error(f"Error creating default stages for clinic {self.clinic.id}: {str(e)}")
 
-            # If commit failed due to race condition, try to fetch again
+            # Another concurrent request won the race and created the
+            # defaults first - fetch and return what it created instead of
+            # leaving this request's (rolled back) attempt as an error.
             stages = PipelineStage.query.filter_by(
                 clinic_id=self.clinic.id
             ).order_by(PipelineStage.order).all()
@@ -73,7 +79,7 @@ class PipelineService:
                 logger.info(f"Stages were created by another request, returning existing ones")
                 return stages
 
-            # If still no stages, re-raise the error
+            # Unexpected: constraint fired but no stages are visible.
             raise
 
     def get_all_stages(self) -> List[PipelineStage]:
@@ -157,7 +163,11 @@ class PipelineService:
                     )
                 db.session.delete(stage)
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            raise ValueError('Já existe um estágio com esse nome para esta clínica.')
 
         # Return stages ordered
         return sorted(result_stages, key=lambda s: s.order)

@@ -100,7 +100,7 @@ export function getStatusColor(status: string): string {
     pending: 'bg-warning/10 text-warning border-warning/20',
     confirmed: 'bg-success/10 text-success border-success/20',
     cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
-    completed: 'bg-primary/10 text-primary border-primary/20',
+    completed: 'bg-accent/10 text-accent border-accent/20',
     no_show: 'bg-muted text-muted-foreground border-border',
     active: 'bg-success/10 text-success border-success/20',
     transferred_to_human: 'bg-accent/10 text-accent border-accent/20'

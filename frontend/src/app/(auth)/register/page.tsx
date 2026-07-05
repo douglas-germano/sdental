@@ -66,10 +66,10 @@ export default function RegisterPage() {
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: '+500', label: 'Clinicas ativas' },
-              { value: '50k+', label: 'Agendamentos/mes' },
-              { value: '98%', label: 'Satisfacao' },
-              { value: '24/7', label: 'Atendimento IA' }
+              { value: '24/7', label: 'Agendamento via WhatsApp' },
+              { value: 'CRM', label: 'Pipeline completo de pacientes' },
+              { value: 'IA', label: 'Recuperação de faltas e lembretes' },
+              { value: 'Dados', label: 'Relatórios em tempo real' }
             ].map((stat, i) => (
               <div key={i} className="p-4 rounded-card border border-white/25">
                 <div className="text-2xl font-extrabold text-primary mb-0.5 tracking-tight">{stat.value}</div>
