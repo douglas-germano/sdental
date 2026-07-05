@@ -44,6 +44,14 @@ class Config:
     # Webhook authentication
     WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')
 
+    # Kiwify (subscription billing)
+    # KIWIFY_WEBHOOK_TOKEN must match the "token" configured for the webhook
+    # in the Kiwify dashboard (Kiwify > App > Webhooks). KIWIFY_CHECKOUT_URL is
+    # the checkout link for the SDental subscription product/offer.
+    KIWIFY_WEBHOOK_TOKEN = os.getenv('KIWIFY_WEBHOOK_TOKEN')
+    KIWIFY_CHECKOUT_URL = os.getenv('KIWIFY_CHECKOUT_URL')
+    KIWIFY_GRACE_PERIOD_DAYS = int(os.getenv('KIWIFY_GRACE_PERIOD_DAYS', '5'))
+
     # Base URL for webhook configuration
     BASE_URL = os.getenv('BASE_URL')
 
@@ -136,6 +144,18 @@ def validate_config(app):
 
     if not app.config.get('WEBHOOK_SECRET'):
         warnings.append('WEBHOOK_SECRET nao definida. Webhooks sem autenticacao.')
+
+    if not app.config.get('KIWIFY_WEBHOOK_TOKEN'):
+        warnings.append(
+            'KIWIFY_WEBHOOK_TOKEN nao definida. O webhook de cobranca vai '
+            'rejeitar todas as chamadas da Kiwify.'
+        )
+
+    if not app.config.get('KIWIFY_CHECKOUT_URL'):
+        warnings.append(
+            'KIWIFY_CHECKOUT_URL nao definida. Clinicas nao terao link de '
+            'pagamento para assinar/regularizar.'
+        )
 
     if not app.config.get('BREVO_API_KEY'):
         warnings.append('BREVO_API_KEY nao definida. E-mails transacionais nao serao enviados (apenas logados).')

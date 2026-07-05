@@ -8,14 +8,24 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { clinicsApi } from '@/lib/api'
+import { clinicsApi, billingApi } from '@/lib/api'
 import { getDayName } from '@/lib/utils'
-import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning } from '@phosphor-icons/react'
+import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning, CreditCard, ArrowSquareOut } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'
+import type { BillingStatus, SubscriptionStatus } from '@/types'
 
-type Section = 'profile' | 'whatsapp' | 'hours' | 'services' | 'automacao'
+type Section = 'profile' | 'whatsapp' | 'hours' | 'services' | 'automacao' | 'assinatura'
+
+const SUBSCRIPTION_STATUS_LABELS: Record<SubscriptionStatus, { label: string; variant: 'success' | 'warning' | 'destructive' }> = {
+  pending_payment: { label: 'Pagamento pendente', variant: 'warning' },
+  active: { label: 'Ativa', variant: 'success' },
+  late: { label: 'Pagamento atrasado', variant: 'warning' },
+  canceled: { label: 'Cancelada', variant: 'destructive' },
+  refunded: { label: 'Reembolsada', variant: 'destructive' },
+  chargeback: { label: 'Contestada (chargeback)', variant: 'destructive' },
+}
 
 export default function SettingsPage() {
   const { clinic, refreshClinic } = useAuth()
@@ -24,6 +34,8 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [editingField, setEditingField] = useState<string | null>(null)
+  const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null)
+  const [billingLoading, setBillingLoading] = useState(true)
 
   // Business Hours State
   const [businessHours, setBusinessHours] = useState(clinic?.business_hours || {})
@@ -45,7 +57,15 @@ export default function SettingsPage() {
     { id: 'hours' as Section, label: 'Horários de Funcionamento', icon: Clock },
     { id: 'services' as Section, label: 'Serviços / Procedimentos', icon: Stethoscope },
     { id: 'automacao' as Section, label: 'Automação (IA proativa)', icon: Sparkle },
+    { id: 'assinatura' as Section, label: 'Assinatura', icon: CreditCard },
   ]
+
+  useEffect(() => {
+    billingApi.getStatus()
+      .then((res) => setBillingStatus(res.data))
+      .catch(() => setBillingStatus(null))
+      .finally(() => setBillingLoading(false))
+  }, [])
 
   const handleToggleAutomation = async (
     field:
@@ -737,6 +757,67 @@ export default function SettingsPage() {
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Billing / Subscription Section */}
+            {activeSection === 'assinatura' && (
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    Assinatura
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    A assinatura do SDental é processada pela Kiwify.
+                  </p>
+                </div>
+
+                {billingLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm py-6">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Carregando status da assinatura...
+                  </div>
+                ) : !billingStatus ? (
+                  <p className="text-sm text-muted-foreground py-6">
+                    Não foi possível carregar o status da assinatura.
+                  </p>
+                ) : (
+                  <div className="rounded-xl border border-border/60 divide-y divide-border/60">
+                    <div className="flex items-center justify-between p-4">
+                      <span className="font-medium text-sm">Status</span>
+                      <Badge variant={SUBSCRIPTION_STATUS_LABELS[billingStatus.subscription_status].variant}>
+                        {SUBSCRIPTION_STATUS_LABELS[billingStatus.subscription_status].label}
+                      </Badge>
+                    </div>
+                    {billingStatus.subscription_period_end && (
+                      <div className="flex items-center justify-between p-4">
+                        <span className="font-medium text-sm">Próxima cobrança</span>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(billingStatus.subscription_period_end).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                    )}
+                    {billingStatus.checkout_url && (
+                      <div className="flex items-center justify-between p-4 gap-3 flex-wrap">
+                        <div className="space-y-0.5">
+                          <span className="font-medium text-sm block">
+                            {billingStatus.subscription_status === 'active' ? 'Gerenciar assinatura' : 'Regularizar pagamento'}
+                          </span>
+                          <p className="text-xs text-muted-foreground">
+                            Você será redirecionado para o checkout seguro da Kiwify.
+                          </p>
+                        </div>
+                        <Button asChild size="sm" className="gap-2">
+                          <a href={billingStatus.checkout_url} target="_blank" rel="noopener noreferrer">
+                            Ir para a Kiwify
+                            <ArrowSquareOut className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

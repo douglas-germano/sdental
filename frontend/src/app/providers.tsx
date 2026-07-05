@@ -15,6 +15,12 @@ interface AuthContextType {
   refreshClinic: () => Promise<void>
 }
 
+export interface SubscriptionInactiveError {
+  error_code: 'SUBSCRIPTION_INACTIVE'
+  subscription_status: string
+  checkout_url: string | null
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -59,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(access_token, refresh_token)
     setStoredClinic(clinicData)
     setClinic(clinicData)
-    router.push('/')
+    router.push(clinicData.active ? '/' : '/assinatura-pendente')
   }
 
   const logout = () => {

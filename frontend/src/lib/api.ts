@@ -298,6 +298,11 @@ export const pipelineApi = {
     api.get(`/pipeline/patients/${patientId}/history`)
 }
 
+// Billing API (Kiwify subscription status)
+export const billingApi = {
+  getStatus: () => api.get('/billing/status')
+}
+
 // Public booking API (no auth required - used by the public /agendar/[slug] page)
 export const publicApi = {
   getClinic: (slug: string) => api.get(`/public/clinic/${slug}`),

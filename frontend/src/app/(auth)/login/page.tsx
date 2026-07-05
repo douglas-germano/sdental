@@ -11,11 +11,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { EnvelopeSimple as Mail, Lock, ChatCircleDots, ArrowRight, CheckCircle as CheckCircle2 } from '@phosphor-icons/react'
+import { SubscriptionInactiveCard } from '@/components/billing/subscription-inactive-card'
+import type { SubscriptionStatus } from '@/types'
+import type { SubscriptionInactiveError } from '@/app/providers'
 
 export default function LoginPage() {
   const { login } = useAuth()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [subscriptionError, setSubscriptionError] = useState<SubscriptionInactiveError | null>(null)
 
   const {
     register,
@@ -27,16 +31,38 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginForm) => {
     setError('')
+    setSubscriptionError(null)
     setLoading(true)
 
     try {
       await login(data.email, data.password)
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } } }
-      setError(error.response?.data?.error || 'Erro ao fazer login')
+      const error = err as { response?: { data?: Partial<SubscriptionInactiveError> & { error?: string } } }
+      const responseData = error.response?.data
+      if (responseData?.error_code === 'SUBSCRIPTION_INACTIVE') {
+        setSubscriptionError(responseData as SubscriptionInactiveError)
+      } else {
+        setError(responseData?.error || 'Erro ao fazer login')
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  if (subscriptionError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <SubscriptionInactiveCard
+          subscriptionStatus={subscriptionError.subscription_status as SubscriptionStatus}
+          checkoutUrl={subscriptionError.checkout_url}
+          footer={
+            <Button variant="ghost" className="w-full" onClick={() => setSubscriptionError(null)}>
+              Voltar
+            </Button>
+          }
+        />
+      </div>
+    )
   }
 
   return (

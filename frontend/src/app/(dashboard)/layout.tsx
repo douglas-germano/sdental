@@ -47,6 +47,10 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!isLoading && !clinic) {
       router.push('/login')
+    } else if (!isLoading && clinic && !clinic.active) {
+      // Session still valid but the subscription is pending/late/canceled -
+      // every dashboard API call would 403, so send them to the billing screen.
+      router.push('/assinatura-pendente')
     }
   }, [clinic, isLoading, router])
 
@@ -61,7 +65,7 @@ export default function DashboardLayout({
     )
   }
 
-  if (!clinic) {
+  if (!clinic || !clinic.active) {
     return null
   }
 

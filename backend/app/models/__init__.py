@@ -1,4 +1,5 @@
-from .clinic import Clinic
+from .clinic import Clinic, SubscriptionStatus
+from .kiwify_webhook_event import KiwifyWebhookEvent
 from .patient import Patient
 from .appointment import Appointment
 from .appointment import Appointment, AppointmentStatus
@@ -13,6 +14,8 @@ from .agent_action import AgentAction, AgentActionType, AgentActionStatus
 
 __all__ = [
     'Clinic',
+    'SubscriptionStatus',
+    'KiwifyWebhookEvent',
     'Patient',
     'Appointment',
     'AppointmentStatus',
