@@ -246,7 +246,7 @@ export default function SettingsPage() {
             {activeSection === 'profile' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Perfil da Clínica</h2>
+                  <h2 className="text-base font-bold">Perfil da Clínica</h2>
                   {editingField !== 'profile' ? (
                     <Button variant="outline" size="sm" onClick={() => setEditingField('profile')}>
                       Editar
@@ -368,7 +368,7 @@ export default function SettingsPage() {
             {/* WhatsApp Section */}
             {activeSection === 'whatsapp' && (
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold mb-2">WhatsApp / Evolution API</h2>
+                <h2 className="text-base font-bold mb-2">WhatsApp / Evolution API</h2>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
                   <div className="space-y-0.5">
@@ -391,7 +391,7 @@ export default function SettingsPage() {
             {activeSection === 'hours' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Horários de Funcionamento</h2>
+                  <h2 className="text-base font-bold">Horários de Funcionamento</h2>
                   {editingField !== 'hours' ? (
                     <Button variant="outline" size="sm" onClick={() => setEditingField('hours')}>
                       Editar
@@ -475,7 +475,7 @@ export default function SettingsPage() {
             {activeSection === 'services' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Serviços / Procedimentos</h2>
+                  <h2 className="text-base font-bold">Serviços / Procedimentos</h2>
                   {editingField !== 'services' ? (
                     <Button variant="outline" size="sm" onClick={() => setEditingField('services')}>
                       Editar
