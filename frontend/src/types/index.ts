@@ -9,6 +9,8 @@ export interface Clinic {
   business_hours: Record<string, BusinessHour>
   services: Service[]
   active: boolean
+  subscription_status?: SubscriptionStatus
+  subscription_period_end?: string | null
   created_at: string
   updated_at: string
   evolution_api_url?: string
@@ -23,6 +25,21 @@ export interface Clinic {
   recall_inactive_days?: number
   funnel_automation_enabled?: boolean
   weekly_report_enabled?: boolean
+}
+
+export type SubscriptionStatus =
+  | 'pending_payment'
+  | 'active'
+  | 'late'
+  | 'canceled'
+  | 'refunded'
+  | 'chargeback'
+
+export interface BillingStatus {
+  subscription_status: SubscriptionStatus
+  subscription_period_end: string | null
+  active: boolean
+  checkout_url: string | null
 }
 
 export interface AgentAction {

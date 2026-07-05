@@ -5,10 +5,11 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
 from app import db
-from app.models import Clinic
+from app.models import Clinic, SubscriptionStatus
 from app.utils.validators import validate_email, validate_phone, validate_password, normalize_phone
 from app.utils.rate_limiter import limiter
 from app.services.email_service import EmailService
+from app.services.billing_service import BillingService
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 logger = logging.getLogger(__name__)
@@ -46,11 +47,14 @@ def register():
     # Normalize phone number to expected format
     normalized_phone = normalize_phone(data['phone'])
 
-    # Create new clinic
+    # Create new clinic. Access is gated on payment - no free trial - so the
+    # clinic starts inactive until a Kiwify webhook confirms the first charge.
     clinic = Clinic(
         name=data['name'],
         email=data['email'],
-        phone=normalized_phone
+        phone=normalized_phone,
+        active=False,
+        subscription_status=SubscriptionStatus.PENDING_PAYMENT
     )
     clinic.set_password(data['password'])
 
@@ -88,7 +92,8 @@ def register():
         'message': 'Clinic registered successfully',
         'clinic': clinic.to_dict(),
         'access_token': access_token,
-        'refresh_token': refresh_token
+        'refresh_token': refresh_token,
+        'checkout_url': BillingService.checkout_url_for(clinic)
     }), 201
 
 
@@ -107,7 +112,12 @@ def login():
         return jsonify({'error': 'Invalid email or password'}), 401
 
     if not clinic.active:
-        return jsonify({'error': 'Account is inactive'}), 403
+        return jsonify({
+            'error': 'Assinatura inativa. Finalize o pagamento para continuar.',
+            'error_code': 'SUBSCRIPTION_INACTIVE',
+            'subscription_status': clinic.subscription_status,
+            'checkout_url': BillingService.checkout_url_for(clinic)
+        }), 403
 
     access_token = create_access_token(identity=str(clinic.id))
     refresh_token = create_refresh_token(identity=str(clinic.id))

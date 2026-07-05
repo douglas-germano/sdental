@@ -32,6 +32,24 @@ def clinic_required(fn: Callable) -> Callable:
     return wrapper
 
 
+def clinic_required_any_status(fn: Callable) -> Callable:
+    """
+    Like clinic_required, but does NOT reject inactive clinics.
+    Only for endpoints an inactive (e.g. unpaid) clinic must still be able to
+    reach - today that's just the billing status endpoint, so it can show
+    the clinic why it's locked out and where to pay.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request()
+        clinic = get_current_clinic()
+        if not clinic:
+            return jsonify({'error': 'Clinic not found'}), 404
+        kwargs['current_clinic'] = clinic
+        return fn(*args, **kwargs)
+    return wrapper
+
+
 def clinic_required_stream(fn: Callable) -> Callable:
     """
     Like clinic_required, but also accepts the JWT via a `?token=` query

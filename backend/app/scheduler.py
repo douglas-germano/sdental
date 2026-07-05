@@ -95,6 +95,37 @@ def weekly_report_job():
                      lambda c: c.weekly_report_enabled)
 
 
+def suspend_late_subscriptions_job():
+    """
+    Suspend clinics whose Kiwify subscription has been "late" for longer
+    than KIWIFY_GRACE_PERIOD_DAYS. Access is kept during the grace period
+    (see BillingService.process_event) - this job is what actually revokes
+    it once that window elapses. subscription_status stays 'late' (as
+    opposed to 'canceled') so a renewal webhook can reactivate the clinic.
+    """
+    from datetime import datetime, timedelta
+    from flask import current_app
+    from app import db
+    from app.models import Clinic, SubscriptionStatus
+
+    grace_days = current_app.config.get('KIWIFY_GRACE_PERIOD_DAYS', 5)
+    cutoff = datetime.utcnow() - timedelta(days=grace_days)
+
+    clinics = Clinic.query.filter(
+        Clinic.subscription_status == SubscriptionStatus.LATE,
+        Clinic.active == True,  # noqa: E712 - SQLAlchemy comparison, not a Python bool check
+        Clinic.subscription_late_since.isnot(None),
+        Clinic.subscription_late_since < cutoff
+    ).all()
+
+    for clinic in clinics:
+        clinic.active = False
+        logger.info('Suspended clinic %s after %s days of late payment', clinic.id, grace_days)
+
+    if clinics:
+        db.session.commit()
+
+
 def init_scheduler(app):
     """
     Initialize the scheduler with the Flask application.
@@ -162,6 +193,15 @@ def init_scheduler(app):
         trigger=IntervalTrigger(hours=24),
         id='agent_weekly_report',
         name='Proactive weekly performance report',
+        replace_existing=True
+    )
+
+    # Suspend clinics whose Kiwify payment has been late past the grace period.
+    scheduler.add_job(
+        func=with_app_context(suspend_late_subscriptions_job),
+        trigger=IntervalTrigger(hours=24),
+        id='suspend_late_subscriptions',
+        name='Suspend clinics past the billing grace period',
         replace_existing=True
     )
 

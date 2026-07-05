@@ -13,6 +13,15 @@ from .mixins import TimestampMixin
 PASSWORD_RESET_TOKEN_TTL = timedelta(hours=1)
 
 
+class SubscriptionStatus:
+    PENDING_PAYMENT = 'pending_payment'  # signed up, no confirmed payment yet
+    ACTIVE = 'active'
+    LATE = 'late'          # payment overdue, inside the grace period
+    CANCELED = 'canceled'
+    REFUNDED = 'refunded'
+    CHARGEBACK = 'chargeback'
+
+
 class Clinic(db.Model, TimestampMixin):
     __tablename__ = 'clinics'
 
@@ -67,6 +76,17 @@ class Clinic(db.Model, TimestampMixin):
     weekly_report_enabled = db.Column(db.Boolean, default=False, nullable=False)
 
     active = db.Column(db.Boolean, default=True)
+
+    # Billing (Kiwify subscription)
+    subscription_status = db.Column(
+        db.String(20), default=SubscriptionStatus.PENDING_PAYMENT, nullable=False
+    )
+    subscription_period_end = db.Column(db.DateTime, nullable=True)
+    # Set when a "subscription_late" webhook arrives; cleared on the next
+    # successful payment. The scheduler suspends the clinic once this is
+    # older than KIWIFY_GRACE_PERIOD_DAYS.
+    subscription_late_since = db.Column(db.DateTime, nullable=True)
+    kiwify_subscription_id = db.Column(db.String(100), nullable=True)
 
     # Password reset (hashed token, never store the raw token)
     password_reset_token_hash = db.Column(db.String(64), nullable=True)
@@ -169,6 +189,8 @@ class Clinic(db.Model, TimestampMixin):
             'business_hours': self.business_hours,
             'services': self.services,
             'active': self.active,
+            'subscription_status': self.subscription_status,
+            'subscription_period_end': self.subscription_period_end.isoformat() if self.subscription_period_end else None,
             'proactive_outreach_enabled': self.proactive_outreach_enabled,
             'noshow_recovery_enabled': self.noshow_recovery_enabled,
             'waitlist_enabled': self.waitlist_enabled,
