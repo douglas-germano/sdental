@@ -52,7 +52,7 @@ export function AppointmentsChart() {
 
   if (loading) {
     return (
-      <div className="h-[200px] flex items-center justify-center">
+      <div className="h-[95px] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
       </div>
     )
@@ -60,8 +60,8 @@ export function AppointmentsChart() {
 
   if (error || data.length === 0) {
     return (
-      <div className="h-[200px] flex flex-col items-center justify-center text-muted-foreground">
-        <Calendar className="h-10 w-10 mb-2 opacity-40" />
+      <div className="h-[95px] flex flex-col items-center justify-center text-muted-foreground">
+        <Calendar className="h-8 w-8 mb-1.5 opacity-40" />
         <p className="text-sm">Nenhum dado disponivel</p>
         <p className="text-xs mt-1">Os dados aparecerao conforme os agendamentos forem criados</p>
       </div>
@@ -69,7 +69,7 @@ export function AppointmentsChart() {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
+    <ResponsiveContainer width="100%" height={95}>
       <AreaChart
         data={data}
         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}

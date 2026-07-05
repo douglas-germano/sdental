@@ -12,7 +12,6 @@ import { CalendarBlank as Calendar, Users, Chat as MessageSquare, TrendUp as Tre
 import { AppointmentsChart } from '@/components/charts/appointments-chart'
 import { StatusPieChart } from '@/components/charts/status-pie-chart'
 import { StatsCard } from '@/components/dashboard/stats-card'
-import { AskAI } from '@/components/dashboard/ask-ai'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
@@ -100,7 +99,7 @@ export default function DashboardPage() {
   const currentMonth = getCurrentMonthName()
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-3">
       {/* Personalized Header with Quick Actions */}
       <PageHeader
         title={`${greeting}${clinicName ? `, ${clinicName}` : ''}`}
@@ -125,7 +124,7 @@ export default function DashboardPage() {
       </PageHeader>
 
       {/* Period Indicator + Metrics Cards */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" size="sm" className="text-xs font-medium">
             {currentMonth}
@@ -133,7 +132,7 @@ export default function DashboardPage() {
           <span className="text-xs text-muted-foreground">Este mes</span>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <StatsCard
             title="Agendamentos do Mes"
             value={overview?.appointments.this_month || 0}
@@ -206,24 +205,25 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Section with Monthly Summary Row */}
-      <div className="space-y-4">
-        <div className="grid gap-6 lg:grid-cols-7">
+      <div className="space-y-2">
+        <div className="grid gap-4 lg:grid-cols-7">
           <Card className="lg:col-span-4">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-primary" />
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <div className="h-7 w-7 rounded-lg bg-primary/8 flex items-center justify-center">
+                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
                 </div>
                 Visao Geral de Agendamentos
               </CardTitle>
             </CardHeader>
-            <CardContent className="pl-2">
+            <CardContent className="p-4 pt-0 pl-1">
               {loading ? (
-                <Skeleton className="h-[300px] w-full rounded-xl" />
+                <Skeleton className="h-[95px] w-full rounded-xl" />
               ) : chartsHaveData ? (
                 <AppointmentsChart />
               ) : (
                 <EmptyState
+                  compact
                   icon={TrendingUp}
                   title="Sem dados ainda"
                   description="Os graficos serao exibidos quando houver agendamentos"
@@ -232,16 +232,17 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Status dos Agendamentos</CardTitle>
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-base">Status dos Agendamentos</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
               {loading ? (
-                <Skeleton className="h-[300px] w-full rounded-xl" />
+                <Skeleton className="h-[95px] w-full rounded-xl" />
               ) : chartsHaveData ? (
                 <StatusPieChart overview={overview} />
               ) : (
                 <EmptyState
+                  compact
                   icon={Calendar}
                   title="Sem dados ainda"
                   description="O grafico de status sera exibido quando houver agendamentos"
@@ -253,7 +254,7 @@ export default function DashboardPage() {
 
         {/* Compact Monthly Summary Row (replaces the old full-width card) */}
         {!loading && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
             {[
               { icon: CheckCircle2, value: overview?.appointments.completed || 0, label: 'Concluidos', color: 'text-success', bg: 'bg-success/8' },
               { icon: XCircle, value: overview?.appointments.cancelled || 0, label: 'Cancelados', color: 'text-destructive', bg: 'bg-destructive/8' },
@@ -262,13 +263,13 @@ export default function DashboardPage() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card"
+                className="flex items-center gap-2 p-2 rounded-xl border border-border/50 bg-card"
               >
-                <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
-                  <item.icon className={`h-4 w-4 ${item.color}`} />
+                <div className={`w-7 h-7 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
+                  <item.icon className={`h-3.5 w-3.5 ${item.color}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className={`text-lg font-bold tabular-nums ${item.color}`}>{item.value}</p>
+                  <p className={`text-base font-bold tabular-nums ${item.color}`}>{item.value}</p>
                   <p className="text-xs text-muted-foreground truncate">{item.label}</p>
                 </div>
               </div>
@@ -277,27 +278,24 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Natural-language analytics */}
-      <AskAI />
-
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* Upcoming Appointments */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center">
-                <Calendar className="h-4 w-4 text-primary" />
+        <Card className="flex flex-col">
+          <CardHeader className="p-3 pb-1.5">
+            <CardTitle className="flex items-center gap-2.5 text-base">
+              <div className="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center">
+                <Calendar className="h-3.5 w-3.5 text-primary" />
               </div>
               Proximos Agendamentos
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 pt-0">
             {loading ? (
-              <div className="space-y-3">
+              <div className="space-y-1.5">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-3">
+                  <div key={i} className="flex items-center justify-between p-2">
                     <div className="flex items-center gap-3">
-                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <Skeleton className="w-8 h-8 rounded-full" />
                       <div className="space-y-1.5">
                         <Skeleton className="h-4 w-[120px]" />
                         <Skeleton className="h-3 w-[80px]" />
@@ -309,20 +307,21 @@ export default function DashboardPage() {
               </div>
             ) : upcomingAppointments.length === 0 ? (
               <EmptyState
+                compact
                 icon={Calendar}
                 title="Nenhum agendamento proximo"
                 description="Nao ha agendamentos nos proximos 7 dias"
               />
             ) : (
-              <div className="space-y-2">
-                {upcomingAppointments.slice(0, 5).map((apt) => (
+              <div className="space-y-1">
+                {upcomingAppointments.slice(0, 2).map((apt) => (
                   <Link
                     key={apt.id}
                     href="/appointments"
-                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
+                    className="flex items-center justify-between p-1.5 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
                         {apt.patient?.name?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div>
@@ -353,7 +352,7 @@ export default function DashboardPage() {
             )}
             <Link
               href="/appointments"
-              className="flex items-center justify-center gap-1.5 mt-5 pt-4 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex items-center justify-center gap-1.5 mt-1.5 pt-1.5 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todos os agendamentos
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -362,22 +361,22 @@ export default function DashboardPage() {
         </Card>
 
         {/* Conversations Needing Attention */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-warning/8 flex items-center justify-center">
-                <MessageSquare className="h-4 w-4 text-warning" />
+        <Card className="flex flex-col">
+          <CardHeader className="p-3 pb-1.5">
+            <CardTitle className="flex items-center gap-2.5 text-base">
+              <div className="w-7 h-7 rounded-lg bg-warning/8 flex items-center justify-center">
+                <MessageSquare className="h-3.5 w-3.5 text-warning" />
               </div>
               Conversas Aguardando Atencao
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 pt-0">
             {loading ? (
-              <div className="space-y-3">
+              <div className="space-y-1.5">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-3">
+                  <div key={i} className="flex items-center justify-between p-2">
                     <div className="flex items-center gap-3">
-                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <Skeleton className="w-8 h-8 rounded-full" />
                       <div className="space-y-1.5">
                         <Skeleton className="h-4 w-[120px]" />
                         <Skeleton className="h-3 w-[150px]" />
@@ -388,20 +387,21 @@ export default function DashboardPage() {
               </div>
             ) : recentConversations.length === 0 ? (
               <EmptyState
+                compact
                 icon={MessageSquare}
                 title="Nenhuma conversa aguardando atencao"
                 description="Todas as conversas estao em dia"
               />
             ) : (
-              <div className="space-y-2">
-                {recentConversations.map((conv) => (
+              <div className="space-y-1">
+                {recentConversations.slice(0, 2).map((conv) => (
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
+                    className="flex items-center justify-between p-1.5 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
                         {conv.patient?.name?.charAt(0).toUpperCase() || conv.phone_number?.charAt(0) || '?'}
                       </div>
                       <div className="min-w-0">
@@ -424,7 +424,7 @@ export default function DashboardPage() {
             )}
             <Link
               href="/conversations"
-              className="flex items-center justify-center gap-1.5 mt-5 pt-4 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex items-center justify-center gap-1.5 mt-1.5 pt-1.5 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todas as conversas
               <ArrowUpRight className="h-3.5 w-3.5" />

@@ -38,12 +38,12 @@ export function StatsCard({
     if (loading) {
         return (
             <Card className={cn('overflow-hidden', className)}>
-                <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2.5">
                         <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-10 w-10 rounded-xl" />
+                        <Skeleton className="h-8 w-8 rounded-lg" />
                     </div>
-                    <Skeleton className="h-9 w-16 mb-2" />
+                    <Skeleton className="h-7 w-16 mb-1.5" />
                     <Skeleton className="h-3.5 w-28" />
                 </CardContent>
             </Card>
@@ -57,23 +57,23 @@ export function StatsCard({
             hover
             className={cn("overflow-hidden", className)}
         >
-            <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
+            <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2.5">
                     <p className="text-sm font-medium text-muted-foreground">
                         {title}
                     </p>
                     <div className={cn(
-                        "h-10 w-10 rounded-xl flex items-center justify-center transition-colors",
+                        "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
                         iconColor
                     )}>
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-4 w-4" />
                     </div>
                 </div>
-                <div className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+                <div className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
                     {isNumeric ? value.toLocaleString('pt-BR') : value}
                 </div>
                 {description && (
-                    <div className="text-xs text-muted-foreground mt-2">
+                    <div className="text-xs text-muted-foreground mt-1">
                         {description}
                     </div>
                 )}
