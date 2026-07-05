@@ -47,13 +47,14 @@ export default function PatientsPage() {
         per_page: 20,
         search: search || undefined
       })
-      console.log('Patients API Response:', response.data)
-      console.log('Patients array:', response.data.patients)
-      console.log('Total patients:', response.data.total)
       setPatients(response.data.patients || [])
       setTotalPages(response.data.pages || 1)
     } catch (error) {
-      console.error('Error fetching patients:', error)
+      toast({
+        title: 'Erro',
+        description: getErrorMessage(error),
+        variant: 'error',
+      })
     } finally {
       setLoading(false)
     }

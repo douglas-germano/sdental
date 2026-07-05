@@ -5,7 +5,9 @@ from sqlalchemy import or_
 
 from app import db
 from app.models import Patient, PipelineStage, Conversation
+from app.services.patient_service import PatientService
 from app.utils.auth import clinic_required
+from app.utils.pagination import get_pagination_params
 from app.utils.validators import normalize_phone, validate_phone
 
 bp = Blueprint('patients', __name__, url_prefix='/api/patients')
@@ -21,8 +23,7 @@ ADDRESS_FIELDS = [
 def list_patients(current_clinic):
     """List all patients for the clinic."""
     # Get query parameters
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    page, per_page = get_pagination_params()
     search = request.args.get('search', '')
 
     # Build query (exclude soft deleted)
@@ -118,12 +119,7 @@ def create_patient(current_clinic):
                     existing.pipeline_stage_id = pipeline_stage_id
             elif not existing.pipeline_stage_id:
                 # Assign default stage if none
-                default_stage = PipelineStage.query.filter_by(
-                    clinic_id=current_clinic.id,
-                    is_default=True
-                ).first() or PipelineStage.query.filter_by(
-                    clinic_id=current_clinic.id
-                ).order_by(PipelineStage.order).first()
+                default_stage = PatientService(current_clinic).get_default_pipeline_stage()
                 if default_stage:
                     existing.pipeline_stage_id = default_stage.id
 
@@ -148,17 +144,7 @@ def create_patient(current_clinic):
             return jsonify({'error': 'Invalid pipeline stage'}), 400
     else:
         # Find default pipeline stage
-        default_stage = PipelineStage.query.filter_by(
-            clinic_id=current_clinic.id,
-            is_default=True
-        ).first()
-
-        # If no default set, get the first one by order
-        if not default_stage:
-            default_stage = PipelineStage.query.filter_by(
-                clinic_id=current_clinic.id
-            ).order_by(PipelineStage.order).first()
-
+        default_stage = PatientService(current_clinic).get_default_pipeline_stage()
         pipeline_stage_id = default_stage.id if default_stage else None
 
     patient = Patient(
@@ -261,7 +247,7 @@ def export_patient_data(patient_id, current_clinic):
     patient = Patient.query.filter_by(
         id=patient_id,
         clinic_id=current_clinic.id
-    ).first()
+    ).filter(Patient.deleted_at.is_(None)).first()
 
     if not patient:
         return jsonify({'error': 'Patient not found'}), 404

@@ -13,21 +13,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toast'
+import { isAxiosError } from 'axios'
 import { patientsApi, pipelineApi, conversationsApi } from '@/lib/api'
 import { CircleNotch as Loader2, LinkSimple as Link2, MagnifyingGlass as Search, User, Chat as MessageSquare } from '@phosphor-icons/react'
 import { cn, normalizePhoneForApi } from '@/lib/utils'
-
-interface Patient {
-  id: string
-  name: string
-  phone: string
-  email?: string
-}
-
-interface ConversationContact {
-  phone: string
-  lastMessage?: string
-}
+import { getErrorMessage } from '@/lib/error-messages'
+import type { Patient, PipelineStage, Conversation } from '@/types'
 
 interface SearchResult {
   type: 'patient' | 'conversation'
@@ -38,17 +29,11 @@ interface SearchResult {
   lastMessage?: string
 }
 
-interface Stage {
-  id: string
-  name: string
-  color: string
-}
-
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
-  stages: Stage[]
+  stages: PipelineStage[]
 }
 
 export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Props) {
@@ -105,13 +90,13 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
 
         // Filter conversations without patient and match search term
         conversations
-          .filter((conv: any) => !conv.patient_id)
-          .filter((conv: any) => {
+          .filter((conv: Conversation) => !conv.patient_id)
+          .filter((conv: Conversation) => {
             const phone = conv.phone_number?.toLowerCase() || ''
             const search = searchTerm.toLowerCase()
             return phone.includes(search)
           })
-          .forEach((conv: any) => {
+          .forEach((conv: Conversation) => {
             // Get last message
             let lastMessage = 'Sem mensagens'
             if (conv.messages && conv.messages.length > 0) {
@@ -187,9 +172,9 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
             description: 'Contato transformado em paciente e vinculado ao pipeline.',
             variant: 'success',
           })
-        } catch (createError: any) {
+        } catch (createError: unknown) {
           // If patient already exists (409), try to find it and move to stage
-          if (createError?.response?.status === 409) {
+          if (isAxiosError(createError) && createError.response?.status === 409) {
             toast({
               title: 'Paciente já existe',
               description: 'Buscando paciente existente com este telefone...',
@@ -231,12 +216,10 @@ export function LinkPatientModal({ open, onOpenChange, onSuccess, stages }: Prop
 
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
-      console.error('Error linking patient:', error)
-      const errorMessage = error?.response?.data?.error || 'Não foi possível vincular o paciente.'
+    } catch (error: unknown) {
       toast({
         title: 'Erro',
-        description: errorMessage,
+        description: getErrorMessage(error),
         variant: 'error',
       })
     } finally {

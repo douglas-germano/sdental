@@ -16,19 +16,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import { patientsApi } from '@/lib/api'
 import { formatPhoneInput, normalizePhoneForApi, validatePhoneForApi } from '@/lib/utils'
+import { getErrorMessage } from '@/lib/error-messages'
 import { CircleNotch as Loader2, UserPlus } from '@phosphor-icons/react'
-
-interface Stage {
-  id: string
-  name: string
-  color: string
-}
+import type { PipelineStage } from '@/types'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
-  stages: Stage[]
+  stages: PipelineStage[]
 }
 
 export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props) {
@@ -114,12 +110,10 @@ export function AddPatientModal({ open, onOpenChange, onSuccess, stages }: Props
 
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
-      console.error('Error adding patient:', error)
-      const errorMessage = error?.response?.data?.error || 'Não foi possível adicionar o paciente.'
+    } catch (error: unknown) {
       toast({
         title: 'Erro',
-        description: errorMessage,
+        description: getErrorMessage(error),
         variant: 'error',
       })
     } finally {

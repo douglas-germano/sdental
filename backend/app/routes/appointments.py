@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from app import db
 from app.models import Appointment, Patient, AppointmentStatus
 from app.utils.auth import clinic_required
+from app.utils.pagination import get_pagination_params
 from app.services.appointment_service import AppointmentService
 from app.services.email_service import EmailService
 
@@ -18,8 +19,7 @@ bp = Blueprint('appointments', __name__, url_prefix='/api/appointments')
 def list_appointments(current_clinic):
     """List appointments with filters."""
     # Get query parameters
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    page, per_page = get_pagination_params()
     status = request.args.get('status')
     date_from = request.args.get('date_from')
     date_to = request.args.get('date_to')

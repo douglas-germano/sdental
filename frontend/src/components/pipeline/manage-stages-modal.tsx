@@ -13,8 +13,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
 import { pipelineApi } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-messages'
 import { Plus, Trash as Trash2, DotsSixVertical as GripVertical, FloppyDisk as Save, CircleNotch as Loader2 } from '@phosphor-icons/react'
 import { PageLoader } from '@/components/ui/page-loader'
+import type { PipelineStage } from '@/types'
 import {
   DndContext,
   closestCenter,
@@ -33,13 +35,10 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-interface Stage {
+// A stage being edited in this form: same shape as PipelineStage, but `id`
+// is optional since a newly-added stage doesn't have one until it's saved.
+type Stage = Omit<PipelineStage, 'id' | 'patients' | 'total_patients' | 'has_more'> & {
   id?: string
-  name: string
-  color: string
-  order: number
-  description?: string
-  is_default?: boolean
 }
 
 interface Props {
@@ -56,7 +55,7 @@ function SortableStageItem({
 }: {
   stage: Stage
   index: number
-  onUpdate: (index: number, field: keyof Stage, value: any) => void
+  onUpdate: (index: number, field: keyof Stage, value: string | number | boolean) => void
   onDelete: (index: number) => void
 }) {
   const {
@@ -197,11 +196,11 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
     ])
   }
 
-  const handleUpdateStage = (index: number, field: keyof Stage, value: any) => {
+  const handleUpdateStage = (index: number, field: keyof Stage, value: string | number | boolean) => {
     const newStages = [...stages]
 
     // If updating color, ensure it has # prefix
-    if (field === 'color' && value && !value.startsWith('#')) {
+    if (field === 'color' && typeof value === 'string' && value && !value.startsWith('#')) {
       value = '#' + value.replace(/^#+/, '')
     }
 
@@ -256,22 +255,14 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
     setSaving(true)
     try {
       // Prepare data - remove undefined IDs and ensure all required fields are present
-      const stagesToSave = stages.map((stage) => {
-        const stageData: any = {
-          name: stage.name.trim(),
-          color: stage.color || '#3b82f6',
-          order: stage.order,
-          description: stage.description || '',
-          is_default: stage.is_default || false,
-        }
-
-        // Only include ID if it exists (for existing stages)
-        if (stage.id) {
-          stageData.id = stage.id
-        }
-
-        return stageData
-      })
+      const stagesToSave = stages.map((stage) => ({
+        ...(stage.id ? { id: stage.id } : {}),
+        name: stage.name.trim(),
+        color: stage.color || '#3b82f6',
+        order: stage.order,
+        description: stage.description || '',
+        is_default: stage.is_default || false,
+      }))
 
       await pipelineApi.updateStages(stagesToSave)
 
@@ -283,15 +274,10 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
 
       onSave()
       onOpenChange(false)
-    } catch (error: any) {
-      console.error('Error updating stages:', error)
-
-      const errorMessage =
-        error?.response?.data?.error || 'Não foi possível atualizar os estágios.'
-
+    } catch (error: unknown) {
       toast({
         title: 'Erro',
-        description: errorMessage,
+        description: getErrorMessage(error),
         variant: 'error',
       })
     } finally {

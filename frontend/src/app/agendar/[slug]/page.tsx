@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { CalendarBlank as Calendar, Clock, User, Phone, EnvelopeSimple as Mail, FileText, CheckCircle, ArrowLeft, ArrowRight, CircleNotch as Loader2, Users } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageLoader } from '@/components/ui/page-loader'
+import { publicApi } from '@/lib/api'
+import { isAxiosError } from 'axios'
 
 interface Service {
     name: string
@@ -46,8 +48,6 @@ interface ClinicInfo {
     professionals: Professional[]
     has_professionals: boolean
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sdental.onrender.com/api'
 
 export default function BookingPage() {
     const params = useParams()
@@ -90,23 +90,15 @@ export default function BookingPage() {
             try {
                 setLoading(true)
                 const [clinicRes, calendarRes] = await Promise.all([
-                    fetch(`${API_URL}/public/clinic/${slug}`),
-                    fetch(`${API_URL}/public/clinic/${slug}/calendar`)
+                    publicApi.getClinic(slug),
+                    publicApi.getCalendar(slug)
                 ])
 
-                if (!clinicRes.ok) {
-                    const data = await clinicRes.json()
-                    setError(data.error || 'Clínica não encontrada')
-                    return
-                }
-
-                const clinicData = await clinicRes.json()
-                const calendarData = await calendarRes.json()
-
-                setClinic(clinicData)
-                setCalendar(calendarData.calendar || [])
-            } catch {
-                setError('Erro ao carregar dados da clínica')
+                setClinic(clinicRes.data)
+                setCalendar(calendarRes.data.calendar || [])
+            } catch (err) {
+                const message = isAxiosError(err) ? err.response?.data?.error : null
+                setError(message || 'Clínica não encontrada')
             } finally {
                 setLoading(false)
             }
@@ -123,18 +115,15 @@ export default function BookingPage() {
             setLoadingSlots(true)
             setTimeSlots([])
             try {
-                let url = `${API_URL}/public/clinic/${slug}/availability?date=${selectedDate}`
-                if (selectedService) {
-                    url += `&service=${encodeURIComponent(selectedService.name)}`
-                }
-                if (selectedProfessional) {
-                    url += `&professional_id=${selectedProfessional.id}`
-                }
-                const res = await fetch(url)
-                const data = await res.json()
-                setTimeSlots(data.available_slots || [])
-            } catch {
-                console.error('Error fetching slots')
+                const res = await publicApi.getAvailability(
+                    slug,
+                    selectedDate,
+                    selectedService?.name,
+                    selectedProfessional?.id
+                )
+                setTimeSlots(res.data.available_slots || [])
+            } catch (err) {
+                console.error('Error fetching slots', err)
             } finally {
                 setLoadingSlots(false)
             }
@@ -150,33 +139,23 @@ export default function BookingPage() {
         setError(null)
 
         try {
-            const res = await fetch(`${API_URL}/public/clinic/${slug}/book`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    service: selectedService.name,
-                    date: selectedDate,
-                    time: selectedTime,
-                    name: formData.name,
-                    phone: formData.phone,
-                    email: formData.email || undefined,
-                    notes: formData.notes || undefined,
-                    professional_id: selectedProfessional?.id || undefined,
-                    consent
-                })
+            const res = await publicApi.book(slug, {
+                service: selectedService.name,
+                date: selectedDate,
+                time: selectedTime,
+                name: formData.name,
+                phone: formData.phone,
+                email: formData.email || undefined,
+                notes: formData.notes || undefined,
+                professional_id: selectedProfessional?.id || undefined,
+                consent
             })
 
-            const data = await res.json()
-
-            if (!res.ok) {
-                setError(data.error || 'Erro ao criar agendamento')
-                return
-            }
-
-            setAppointment(data.appointment)
+            setAppointment(res.data.appointment)
             setSuccess(true)
-        } catch {
-            setError('Erro ao criar agendamento')
+        } catch (err) {
+            const message = isAxiosError(err) ? err.response?.data?.error : null
+            setError(message || 'Erro ao criar agendamento')
         } finally {
             setSubmitting(false)
         }

@@ -4,11 +4,13 @@ import binascii
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 
 from app import db
-from app.models import Conversation, BotTransfer, ConversationStatus, Patient, PipelineStage
+from app.models import Conversation, BotTransfer, ConversationStatus, Patient
 from app.services.conversation_service import ConversationService
 from app.services.evolution_service import EvolutionService
+from app.services.patient_service import PatientService
 from app.services import realtime_service
 from app.utils.auth import clinic_required, clinic_required_stream
+from app.utils.pagination import get_pagination_params
 from app.utils.validators import normalize_phone
 
 bp = Blueprint('conversations', __name__, url_prefix='/api/conversations')
@@ -48,8 +50,7 @@ def stream_conversations(current_clinic):
 @clinic_required
 def list_conversations(current_clinic):
     """List conversations with filters."""
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    page, per_page = get_pagination_params()
     status = request.args.get('status')
     needs_attention = request.args.get('needs_attention', type=bool)
     search = request.args.get('search')
@@ -224,60 +225,13 @@ def link_patient(conversation_id, current_clinic):
     if not phone:
         return jsonify({'error': 'Telefone é obrigatório'}), 400
 
-    # Try to find existing patient with this phone (including soft deleted)
-    patient = Patient.query.filter_by(
-        clinic_id=current_clinic.id,
-        phone=phone
-    ).first()
-
-    if patient:
-        # Restore if soft deleted
-        if patient.deleted_at is not None:
-            patient.restore()
-
-        # Update existing patient
-        patient.name = name
-        if email:
-            patient.email = email
-        if notes:
-            patient.notes = notes
-
-        # Ensure patient has a pipeline stage
-        if not patient.pipeline_stage_id:
-            default_stage = PipelineStage.query.filter_by(
-                clinic_id=current_clinic.id,
-                is_default=True
-            ).first()
-            if not default_stage:
-                default_stage = PipelineStage.query.filter_by(
-                    clinic_id=current_clinic.id
-                ).order_by(PipelineStage.order).first()
-            if default_stage:
-                patient.pipeline_stage_id = default_stage.id
-    else:
-        # Find default pipeline stage for new patients
-        default_stage = PipelineStage.query.filter_by(
-            clinic_id=current_clinic.id,
-            is_default=True
-        ).first()
-
-        # If no default set, get the first one by order
-        if not default_stage:
-            default_stage = PipelineStage.query.filter_by(
-                clinic_id=current_clinic.id
-            ).order_by(PipelineStage.order).first()
-
-        # Create new patient with pipeline stage
-        patient = Patient(
-            clinic_id=current_clinic.id,
-            name=name,
-            phone=phone,
-            email=email,
-            notes=notes,
-            pipeline_stage_id=default_stage.id if default_stage else None
-        )
-        db.session.add(patient)
-        db.session.flush()
+    # Find existing patient with this phone (restoring if soft deleted) or create one
+    patient, _created = PatientService(current_clinic).find_or_create(
+        name=name,
+        phone=phone,
+        email=email,
+        notes=notes
+    )
 
     # Link patient to conversation
     conversation.patient_id = patient.id

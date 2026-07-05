@@ -25,6 +25,7 @@ import { pipelineApi } from '@/lib/api'
 import { KanbanColumn } from './kanban-column'
 import { KanbanCard } from './kanban-card'
 import { useToast } from '@/components/ui/toast'
+import { getErrorMessage } from '@/lib/error-messages'
 import { CircleNotch as Loader2 } from '@phosphor-icons/react'
 import { PageLoader } from '@/components/ui/page-loader'
 
@@ -178,18 +179,13 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
                 description: `Paciente movido para ${targetStage.name}.`,
                 variant: 'success'
             })
-        } catch (error: any) {
-            console.error("Error moving patient", error)
-
+        } catch (error: unknown) {
             // Rollback to previous state
             setStages(previousStages)
 
-            // More specific error message
-            const errorMessage = error?.response?.data?.error || 'Não foi possível mover o paciente.'
-
             toast({
                 title: 'Erro ao mover paciente',
-                description: errorMessage,
+                description: getErrorMessage(error),
                 variant: 'error'
             })
         } finally {
