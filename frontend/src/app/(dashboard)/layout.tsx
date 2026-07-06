@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/button'
-import { SquaresFour as LayoutDashboard, CalendarBlank as Calendar, CalendarDots, Users, Chat as MessageSquare, Gear as Settings, SignOut as LogOut, List as Menu, X, Robot as Bot, CaretLineLeft as PanelLeftClose, CaretLineRight as PanelLeft, Stethoscope, Columns } from '@phosphor-icons/react'
+import { SquaresFour as LayoutDashboard, CalendarBlank as Calendar, CalendarDots, Users, Chat as MessageSquare, Gear as Settings, SignOut as LogOut, List as Menu, X, Robot as Bot, CaretLineLeft as PanelLeftClose, CaretLineRight as PanelLeft, Stethoscope, Columns, Sparkle } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -18,6 +18,7 @@ const navigation = [
   { name: 'Profissionais', href: '/professionals', icon: Stethoscope },
   { name: 'Conversas', href: '/conversations', icon: MessageSquare },
   { name: 'Agentes', href: '/agents', icon: Bot },
+  { name: 'Assistente IA', href: '/assistant', icon: Sparkle },
   { name: 'Configuracoes', href: '/settings', icon: Settings },
 ]
 

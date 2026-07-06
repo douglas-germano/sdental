@@ -11,6 +11,7 @@ from .bot_transfer import BotTransfer
 from .reminder import AppointmentReminder, ReminderStatus, ReminderType
 from .professional import Professional
 from .agent_action import AgentAction, AgentActionType, AgentActionStatus
+from .assistant import AssistantConversation, AssistantMemory
 
 __all__ = [
     'Clinic',
@@ -31,5 +32,7 @@ __all__ = [
     'Professional',
     'AgentAction',
     'AgentActionType',
-    'AgentActionStatus'
+    'AgentActionStatus',
+    'AssistantConversation',
+    'AssistantMemory'
 ]

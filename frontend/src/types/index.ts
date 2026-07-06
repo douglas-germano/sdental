@@ -214,6 +214,27 @@ export interface AnalyticsOverview {
   }
 }
 
+export interface AssistantMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
+}
+
+export interface AssistantConversation {
+  id: string
+  clinic_id: string
+  messages: AssistantMessage[]
+  last_message_at: string | null
+}
+
+export interface AssistantMemory {
+  id: string
+  clinic_id: string
+  content: string
+  created_at: string
+}
+
 export interface PaginatedResponse<T> {
   items?: T[]
   total: number

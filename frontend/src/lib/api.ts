@@ -303,6 +303,18 @@ export const billingApi = {
   getStatus: () => api.get('/billing/status')
 }
 
+// Internal AI assistant API (dashboard copilot for the clinic owner/staff -
+// separate from the WhatsApp patient-facing agent)
+export const assistantApi = {
+  getMessages: () => api.get('/assistant/messages'),
+
+  sendMessage: (message: string) => api.post('/assistant/messages', { message }),
+
+  clearMessages: () => api.delete('/assistant/messages'),
+
+  listMemories: () => api.get('/assistant/memories')
+}
+
 // Public booking API (no auth required - used by the public /agendar/[slug] page)
 export const publicApi = {
   getClinic: (slug: string) => api.get(`/public/clinic/${slug}`),
