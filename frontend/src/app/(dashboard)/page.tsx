@@ -99,11 +99,12 @@ export default function DashboardPage() {
   const currentMonth = getCurrentMonthName()
 
   return (
-    <div className="space-y-8">
+    <div className="h-[calc(100dvh-2rem)] lg:h-[calc(100dvh-4rem)] flex flex-col gap-4">
       {/* Personalized Header with Quick Actions */}
       <PageHeader
         title={`${greeting}${clinicName ? `, ${clinicName}` : ''}`}
         description={formattedDate}
+        className="shrink-0"
       >
         <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -123,8 +124,12 @@ export default function DashboardPage() {
         </Link>
       </PageHeader>
 
+      {/* Scrollable content - keeps header/sidebar fixed even if the content
+          below needs more vertical space than the viewport offers */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-0.5">
+
       {/* Period Indicator + Metrics Cards */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" size="sm" className="text-xs font-medium">
             {currentMonth}
@@ -205,10 +210,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Section with Monthly Summary Row */}
-      <div className="space-y-4">
-        <div className="grid gap-6 lg:grid-cols-7">
+      <div className="space-y-3">
+        <div className="grid gap-4 lg:grid-cols-7">
           <Card className="lg:col-span-4">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
                   <TrendingUp className="h-4 w-4 text-primary" />
@@ -232,7 +237,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           <Card className="lg:col-span-3">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2">
               <CardTitle>Status dos Agendamentos</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
@@ -254,7 +259,7 @@ export default function DashboardPage() {
 
         {/* Monthly Summary Row */}
         {!loading && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { icon: CheckCircle2, value: overview?.appointments.completed || 0, label: 'Concluidos', color: 'text-success', bg: 'bg-success/8' },
               { icon: XCircle, value: overview?.appointments.cancelled || 0, label: 'Cancelados', color: 'text-destructive', bg: 'bg-destructive/8' },
@@ -263,7 +268,7 @@ export default function DashboardPage() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex items-center gap-3 p-4 rounded-card border border-border bg-card"
+                className="flex items-center gap-3 p-3 rounded-card border border-border bg-card"
               >
                 <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
                   <item.icon className={`h-5 w-5 ${item.color}`} />
@@ -278,10 +283,10 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* Upcoming Appointments */}
         <Card className="flex flex-col">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
                 <Calendar className="h-4 w-4 text-primary" />
@@ -318,7 +323,7 @@ export default function DashboardPage() {
                   <Link
                     key={apt.id}
                     href="/appointments"
-                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm shrink-0">
@@ -352,7 +357,7 @@ export default function DashboardPage() {
             )}
             <Link
               href="/appointments"
-              className="flex items-center justify-center gap-1.5 mt-3 pt-3 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex items-center justify-center gap-1.5 mt-2 pt-2 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todos os agendamentos
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -362,7 +367,7 @@ export default function DashboardPage() {
 
         {/* Conversations Needing Attention */}
         <Card className="flex flex-col">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-warning/8 flex items-center justify-center shrink-0">
                 <MessageSquare className="h-4 w-4 text-warning" />
@@ -398,7 +403,7 @@ export default function DashboardPage() {
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm shrink-0">
@@ -424,13 +429,14 @@ export default function DashboardPage() {
             )}
             <Link
               href="/conversations"
-              className="flex items-center justify-center gap-1.5 mt-3 pt-3 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex items-center justify-center gap-1.5 mt-2 pt-2 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todas as conversas
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   )
