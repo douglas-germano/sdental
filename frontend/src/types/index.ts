@@ -175,6 +175,10 @@ export interface Message {
   media_url?: string
   media_mimetype?: string
   caption?: string
+  /** Set to 'whatsapp_app' for messages sent directly from the linked phone
+   *  (not through this platform) - e.g. staff replying manually. Omitted for
+   *  normal bot/dashboard-sent messages. */
+  sent_via?: 'whatsapp_app'
 }
 
 export interface BotTransfer {

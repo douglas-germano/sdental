@@ -74,9 +74,18 @@ def sample_clinic(app, db_session):
 
         yield clinic
 
-        # Cleanup
-        db.session.delete(clinic)
-        db.session.commit()
+        # Cleanup - re-fetch by id rather than reusing the `clinic` object:
+        # Flask-SQLAlchemy tears down (and replaces) `db.session` at the end
+        # of every request/app-context, so if the test made any
+        # client.post()/get() calls, `clinic` is detached from the *current*
+        # session by now. Re-querying gives us an attached instance so
+        # `session.delete()` can still walk its `cascade='all, delete-orphan'`
+        # relationships (conversations, patients, appointments, etc.) instead
+        # of leaving them behind to violate FK constraints on the next test.
+        fresh = db.session.get(Clinic, clinic.id)
+        if fresh:
+            db.session.delete(fresh)
+            db.session.commit()
 
 
 @pytest.fixture
@@ -102,9 +111,11 @@ def sample_patient(app, db_session, sample_clinic):
 
         yield patient
 
-        # Cleanup
-        if not patient.is_deleted:
-            db.session.delete(patient)
+        # Cleanup - see sample_clinic for why this re-fetches instead of
+        # deleting the (possibly session-detached) `patient` object.
+        fresh = db.session.get(Patient, patient.id)
+        if fresh:
+            db.session.delete(fresh)
             db.session.commit()
 
 
@@ -127,6 +138,9 @@ def sample_appointment(app, db_session, sample_clinic, sample_patient):
 
         yield appointment
 
-        # Cleanup
-        db.session.delete(appointment)
-        db.session.commit()
+        # Cleanup - see sample_clinic for why this re-fetches instead of
+        # deleting the (possibly session-detached) `appointment` object.
+        fresh = db.session.get(Appointment, appointment.id)
+        if fresh:
+            db.session.delete(fresh)
+            db.session.commit()

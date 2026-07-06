@@ -40,7 +40,10 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     urgent = db.Column(db.Boolean, default=False, nullable=False)
 
     # Relationships
-    bot_transfers = db.relationship('BotTransfer', backref='conversation', lazy='dynamic')
+    bot_transfers = db.relationship(
+        'BotTransfer', backref='conversation', lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
 
     def _lock_row(self) -> None:
         """
@@ -77,7 +80,8 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
         message_type: str = MessageType.TEXT,
         media_url: str = None,
         media_mimetype: str = None,
-        caption: str = None
+        caption: str = None,
+        sent_via: str = None
     ) -> dict:
         """
         Append a message to the conversation.
@@ -86,6 +90,9 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
         frontend). `evolution_id` is the WhatsApp/Evolution message id, used to
         match later delivery/read ACK webhooks - it may be unknown at creation
         time (e.g. the bot composes a reply before it is actually sent).
+        `sent_via` marks messages that didn't originate from this platform
+        (e.g. 'whatsapp_app' for a staff member replying directly from the
+        linked phone) - omitted for normal bot/dashboard-sent messages.
         """
         self._lock_row()
 
@@ -107,6 +114,8 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             message['media_mimetype'] = media_mimetype
         if caption:
             message['caption'] = caption
+        if sent_via:
+            message['sent_via'] = sent_via
 
         self.messages = self.messages + [message]
         self.last_message_at = datetime.utcnow()
@@ -164,6 +173,65 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             return new_messages[i]
 
         return None
+
+    def merge_history_messages(self, historical: list) -> int:
+        """
+        Merge messages fetched from Evolution API's chat history into this
+        conversation, skipping any whose evolution_id we already have.
+
+        `historical` items are normalized dicts as produced by
+        `app.utils.whatsapp_message.normalize_raw_message`: {evolution_id,
+        from_me, timestamp (datetime), content, message_type, media_url,
+        media_mimetype, caption}. The merged list is re-sorted by timestamp so
+        history stays chronological regardless of fetch/page order.
+
+        Returns the number of messages actually added.
+        """
+        self._lock_row()
+
+        existing = self.messages or []
+        existing_evolution_ids = {m.get('evolution_id') for m in existing if m.get('evolution_id')}
+
+        new_entries = []
+        for h in historical:
+            evo_id = h.get('evolution_id')
+            if evo_id and evo_id in existing_evolution_ids:
+                continue
+            if evo_id:
+                existing_evolution_ids.add(evo_id)
+
+            from_me = bool(h.get('from_me'))
+            message = {
+                'id': uuid.uuid4().hex,
+                'evolution_id': evo_id,
+                'role': 'assistant' if from_me else 'user',
+                'content': h['content'],
+                'timestamp': h['timestamp'].isoformat() + 'Z',
+                'status': MessageStatus.READ if from_me else MessageStatus.DELIVERED,
+                'type': h.get('message_type', MessageType.TEXT),
+            }
+            if h.get('media_url'):
+                message['media_url'] = h['media_url']
+            if h.get('media_mimetype'):
+                message['media_mimetype'] = h['media_mimetype']
+            if h.get('caption'):
+                message['caption'] = h['caption']
+            if from_me:
+                message['sent_via'] = 'whatsapp_app'
+            new_entries.append(message)
+
+        if not new_entries:
+            return 0
+
+        merged = existing + new_entries
+        merged.sort(key=lambda m: m['timestamp'])
+        self.messages = merged
+
+        last_ts = datetime.fromisoformat(merged[-1]['timestamp'].replace('Z', '+00:00')).replace(tzinfo=None)
+        if not self.last_message_at or last_ts > self.last_message_at:
+            self.last_message_at = last_ts
+
+        return len(new_entries)
 
     def to_dict(self, include_messages: bool = True, include_last_message_only: bool = False) -> dict:
         data = {

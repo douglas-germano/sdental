@@ -236,6 +236,12 @@ export const conversationsApi = {
   sendMedia: (id: string, data: { media_type: 'image' | 'audio' | 'document'; data: string; mimetype: string; filename?: string; caption?: string }) =>
     api.post(`/conversations/${id}/send-media`, data),
 
+  syncHistory: (id: string) =>
+    api.post(`/conversations/${id}/sync-history`),
+
+  syncAllHistory: () =>
+    api.post('/conversations/sync-all-history'),
+
   /**
    * URL for the SSE realtime stream. EventSource can't set an Authorization
    * header, so the access token is passed as a query param instead.
