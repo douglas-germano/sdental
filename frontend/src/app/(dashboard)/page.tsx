@@ -99,7 +99,7 @@ export default function DashboardPage() {
   const currentMonth = getCurrentMonthName()
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-8">
       {/* Personalized Header with Quick Actions */}
       <PageHeader
         title={`${greeting}${clinicName ? `, ${clinicName}` : ''}`}
@@ -124,15 +124,15 @@ export default function DashboardPage() {
       </PageHeader>
 
       {/* Period Indicator + Metrics Cards */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" size="sm" className="text-xs font-medium">
             {currentMonth}
           </Badge>
-          <span className="text-xs text-muted-foreground">Este mes</span>
+          <span className="text-sm text-muted-foreground">Este mes</span>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatsCard
             title="Agendamentos do Mes"
             value={overview?.appointments.this_month || 0}
@@ -205,18 +205,18 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Section with Monthly Summary Row */}
-      <div className="space-y-2">
-        <div className="grid gap-4 lg:grid-cols-7">
+      <div className="space-y-4">
+        <div className="grid gap-6 lg:grid-cols-7">
           <Card className="lg:col-span-4">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <div className="h-7 w-7 rounded-lg bg-primary/8 flex items-center justify-center">
-                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
+                  <TrendingUp className="h-4 w-4 text-primary" />
                 </div>
                 Visao Geral de Agendamentos
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0 pl-1">
+            <CardContent className="pt-0">
               {loading ? (
                 <Skeleton className="h-[95px] w-full rounded-xl" />
               ) : chartsHaveData ? (
@@ -232,10 +232,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           <Card className="lg:col-span-3">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-base">Status dos Agendamentos</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle>Status dos Agendamentos</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="pt-0">
               {loading ? (
                 <Skeleton className="h-[95px] w-full rounded-xl" />
               ) : chartsHaveData ? (
@@ -252,9 +252,9 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Compact Monthly Summary Row (replaces the old full-width card) */}
+        {/* Monthly Summary Row */}
         {!loading && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { icon: CheckCircle2, value: overview?.appointments.completed || 0, label: 'Concluidos', color: 'text-success', bg: 'bg-success/8' },
               { icon: XCircle, value: overview?.appointments.cancelled || 0, label: 'Cancelados', color: 'text-destructive', bg: 'bg-destructive/8' },
@@ -263,14 +263,14 @@ export default function DashboardPage() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex items-center gap-2 p-2 rounded-xl border border-border/50 bg-card"
+                className="flex items-center gap-3 p-4 rounded-card border border-border bg-card"
               >
-                <div className={`w-7 h-7 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
-                  <item.icon className={`h-3.5 w-3.5 ${item.color}`} />
+                <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
+                  <item.icon className={`h-5 w-5 ${item.color}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className={`text-base font-bold tabular-nums ${item.color}`}>{item.value}</p>
-                  <p className="text-xs text-muted-foreground truncate">{item.label}</p>
+                  <p className={`text-xl font-bold tabular-nums ${item.color}`}>{item.value}</p>
+                  <p className="text-sm text-muted-foreground truncate">{item.label}</p>
                 </div>
               </div>
             ))}
@@ -278,24 +278,24 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming Appointments */}
         <Card className="flex flex-col">
-          <CardHeader className="p-3 pb-1.5">
-            <CardTitle className="flex items-center gap-2.5 text-base">
-              <div className="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center">
-                <Calendar className="h-3.5 w-3.5 text-primary" />
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
+                <Calendar className="h-4 w-4 text-primary" />
               </div>
               Proximos Agendamentos
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 pt-0">
+          <CardContent className="pt-0">
             {loading ? (
-              <div className="space-y-1.5">
+              <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-2">
+                  <div key={i} className="flex items-center justify-between p-3">
                     <div className="flex items-center gap-3">
-                      <Skeleton className="w-8 h-8 rounded-full" />
+                      <Skeleton className="w-10 h-10 rounded-full" />
                       <div className="space-y-1.5">
                         <Skeleton className="h-4 w-[120px]" />
                         <Skeleton className="h-3 w-[80px]" />
@@ -314,19 +314,19 @@ export default function DashboardPage() {
               />
             ) : (
               <div className="space-y-1">
-                {upcomingAppointments.slice(0, 2).map((apt) => (
+                {upcomingAppointments.slice(0, 3).map((apt) => (
                   <Link
                     key={apt.id}
                     href="/appointments"
-                    className="flex items-center justify-between p-1.5 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm shrink-0">
                         {apt.patient?.name?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div>
                         <p className="font-medium text-sm text-foreground">{apt.patient?.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm text-muted-foreground">
                           {apt.service_name}
                         </p>
                       </div>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                     <div className="text-right">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <p className="text-xs text-muted-foreground mb-1 cursor-help">
+                          <p className="text-xs text-muted-foreground mb-1.5 cursor-help">
                             {formatRelativeTime(apt.scheduled_datetime)}
                           </p>
                         </TooltipTrigger>
@@ -352,7 +352,7 @@ export default function DashboardPage() {
             )}
             <Link
               href="/appointments"
-              className="flex items-center justify-center gap-1.5 mt-1.5 pt-1.5 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex items-center justify-center gap-1.5 mt-3 pt-3 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todos os agendamentos
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -362,21 +362,21 @@ export default function DashboardPage() {
 
         {/* Conversations Needing Attention */}
         <Card className="flex flex-col">
-          <CardHeader className="p-3 pb-1.5">
-            <CardTitle className="flex items-center gap-2.5 text-base">
-              <div className="w-7 h-7 rounded-lg bg-warning/8 flex items-center justify-center">
-                <MessageSquare className="h-3.5 w-3.5 text-warning" />
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-warning/8 flex items-center justify-center shrink-0">
+                <MessageSquare className="h-4 w-4 text-warning" />
               </div>
               Conversas Aguardando Atencao
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 pt-0">
+          <CardContent className="pt-0">
             {loading ? (
-              <div className="space-y-1.5">
+              <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-2">
+                  <div key={i} className="flex items-center justify-between p-3">
                     <div className="flex items-center gap-3">
-                      <Skeleton className="w-8 h-8 rounded-full" />
+                      <Skeleton className="w-10 h-10 rounded-full" />
                       <div className="space-y-1.5">
                         <Skeleton className="h-4 w-[120px]" />
                         <Skeleton className="h-3 w-[150px]" />
@@ -394,21 +394,21 @@ export default function DashboardPage() {
               />
             ) : (
               <div className="space-y-1">
-                {recentConversations.slice(0, 2).map((conv) => (
+                {recentConversations.slice(0, 3).map((conv) => (
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between p-1.5 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm shrink-0">
                         {conv.patient?.name?.charAt(0).toUpperCase() || conv.phone_number?.charAt(0) || '?'}
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-sm text-foreground">
                           {conv.patient?.name || conv.phone_number}
                         </p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        <p className="text-sm text-muted-foreground truncate max-w-[180px]">
                           {conv.messages && conv.messages.length > 0
                             ? conv.messages[conv.messages.length - 1].content
                             : 'Sem mensagens'}
@@ -424,7 +424,7 @@ export default function DashboardPage() {
             )}
             <Link
               href="/conversations"
-              className="flex items-center justify-center gap-1.5 mt-1.5 pt-1.5 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex items-center justify-center gap-1.5 mt-3 pt-3 border-t border-border/40 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
             >
               Ver todas as conversas
               <ArrowUpRight className="h-3.5 w-3.5" />
