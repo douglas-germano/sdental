@@ -251,7 +251,7 @@ export default function DashboardLayout({
         {/* Page content */}
         <main className={cn(
           'flex-1',
-          pathname.startsWith('/conversations') || pathname.startsWith('/assistant') ? 'p-0 lg:p-4' : 'p-4 lg:p-8'
+          pathname === '/pipeline' || pathname.startsWith('/conversations') || pathname.startsWith('/assistant') ? 'p-0 lg:p-4' : 'p-4 lg:p-8'
         )}>
           <div className={cn(
             "h-full w-full mx-auto",

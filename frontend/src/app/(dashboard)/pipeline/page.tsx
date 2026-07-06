@@ -48,7 +48,7 @@ export default function PipelinePage() {
     }
 
     return (
-        <div className="h-[calc(100vh-7rem)] flex flex-col gap-6">
+        <div className="h-[100dvh] lg:h-[calc(100dvh-2rem)] flex flex-col gap-4 p-4 lg:p-0">
             <PageHeader title="CRM & Pipeline" description="Gerencie o fluxo de atendimento dos seus pacientes" className="flex-shrink-0">
                 <Button
                     onClick={() => setAddPatientModalOpen(true)}
