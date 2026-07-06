@@ -150,25 +150,6 @@ export default function DashboardLayout({
             </button>
           )}
 
-          {/* Clinic identity */}
-          <div className={cn('px-3 pt-3', sidebarCollapsed && 'lg:px-2')}>
-            <div className={cn(
-              'flex items-center gap-2.5 rounded-card bg-muted/40 border border-border/40 p-2.5',
-              sidebarCollapsed && 'lg:justify-center lg:p-1.5'
-            )}>
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
-                {clinic.name.charAt(0).toUpperCase()}
-              </div>
-              <div className={cn('min-w-0', sidebarCollapsed && 'lg:hidden')}>
-                <p className="text-xs font-semibold text-foreground truncate">{clinic.name}</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
-                  <span className="text-[11px] text-muted-foreground">Sessão ativa</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Navigation */}
           <nav className={cn(
             'flex-1 py-3 space-y-0.5 overflow-y-auto',
