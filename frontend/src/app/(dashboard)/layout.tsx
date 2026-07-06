@@ -241,7 +241,7 @@ export default function DashboardLayout({
         <button
           className={cn(
             'lg:hidden fixed left-4 z-40 p-3 bg-card border border-border/60 rounded-card hover:bg-muted transition-colors duration-200',
-            pathname.startsWith('/conversations') ? 'bottom-20' : 'bottom-4'
+            pathname.startsWith('/conversations') || pathname.startsWith('/assistant') ? 'bottom-20' : 'bottom-4'
           )}
           onClick={() => setSidebarOpen(true)}
         >
@@ -251,11 +251,11 @@ export default function DashboardLayout({
         {/* Page content */}
         <main className={cn(
           'flex-1',
-          pathname.startsWith('/conversations') ? 'p-0 lg:p-4' : 'p-4 lg:p-8'
+          pathname.startsWith('/conversations') || pathname.startsWith('/assistant') ? 'p-0 lg:p-4' : 'p-4 lg:p-8'
         )}>
           <div className={cn(
             "h-full w-full mx-auto",
-            pathname === '/pipeline' || pathname.startsWith('/conversations') ? 'max-w-none' : 'max-w-[1400px]'
+            pathname === '/pipeline' || pathname.startsWith('/conversations') || pathname.startsWith('/assistant') ? 'max-w-none' : 'max-w-[1400px]'
           )}>
             {children}
           </div>
