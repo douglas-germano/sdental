@@ -6,13 +6,14 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/button'
-import { SquaresFour as LayoutDashboard, CalendarBlank as Calendar, Users, Chat as MessageSquare, Gear as Settings, SignOut as LogOut, List as Menu, X, Robot as Bot, CaretLineLeft as PanelLeftClose, CaretLineRight as PanelLeft, Stethoscope, Columns } from '@phosphor-icons/react'
+import { SquaresFour as LayoutDashboard, CalendarBlank as Calendar, CalendarDots, Users, Chat as MessageSquare, Gear as Settings, SignOut as LogOut, List as Menu, X, Robot as Bot, CaretLineLeft as PanelLeftClose, CaretLineRight as PanelLeft, Stethoscope, Columns } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Pipeline', href: '/pipeline', icon: Columns },
   { name: 'Agendamentos', href: '/appointments', icon: Calendar },
+  { name: 'Calendario', href: '/calendar', icon: CalendarDots },
   { name: 'Pacientes', href: '/patients', icon: Users },
   { name: 'Profissionais', href: '/professionals', icon: Stethoscope },
   { name: 'Conversas', href: '/conversations', icon: MessageSquare },
