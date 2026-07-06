@@ -62,7 +62,7 @@ JWT_SECRET_KEY=<generated-secret>
 
 ### API Keys
 ```
-CLAUDE_API_KEY=sk-ant-your-actual-key
+OPENROUTER_API_KEY=sk-or-v1-your-actual-key
 EVOLUTION_API_URL=https://your-evolution-api.com
 EVOLUTION_API_KEY=your-evolution-key
 ```

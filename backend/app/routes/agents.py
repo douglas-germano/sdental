@@ -28,7 +28,7 @@ def update_agent_config(current_clinic):
         'message': 'Agent configuration updated successfully',
         'config': {
             'name': current_clinic.agent_name,
-            'model': current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
+            'model': current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5'),
             'temperature': current_clinic.agent_temperature,
             'system_prompt': current_clinic.agent_system_prompt,
             'context': current_clinic.agent_context
@@ -40,7 +40,7 @@ def update_agent_config(current_clinic):
 def get_agent_config(current_clinic):
     return jsonify({
         'name': current_clinic.agent_name or 'Assistente SDental',
-        'model': current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
+        'model': current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5'),
         'temperature': current_clinic.agent_temperature if current_clinic.agent_temperature is not None else 0.7,
         'system_prompt': current_clinic.agent_system_prompt or '',
         'context': current_clinic.agent_context or ''

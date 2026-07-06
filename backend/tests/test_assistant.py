@@ -42,7 +42,7 @@ class TestAssistantMessages:
         self, app, client, auth_headers, sample_clinic
     ):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             db.session.commit()
 
         with patch.object(AssistantService, 'process_message', return_value='Resposta de teste'):
@@ -99,42 +99,42 @@ class TestAssistantServiceTools:
 
     def test_list_patients(self, app, sample_clinic, sample_patient):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_list_patients({})
             assert 'Test Patient' in result
 
     def test_list_patients_no_match(self, app, sample_clinic, sample_patient):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_list_patients({'search': 'Nobody Here'})
             assert 'Nenhum paciente' in result
 
     def test_get_patient_details_requires_identifier(self, app, sample_clinic):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_get_patient_details({})
             assert 'Informe o nome ou telefone' in result
 
     def test_get_patient_details_found(self, app, sample_clinic, sample_patient):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_get_patient_details({'patient_name': 'Test Patient'})
             assert 'patient@test.com' in result
 
     def test_list_appointments(self, app, sample_clinic, sample_appointment):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_list_appointments({})
             assert 'Consulta Geral' in result
 
     def test_list_professionals_empty(self, app, sample_clinic):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_list_professionals({})
             assert 'não tem profissionais' in result
@@ -153,7 +153,7 @@ class TestAssistantServiceTools:
             patient.pipeline_stage_id = stage.id
             db.session.commit()
 
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_get_pipeline_overview({})
             assert 'Novo Lead' in result
@@ -167,21 +167,21 @@ class TestAssistantServiceTools:
 
     def test_get_billing_status(self, app, sample_clinic):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_get_billing_status({})
             assert 'subscription_status' in result
 
     def test_get_clinic_settings(self, app, sample_clinic):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_get_clinic_settings({})
             assert 'business_hours' in result
 
     def test_remember_fact_persists(self, app, sample_clinic):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_remember_fact({'content': 'Meta mensal e 100 consultas'})
             assert 'Anotado' in result
@@ -189,22 +189,22 @@ class TestAssistantServiceTools:
 
     def test_remember_fact_requires_content(self, app, sample_clinic):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._tool_remember_fact({})
             assert 'Nenhum conteúdo' in result
 
     def test_execute_tool_unknown_tool(self, app, sample_clinic):
         with app.app_context():
-            sample_clinic.claude_api_key = 'test-key'
+            sample_clinic.openrouter_api_key = 'test-key'
             service = AssistantService(sample_clinic)
             result = service._execute_tool('does_not_exist', {})
             assert 'não reconhecida' in result
 
     def test_service_requires_api_key(self, app, sample_clinic):
         with app.app_context():
-            sample_clinic.claude_api_key = None
-            app.config['CLAUDE_API_KEY'] = None
+            sample_clinic.openrouter_api_key = None
+            app.config['OPENROUTER_API_KEY'] = None
             try:
                 AssistantService(sample_clinic)
                 assert False, 'expected ValueError'

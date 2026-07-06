@@ -16,7 +16,7 @@ export interface Clinic {
   evolution_api_url?: string
   evolution_instance_name?: string
   has_evolution_key?: boolean
-  has_claude_key?: boolean
+  has_openrouter_key?: boolean
   // Autonomous / proactive AI
   proactive_outreach_enabled?: boolean
   noshow_recovery_enabled?: boolean

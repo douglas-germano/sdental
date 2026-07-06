@@ -5,7 +5,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from flask import current_app
-import anthropic
+import openai
 
 from app import db
 from app.models import Conversation, Patient, ConversationStatus, Professional, PipelineStage, AppointmentStatus, Appointment
@@ -83,12 +83,31 @@ class ClaudeService:
 
     def __init__(self, clinic):
         self.clinic = clinic
-        api_key = clinic.claude_api_key or current_app.config.get('CLAUDE_API_KEY')
+        api_key = clinic.openrouter_api_key or current_app.config.get('OPENROUTER_API_KEY')
         if not api_key:
-            raise ValueError('Claude API key not configured')
-        self.client = anthropic.Anthropic(api_key=api_key)
+            raise ValueError('OpenRouter API key not configured')
+        self.client = openai.OpenAI(
+            api_key=api_key,
+            base_url=current_app.config.get('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+        )
         self.appointment_service = AppointmentService(clinic)
         self.conversation_service = ConversationService(clinic)
+
+    @staticmethod
+    def _to_openai_tools(tools: list) -> list:
+        """Convert Anthropic-style tool defs ({name, description, input_schema}) to
+        the OpenAI-compatible function-calling shape OpenRouter expects."""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t["description"],
+                    "parameters": t["input_schema"],
+                },
+            }
+            for t in tools
+        ]
 
     def _get_tools(self) -> list:
         """Define tools available to Claude."""
@@ -698,15 +717,16 @@ class ClaudeService:
         """Single-shot Claude completion returning plain text (no tools)."""
         if temperature is None:
             temperature = self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7
-        response = self.client.messages.create(
-            model=current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
+        response = self.client.chat.completions.create(
+            model=current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5'),
             max_tokens=max_tokens,
             temperature=temperature,
-            system=system,
-            messages=[{"role": "user", "content": user}]
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
         )
-        parts = [block.text for block in response.content if getattr(block, 'type', None) == 'text']
-        return "".join(parts).strip()
+        return (response.choices[0].message.content or "").strip()
 
     def _clinic_context_block(self) -> str:
         """Short clinic description reused across proactive prompts."""
@@ -898,66 +918,59 @@ class ClaudeService:
             )
 
         # Get message history
-        messages = self.conversation_service.get_message_history_for_claude(conversation)
+        history = self.conversation_service.get_message_history_for_claude(conversation)
+        api_messages = [{"role": "system", "content": system_prompt}] + history
+
+        model = current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5')
+        temperature = self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7
+        tools = self._to_openai_tools(self._get_tools())
 
         try:
-            # Call Claude API
-            response = self.client.messages.create(
-                model=current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
+            # Call OpenRouter
+            response = self.client.chat.completions.create(
+                model=model,
                 max_tokens=1024,
-                temperature=self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7,
-                system=system_prompt,
-                tools=self._get_tools(),
-                messages=messages
+                temperature=temperature,
+                tools=tools,
+                messages=api_messages,
             )
 
-            # Process response
-            final_response = ""
+            while response.choices[0].finish_reason == "tool_calls":
+                message = response.choices[0].message
+                tool_calls = message.tool_calls or []
 
-            while response.stop_reason == "tool_use":
-                # Find tool use blocks
-                tool_results = []
-                for block in response.content:
-                    if block.type == "tool_use":
-                        result = self._execute_tool(
-                            block.name,
-                            block.input,
-                            conversation
-                        )
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result
-                        })
-                    elif block.type == "text":
-                        final_response += block.text
+                api_messages.append({
+                    "role": "assistant",
+                    "content": message.content,
+                    "tool_calls": [tc.model_dump() for tc in tool_calls],
+                })
 
-                # Continue conversation with tool results
-                messages.append({"role": "assistant", "content": response.content})
-                messages.append({"role": "user", "content": tool_results})
+                for tool_call in tool_calls:
+                    tool_input = json.loads(tool_call.function.arguments or "{}")
+                    result = self._execute_tool(tool_call.function.name, tool_input, conversation)
+                    api_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result,
+                    })
 
-                response = self.client.messages.create(
-                    model=current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
+                response = self.client.chat.completions.create(
+                    model=model,
                     max_tokens=1024,
-                    temperature=self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7,
-                    system=system_prompt,
-                    tools=self._get_tools(),
-                    messages=messages
+                    temperature=temperature,
+                    tools=tools,
+                    messages=api_messages,
                 )
 
-            # Get final text response
-            for block in response.content:
-                if hasattr(block, 'text'):
-                    final_response = block.text
-                    break
+            final_response = response.choices[0].message.content or ""
 
             # Add assistant response to history
             self.conversation_service.add_message(conversation, 'assistant', final_response)
 
             return final_response
 
-        except anthropic.APIError as e:
-            logger.error('Claude API error: %s', str(e))
+        except openai.APIError as e:
+            logger.error('OpenRouter API error: %s', str(e))
             return (
                 "Desculpe, estou com dificuldades técnicas no momento. "
                 "Por favor, tente novamente em alguns instantes."

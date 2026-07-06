@@ -7,7 +7,8 @@ Guidance for AI assistants (and humans) working in this repository.
 **SDental** is a multi-tenant SaaS platform for dental/medical clinics. Its core
 feature is an **AI chatbot that handles patient appointment scheduling over
 WhatsApp**. Each clinic (the tenant) connects its own WhatsApp number, and an
-Anthropic Claude–powered agent answers patients, checks availability, books /
+AI-powered agent (via OpenRouter, giving access to models from Anthropic, OpenAI,
+Google, and others) answers patients, checks availability, books /
 reschedules / cancels appointments, confirms reminders, and moves patients
 through a CRM pipeline. Clinic staff use a web dashboard to manage patients,
 appointments, professionals, conversations (with live human takeover), a Kanban
@@ -23,7 +24,7 @@ format `5511999999999` (country code + area code + number).
 |-----------|------|
 | Backend   | Flask 3 (app-factory + Blueprints), SQLAlchemy, Flask-Migrate/Alembic, Flask-JWT-Extended, Marshmallow, Flask-Limiter, Flask-Caching, APScheduler, Gunicorn |
 | Database  | PostgreSQL 16 (UUID PKs, JSONB columns) |
-| AI        | Anthropic Claude via the `anthropic` SDK, using tool/function calling |
+| AI        | OpenRouter (OpenAI-compatible multi-provider gateway) via the `openai` SDK, using tool/function calling |
 | WhatsApp  | [Evolution API](https://github.com/EvolutionAPI/evolution-api) (self-hosted WhatsApp gateway) |
 | Email     | Brevo (transactional email) |
 | Realtime  | Server-Sent Events (SSE), backed by Redis pub/sub (with in-process fallback) |
@@ -108,14 +109,19 @@ Prefer schemas for new endpoints. Reusable validators live in
 `app/utils/validators.py` and `app/schemas/base.py`.
 
 **The AI agent (`services/claude_service.py`).** This is the heart of the
-product. It builds a Portuguese system prompt from clinic config
-(`SYSTEM_PROMPT_TEMPLATE`) and exposes a set of **tools** Claude can call:
-`check_availability`, `create_appointment`, `reschedule_appointment`,
-`confirm_appointment`, `list_appointments`, `cancel_appointment`,
-`list_professionals`, `get_current_datetime`, `update_patient_info`,
-`update_pipeline_stage`, `resend_reminder`, `send_procedure_instructions`,
-`transfer_to_human`, `send_booking_link`. Tools are declared in `_get_tools()`
-and dispatched in `_execute_tool()`. **To add an agent capability: add the tool
+product. It talks to the model through the `openai` SDK pointed at OpenRouter's
+`base_url` (OpenAI-compatible chat-completions API), so `OPENROUTER_MODEL` can
+be swapped to any provider OpenRouter offers with no code changes. It builds a
+Portuguese system prompt from clinic config (`SYSTEM_PROMPT_TEMPLATE`) and
+exposes a set of **tools** the model can call: `check_availability`,
+`create_appointment`, `reschedule_appointment`, `confirm_appointment`,
+`list_appointments`, `cancel_appointment`, `list_professionals`,
+`get_current_datetime`, `update_patient_info`, `update_pipeline_stage`,
+`resend_reminder`, `send_procedure_instructions`, `transfer_to_human`,
+`send_booking_link`. Tools are declared in `_get_tools()` in Anthropic's
+`{name, description, input_schema}` shape and converted to OpenAI's
+function-calling format by `_to_openai_tools()` at the call site; dispatch
+happens in `_execute_tool()`. **To add an agent capability: add the tool
 schema in `_get_tools()`, add its branch in `_execute_tool()`, and (usually)
 back it with a method on the relevant service.** The clinic can override
 `agent_system_prompt`, `agent_context`, `agent_temperature`, and toggle
@@ -125,7 +131,7 @@ back it with a method on the relevant service.** The clinic can override
 Each clinic gets an `evolution_instance_name` (auto-derived from clinic UUID if
 unset). Global API URL/key come from config but can be overridden per clinic.
 Inbound messages arrive at `routes/webhook.py` (`/api/webhook`), which resolves
-the clinic by instance name, runs the Claude agent, and sends the reply.
+the clinic by instance name, runs the AI agent, and sends the reply.
 Message delivery ACKs update internal status via `ACK_STATUS_MAP`.
 
 **Realtime (`services/realtime_service.py`).** Live conversation updates use
@@ -260,7 +266,7 @@ on missing integration keys.
 
 Key variables (see `.env.example` / `backend/.env.example`):
 - `DATABASE_URL`, `SECRET_KEY`, `JWT_SECRET_KEY` (required in prod)
-- `CLAUDE_API_KEY`, `CLAUDE_MODEL` (default `claude-sonnet-4-20250514`)
+- `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (default `anthropic/claude-sonnet-4.5`), `OPENROUTER_BASE_URL`
 - `EVOLUTION_API_URL`, `EVOLUTION_API_KEY` (WhatsApp; overridable per clinic)
 - `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME` (email; logs only if unset)
 - `REDIS_URL` (realtime + rate-limit storage; **required for multi-worker SSE**)

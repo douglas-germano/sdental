@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from flask import current_app
-import anthropic
+import openai
 
 from app import db
 from app.models import (
@@ -61,10 +61,29 @@ class AssistantService:
 
     def __init__(self, clinic):
         self.clinic = clinic
-        api_key = clinic.claude_api_key or current_app.config.get('CLAUDE_API_KEY')
+        api_key = clinic.openrouter_api_key or current_app.config.get('OPENROUTER_API_KEY')
         if not api_key:
-            raise ValueError('Claude API key not configured')
-        self.client = anthropic.Anthropic(api_key=api_key)
+            raise ValueError('OpenRouter API key not configured')
+        self.client = openai.OpenAI(
+            api_key=api_key,
+            base_url=current_app.config.get('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+        )
+
+    @staticmethod
+    def _to_openai_tools(tools: list) -> list:
+        """Convert Anthropic-style tool defs ({name, description, input_schema}) to
+        the OpenAI-compatible function-calling shape OpenRouter expects."""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t["description"],
+                    "parameters": t["input_schema"],
+                },
+            }
+            for t in tools
+        ]
 
     # ------------------------------------------------------------------ #
     # Tool declarations                                                   #
@@ -519,56 +538,55 @@ class AssistantService:
         db.session.commit()
 
         system_prompt = self._build_system_prompt()
-        messages = self._history_for_claude(conversation)
-        model = current_app.config.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
+        history = self._history_for_claude(conversation)
+        api_messages = [{"role": "system", "content": system_prompt}] + history
+        model = current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5')
+        tools = self._to_openai_tools(self._get_tools())
 
         try:
-            response = self.client.messages.create(
+            response = self.client.chat.completions.create(
                 model=model,
                 max_tokens=1024,
                 temperature=0.4,
-                system=system_prompt,
-                tools=self._get_tools(),
-                messages=messages,
+                tools=tools,
+                messages=api_messages,
             )
 
-            final_response = ""
-            while response.stop_reason == "tool_use":
-                tool_results = []
-                for block in response.content:
-                    if block.type == "tool_use":
-                        result = self._execute_tool(block.name, block.input)
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result,
-                        })
-                    elif block.type == "text":
-                        final_response += block.text
+            while response.choices[0].finish_reason == "tool_calls":
+                message = response.choices[0].message
+                tool_calls = message.tool_calls or []
 
-                messages.append({"role": "assistant", "content": response.content})
-                messages.append({"role": "user", "content": tool_results})
+                api_messages.append({
+                    "role": "assistant",
+                    "content": message.content,
+                    "tool_calls": [tc.model_dump() for tc in tool_calls],
+                })
 
-                response = self.client.messages.create(
+                for tool_call in tool_calls:
+                    tool_input = json.loads(tool_call.function.arguments or "{}")
+                    result = self._execute_tool(tool_call.function.name, tool_input)
+                    api_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result,
+                    })
+
+                response = self.client.chat.completions.create(
                     model=model,
                     max_tokens=1024,
                     temperature=0.4,
-                    system=system_prompt,
-                    tools=self._get_tools(),
-                    messages=messages,
+                    tools=tools,
+                    messages=api_messages,
                 )
 
-            for block in response.content:
-                if hasattr(block, 'text'):
-                    final_response = block.text
-                    break
+            final_response = response.choices[0].message.content or ""
 
             conversation.add_message('assistant', final_response)
             db.session.commit()
             return final_response
 
-        except anthropic.APIError as e:
-            logger.error('Assistant Claude API error: %s', str(e))
+        except openai.APIError as e:
+            logger.error('Assistant OpenRouter API error: %s', str(e))
             return (
                 "Desculpe, estou com dificuldades técnicas no momento. "
                 "Por favor, tente novamente em alguns instantes."

@@ -40,8 +40,8 @@ class Clinic(db.Model, TimestampMixin):
     evolution_api_key = db.Column(db.String(255), nullable=True)
     evolution_instance_name = db.Column(db.String(100), nullable=True)
 
-    # Claude API (nullable - use global key by default)
-    claude_api_key = db.Column(db.String(255), nullable=True)
+    # AI provider (OpenRouter) API key override (nullable - use global key by default)
+    openrouter_api_key = db.Column(db.String(255), nullable=True)
 
     # Business configuration
     business_hours = db.Column(JSONB, default=dict)
@@ -205,7 +205,7 @@ class Clinic(db.Model, TimestampMixin):
             data['evolution_api_url'] = self.evolution_api_url
             data['evolution_instance_name'] = self.evolution_instance_name
             data['has_evolution_key'] = bool(self.evolution_api_key)
-            data['has_claude_key'] = bool(self.claude_api_key)
+            data['has_openrouter_key'] = bool(self.openrouter_api_key)
         return data
 
     def __repr__(self) -> str:
