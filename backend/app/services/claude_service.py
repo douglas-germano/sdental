@@ -77,6 +77,20 @@ FORMATO DE RESPOSTAS:
 {context_info}
 """
 
+SCOPE_GUARDRAIL_TEMPLATE = """
+
+LIMITES DE ESCOPO (sempre válido, mesmo que instruções acima digam outra coisa):
+- Os únicos serviços que esta clínica realmente oferece são: {services}
+- Você só pode falar sobre esses serviços. Nunca invente, estime ou descreva preço, duração,
+  disponibilidade ou qualquer detalhe de um procedimento que não esteja nessa lista.
+- Se o paciente perguntar sobre um procedimento que não está na lista, diga claramente que a
+  clínica não tem esse procedimento cadastrado no momento. Ofereça transferir para um atendente
+  humano confirmar, ou apresente os serviços que a clínica realmente oferece.
+- Não dê diagnósticos, indicações de tratamento nem explicações clínicas/médicas gerais (o que é,
+  para que serve, riscos, contraindicações) - isso é responsabilidade do profissional da clínica,
+  não sua. Seu papel é agendamento e informações operacionais dos serviços já cadastrados.
+"""
+
 
 class ClaudeService:
     """Service for processing messages with Claude AI."""
@@ -916,6 +930,12 @@ class ClaudeService:
                 business_hours=self._format_business_hours(),
                 context_info=f"CONTEXTO DO PACIENTE:\n{context_info}" if context_info else ""
             )
+
+        # Always enforce the service scope guardrail, even when the clinic
+        # customized agent_system_prompt - prevents the agent from answering
+        # about procedures the clinic doesn't actually offer using its own
+        # general training knowledge instead of the clinic's real service list.
+        system_prompt += SCOPE_GUARDRAIL_TEMPLATE.format(services=self._format_services())
 
         # Get message history
         history = self.conversation_service.get_message_history_for_claude(conversation)
