@@ -88,6 +88,22 @@ def list_conversations(current_clinic):
     })
 
 
+@bp.route('/sync-all-history', methods=['POST'])
+@clinic_required
+def sync_all_conversations_history(current_clinic):
+    """
+    Sync WhatsApp message history for every conversation of this clinic from
+    Evolution API. Bounded by a time budget - call again to continue if
+    `remaining` comes back non-zero.
+    """
+    try:
+        result = ConversationService(current_clinic).sync_all_conversations_history()
+    except Exception as e:
+        return jsonify({'error': f'Failed to sync history: {str(e)}'}), 502
+
+    return jsonify(result)
+
+
 @bp.route('/<conversation_id>', methods=['GET'])
 @clinic_required
 def get_conversation(conversation_id, current_clinic):
@@ -109,6 +125,30 @@ def get_conversation(conversation_id, current_clinic):
     data['transfers'] = [t.to_dict() for t in transfers]
 
     return jsonify(data)
+
+
+@bp.route('/<conversation_id>/sync-history', methods=['POST'])
+@clinic_required
+def sync_conversation_history(conversation_id, current_clinic):
+    """Fetch and merge this contact's WhatsApp message history from Evolution API."""
+    conversation = Conversation.query.filter_by(
+        id=conversation_id,
+        clinic_id=current_clinic.id
+    ).first()
+
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    try:
+        added = ConversationService(current_clinic).sync_history_from_whatsapp(conversation)
+    except Exception as e:
+        return jsonify({'error': f'Failed to sync history: {str(e)}'}), 502
+
+    return jsonify({
+        'message': f'{added} mensagem(ns) importada(s)' if added else 'Nenhuma mensagem nova encontrada',
+        'added': added,
+        'conversation': conversation.to_dict(include_messages=True)
+    })
 
 
 @bp.route('/<conversation_id>/transfer', methods=['POST'])

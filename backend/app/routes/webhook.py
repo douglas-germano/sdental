@@ -10,6 +10,7 @@ from app.services.realtime_service import publish_event
 from app.utils.validators import normalize_phone
 from app.utils.webhook_auth import webhook_auth_required
 from app.utils.rate_limiter import limiter
+from app.utils.whatsapp_message import extract_media, extract_text, MEDIA_PLACEHOLDER_TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -24,43 +25,12 @@ ACK_STATUS_MAP = {
     'PLAYED': 'read',
 }
 
-MEDIA_MESSAGE_KEYS = {
-    'imageMessage': 'image',
-    'audioMessage': 'audio',
-    'documentMessage': 'document',
-    'documentWithCaptionMessage': 'document',
-    'stickerMessage': 'image',
-}
-
-MEDIA_PLACEHOLDER_TEXT = {
-    'image': 'Imagem enviada',
-    'audio': 'Audio enviado',
-    'document': 'Documento enviado',
-}
-
 
 def _find_clinic_by_instance(instance_name: str):
     return Clinic.query.filter_by(
         evolution_instance_name=instance_name,
         active=True
     ).first()
-
-
-def _extract_media(message_obj: dict):
-    """Return (message_type, media_url, mimetype, caption) for the first media key found, or None."""
-    for key, media_type in MEDIA_MESSAGE_KEYS.items():
-        media = message_obj.get(key)
-        if not media:
-            continue
-        # documentWithCaptionMessage nests the real document payload one
-        # level deeper: {"message": {"documentMessage": {...}}}
-        if key == 'documentWithCaptionMessage':
-            media = media.get('message', {}).get('documentMessage', media)
-        url = media.get('url') or media.get('directPath')
-        mimetype = media.get('mimetype') or media.get('mimeType')
-        caption = media.get('caption', '')
-        return media_type, url, mimetype, caption
-    return None
 
 
 @bp.route('/evolution', methods=['POST'])
@@ -113,10 +83,6 @@ def evolution_webhook():
         from_me = key.get('fromMe', False)
         evolution_message_id = key.get('id')
 
-        # Ignore messages sent by us
-        if from_me:
-            return jsonify({'status': 'ignored', 'reason': 'Message from self'})
-
         # Ignore group messages
         if '@g.us' in remote_jid:
             return jsonify({'status': 'ignored', 'reason': 'Group message'})
@@ -126,12 +92,8 @@ def evolution_webhook():
 
         # Get message content
         message_obj = data.get('message', {})
-        message_text = (
-            message_obj.get('conversation') or
-            message_obj.get('extendedTextMessage', {}).get('text') or
-            ''
-        )
-        media = None if message_text else _extract_media(message_obj)
+        message_text = extract_text(message_obj)
+        media = None if message_text else extract_media(message_obj)
 
         if not message_text and not media:
             return jsonify({'status': 'ignored', 'reason': 'No text or media content'})
@@ -144,6 +106,38 @@ def evolution_webhook():
 
         conversation_service = ConversationService(clinic)
         conversation = conversation_service.get_or_create_conversation(phone)
+
+        # Sent directly from the linked WhatsApp app/phone (not through this
+        # platform) - e.g. a staff member replying manually. Keep it in the
+        # conversation so it shows up in the dashboard and the AI has full
+        # context, but hand off to a human since someone is already handling
+        # this chat outside the bot.
+        if from_me:
+            if media:
+                media_type, media_url, mimetype, caption = media
+                content = caption or MEDIA_PLACEHOLDER_TEXT.get(media_type, 'Midia enviada')
+            else:
+                media_type, media_url, mimetype, caption = 'text', None, None, None
+                content = message_text
+
+            if conversation.status != ConversationStatus.TRANSFERRED_TO_HUMAN:
+                conversation_service.transfer_to_human(
+                    conversation,
+                    'Mensagem enviada diretamente pelo WhatsApp (fora da plataforma)'
+                )
+
+            conversation_service.add_message(
+                conversation,
+                'assistant',
+                content,
+                evolution_id=evolution_message_id,
+                message_type=media_type,
+                media_url=media_url,
+                media_mimetype=mimetype,
+                caption=caption,
+                sent_via='whatsapp_app'
+            )
+            return jsonify({'status': 'processed', 'reason': 'Message from self stored'})
 
         # Media messages: the bot can't process them, store and hand off to a human
         if media:

@@ -79,7 +79,8 @@ class ConversationService:
         message_type: str = 'text',
         media_url: str = None,
         media_mimetype: str = None,
-        caption: str = None
+        caption: str = None,
+        sent_via: str = None
     ) -> dict:
         """
         Add a message to the conversation history and broadcast it in realtime.
@@ -98,7 +99,8 @@ class ConversationService:
             message_type=message_type,
             media_url=media_url,
             media_mimetype=media_mimetype,
-            caption=caption
+            caption=caption,
+            sent_via=sent_via
         )
         db.session.commit()
 
@@ -313,3 +315,67 @@ class ConversationService:
             parts.append(f"Horário preferido: {context['preferred_time']}")
 
         return '\n'.join(parts) if parts else 'Novo contato, sem histórico.'
+
+    def sync_history_from_whatsapp(self, conversation: Conversation, max_messages: int = 2000) -> int:
+        """
+        Fetch this conversation's WhatsApp message history from Evolution API
+        and merge in anything we don't already have, so older messages (sent
+        before the instance was connected, or directly from the linked phone)
+        become part of the stored history and available to the AI as context.
+
+        Returns the number of messages actually added.
+        """
+        from app.services.evolution_service import EvolutionService
+
+        historical = EvolutionService(self.clinic).fetch_chat_history(
+            conversation.phone_number, max_messages=max_messages
+        )
+        added = conversation.merge_history_messages(historical)
+
+        if added:
+            db.session.commit()
+            if not conversation.phone_number.startswith(TEST_PHONE_PREFIX):
+                publish_event(str(self.clinic.id), 'history_synced', {
+                    'conversation_id': str(conversation.id),
+                    'added': added,
+                })
+
+        return added
+
+    def sync_all_conversations_history(
+        self,
+        max_messages_per_conversation: int = 500,
+        time_budget_seconds: float = 90.0
+    ) -> dict:
+        """
+        Sync WhatsApp history for every existing conversation of this clinic,
+        oldest-touched first. Bounded by a wall-clock time budget so a clinic
+        with many contacts can't time out the request - call again to pick up
+        where it left off (already-synced messages are deduped, so repeat
+        calls are safe and just make incremental progress).
+
+        Returns {'synced': N, 'total_added': M, 'remaining': K}.
+        """
+        import time
+
+        start = time.monotonic()
+        conversations = Conversation.query.filter_by(clinic_id=self.clinic.id).order_by(
+            Conversation.last_message_at.asc()
+        ).all()
+
+        synced = 0
+        total_added = 0
+
+        for conversation in conversations:
+            if time.monotonic() - start >= time_budget_seconds:
+                break
+            total_added += self.sync_history_from_whatsapp(
+                conversation, max_messages=max_messages_per_conversation
+            )
+            synced += 1
+
+        return {
+            'synced': synced,
+            'total_added': total_added,
+            'remaining': max(len(conversations) - synced, 0),
+        }

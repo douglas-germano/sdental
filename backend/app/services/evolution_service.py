@@ -5,7 +5,16 @@ import uuid
 
 from flask import current_app
 
+from app.utils.validators import normalize_phone
+from app.utils.whatsapp_message import normalize_raw_message
+
 logger = logging.getLogger(__name__)
+
+# Safety caps for historical sync pagination - Evolution API's message-history
+# endpoint contract varies across forks/versions, so these bound how much a
+# single sync call can do regardless of what the server reports.
+HISTORY_PAGE_SIZE = 100
+HISTORY_MAX_PAGES = 40
 
 
 class EvolutionService:
@@ -356,3 +365,102 @@ class EvolutionService:
         except requests.exceptions.RequestException as e:
             logger.error('Failed to get QR code: %s', str(e))
             return None
+
+    @staticmethod
+    def _extract_history_records(payload) -> Optional[list]:
+        """
+        Pull the list of raw message records out of a chat/findMessages
+        response, tolerating the different response shapes seen across
+        Evolution API versions/forks: a flat list, {"records": [...]},
+        {"messages": [...]}, or {"messages": {"records": [...]}}.
+
+        Returns None if no record list could be found (caller stops paging).
+        """
+        if isinstance(payload, list):
+            return payload
+        if not isinstance(payload, dict):
+            return None
+        if isinstance(payload.get('records'), list):
+            return payload['records']
+        messages = payload.get('messages')
+        if isinstance(messages, list):
+            return messages
+        if isinstance(messages, dict) and isinstance(messages.get('records'), list):
+            return messages['records']
+        return None
+
+    def fetch_chat_history(self, phone: str, max_messages: int = 2000) -> list:
+        """
+        Fetch as much of a contact's WhatsApp message history as Evolution API
+        has stored (requires the Evolution API server itself to have
+        persistence enabled - it only returns what it has kept), paginating
+        through chat/findMessages until exhausted, `max_messages` is reached,
+        or a safety page cap is hit.
+
+        Returns a list of normalized dicts (see
+        app.utils.whatsapp_message.normalize_raw_message), including both
+        directions (patient messages and anything sent from the linked phone).
+        """
+        if not self.api_url or not self.api_key:
+            logger.error('Evolution API not configured globally')
+            return []
+
+        jid = f'{normalize_phone(phone)}@s.whatsapp.net'
+        url = f'{self.api_url}/chat/findMessages/{self.instance_name}'
+
+        normalized = []
+        seen_evolution_ids = set()
+
+        for page in range(1, HISTORY_MAX_PAGES + 1):
+            payload = {
+                'where': {'key': {'remoteJid': jid}},
+                'page': page,
+                'offset': HISTORY_PAGE_SIZE,
+                # Some Evolution API versions use limit/skip instead of
+                # page/offset - send both so either contract is satisfied.
+                'limit': HISTORY_PAGE_SIZE,
+            }
+
+            try:
+                response = requests.post(
+                    url,
+                    json=payload,
+                    headers=self._get_headers(),
+                    timeout=30
+                )
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error('Failed to fetch chat history (page %s): %s', page, str(e))
+                break
+
+            records = self._extract_history_records(response.json())
+            if not records:
+                break
+
+            new_this_page = 0
+            for raw in records:
+                message = normalize_raw_message(raw)
+                if not message:
+                    continue
+                evo_id = message.get('evolution_id')
+                if evo_id:
+                    if evo_id in seen_evolution_ids:
+                        continue
+                    seen_evolution_ids.add(evo_id)
+                normalized.append(message)
+                new_this_page += 1
+
+            # The server ignored pagination (returned the same page again) or
+            # this page was entirely already-seen messages - stop instead of
+            # looping forever.
+            if new_this_page == 0:
+                break
+
+            if len(records) < HISTORY_PAGE_SIZE or len(normalized) >= max_messages:
+                break
+
+        logger.info(
+            'Fetched %d historical messages for %s via Evolution API',
+            len(normalized), phone
+        )
+        return normalized[:max_messages]

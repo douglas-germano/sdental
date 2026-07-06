@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { conversationsApi, patientsApi } from '@/lib/api'
 import { Conversation, Message } from '@/types'
 import { formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { ArrowLeft, User, WarningCircle as AlertCircle, CheckCircle, ArrowCounterClockwise as RotateCcw, FloppyDisk as Save, X, PencilSimple as Edit2, Info, CaretDown as ChevronDown } from '@phosphor-icons/react'
+import { ArrowLeft, User, WarningCircle as AlertCircle, CheckCircle, ArrowCounterClockwise as RotateCcw, FloppyDisk as Save, X, PencilSimple as Edit2, Info, CaretDown as ChevronDown, ArrowsClockwise as SyncIcon } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -67,6 +67,7 @@ export default function ConversationDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [syncingHistory, setSyncingHistory] = useState(false)
   const [patientForm, setPatientForm] = useState({ name: '', phone: '', email: '', notes: '' })
 
   const fetchConversation = useCallback(async () => {
@@ -181,6 +182,24 @@ export default function ConversationDetailPage() {
     } catch (error) {
       console.error('Error toggling AI:', error)
       toast({ title: 'Erro ao alterar status da IA', variant: 'error' })
+    }
+  }
+
+  const handleSyncHistory = async () => {
+    setSyncingHistory(true)
+    try {
+      const response = await conversationsApi.syncHistory(conversationId)
+      const added = response.data.added as number
+      toast({
+        title: added > 0 ? `${added} mensagem(ns) importada(s)` : 'Nenhuma mensagem nova encontrada',
+        variant: 'success'
+      })
+      fetchConversation()
+    } catch (error) {
+      console.error('Error syncing history:', error)
+      toast({ title: 'Erro ao sincronizar histórico', variant: 'error' })
+    } finally {
+      setSyncingHistory(false)
     }
   }
 
@@ -327,6 +346,16 @@ export default function ConversationDetailPage() {
           <Badge className={cn(getStatusColor(conversation.status))} size="sm">
             {getStatusLabel(conversation.status)}
           </Badge>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleSyncHistory}
+            disabled={syncingHistory}
+            className="rounded-full"
+            title="Sincronizar histórico do WhatsApp"
+          >
+            <SyncIcon className={cn('h-4 w-4', syncingHistory && 'animate-spin')} />
+          </Button>
           <Button variant="ghost" size="icon-sm" onClick={() => setShowInfo((v) => !v)} className="rounded-full" title="Informacoes do paciente">
             <Info className="h-4 w-4" />
           </Button>

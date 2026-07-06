@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { clinicsApi, billingApi } from '@/lib/api'
+import { clinicsApi, billingApi, conversationsApi } from '@/lib/api'
 import { getDayName, formatPhone } from '@/lib/utils'
 import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning, CreditCard, ArrowSquareOut } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -141,6 +141,25 @@ export default function SettingsPage() {
     } catch (err) {
       setAgentEnabled(!enabled) // revert
       showMessage('error', 'Erro ao atualizar configuração.')
+    }
+  }
+
+  const [syncingHistory, setSyncingHistory] = useState(false)
+
+  const handleSyncAllHistory = async () => {
+    setSyncingHistory(true)
+    try {
+      const response = await conversationsApi.syncAllHistory()
+      const { synced, total_added, remaining } = response.data
+      if (remaining > 0) {
+        showMessage('success', `${total_added} mensagem(ns) importada(s) em ${synced} conversa(s). Clique novamente para continuar (${remaining} restante(s)).`)
+      } else {
+        showMessage('success', `${total_added} mensagem(ns) importada(s) em ${synced} conversa(s). Histórico sincronizado!`)
+      }
+    } catch {
+      showMessage('error', 'Erro ao sincronizar histórico das conversas.')
+    } finally {
+      setSyncingHistory(false)
     }
   }
 
@@ -404,6 +423,20 @@ export default function SettingsPage() {
                 </div>
 
                 <WhatsappConnectionWizard />
+
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Sincronizar histórico de mensagens</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Importa o máximo de mensagens antigas possível de todas as conversas
+                      a partir do WhatsApp, incluindo as enviadas diretamente pelo aparelho
+                      (fora da plataforma), para que a IA tenha mais contexto.
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={handleSyncAllHistory} loading={syncingHistory} disabled={syncingHistory}>
+                    Sincronizar tudo
+                  </Button>
+                </div>
               </div>
             )}
 

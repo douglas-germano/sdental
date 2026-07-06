@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Message } from '@/types'
 import { cn } from '@/lib/utils'
-import { Robot as Bot, User, Check, Checks as CheckCheck, Clock, Warning as AlertTriangle, FileText, DownloadSimple as Download } from '@phosphor-icons/react'
+import { Robot as Bot, User, Check, Checks as CheckCheck, Clock, Warning as AlertTriangle, FileText, DownloadSimple as Download, DeviceMobile as Phone } from '@phosphor-icons/react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 
 function MessageStatusTicks({ status }: { status?: string }) {
@@ -99,6 +99,14 @@ export function MessageBubble({ message }: { message: Message }) {
           <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{textContent}</p>
         )}
         <div className={cn('flex items-center gap-1 mt-1', outgoing ? 'justify-end' : 'justify-start')}>
+          {message.sent_via === 'whatsapp_app' && (
+            <span
+              className="flex items-center gap-0.5 text-[10px] text-muted-foreground/80"
+              title="Enviado diretamente pelo WhatsApp, fora da plataforma"
+            >
+              <Phone className="h-2.5 w-2.5" /> WhatsApp
+            </span>
+          )}
           <span className="text-[10px] text-muted-foreground">
             {new Date(message.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </span>
