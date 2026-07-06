@@ -20,8 +20,10 @@ services:
         fromDatabase:
           name: sdental-db
           property: connectionString
-      - key: CLAUDE_API_KEY
+      - key: OPENROUTER_API_KEY
         sync: false
+      - key: OPENROUTER_MODEL
+        value: anthropic/claude-sonnet-4.5
       - key: EVOLUTION_API_URL
         sync: false
       - key: EVOLUTION_API_KEY

@@ -135,18 +135,18 @@ def update_services(current_clinic):
     })
 
 
-@bp.route('/claude-config', methods=['PUT'])
+@bp.route('/openrouter-config', methods=['PUT'])
 @clinic_required
-def update_claude_config(current_clinic):
-    """Configure Claude API key (optional - uses global key by default)."""
+def update_openrouter_config(current_clinic):
+    """Configure OpenRouter API key (optional - uses global key by default)."""
     data = request.get_json()
 
-    if 'claude_api_key' in data:
-        current_clinic.claude_api_key = data['claude_api_key'] or None
+    if 'openrouter_api_key' in data:
+        current_clinic.openrouter_api_key = data['openrouter_api_key'] or None
 
     db.session.commit()
 
     return jsonify({
-        'message': 'Claude API configuration updated',
-        'has_custom_key': bool(current_clinic.claude_api_key)
+        'message': 'OpenRouter API configuration updated',
+        'has_custom_key': bool(current_clinic.openrouter_api_key)
     })

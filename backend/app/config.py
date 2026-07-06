@@ -33,9 +33,12 @@ class Config:
     # EventSource cannot set an Authorization header.
     JWT_QUERY_STRING_NAME = 'token'
 
-    # Claude API
-    CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
-    CLAUDE_MODEL = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
+    # AI provider - OpenRouter (OpenAI-compatible API, gives access to models
+    # from many providers - Anthropic, OpenAI, Google, Meta, etc. - by
+    # changing OPENROUTER_MODEL, no code changes needed).
+    OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+    OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5')
+    OPENROUTER_BASE_URL = os.getenv('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1')
 
     # Evolution API (default - can be overridden per clinic)
     EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL')
@@ -130,8 +133,8 @@ def validate_config(app):
         errors.append('JWT_SECRET_KEY ainda esta com o valor padrao. Defina um valor seguro.')
 
     # Recommended: services that won't work without these
-    if not app.config.get('CLAUDE_API_KEY'):
-        warnings.append('CLAUDE_API_KEY nao definida. Chatbot IA nao funcionara.')
+    if not app.config.get('OPENROUTER_API_KEY'):
+        warnings.append('OPENROUTER_API_KEY nao definida. Chatbot IA nao funcionara.')
 
     if not app.config.get('EVOLUTION_API_URL'):
         warnings.append('EVOLUTION_API_URL nao definida. Integracao WhatsApp nao funcionara.')

@@ -17,9 +17,10 @@ SECRET_KEY=<generate-a-secure-random-key>
 JWT_SECRET_KEY=<generate-a-secure-random-key>
 ```
 
-### Claude AI API
+### AI Provider (OpenRouter)
 ```
-CLAUDE_API_KEY=<your-anthropic-api-key>
+OPENROUTER_API_KEY=<your-openrouter-api-key>
+OPENROUTER_MODEL=anthropic/claude-sonnet-4.5
 ```
 
 ### Evolution API (WhatsApp)
