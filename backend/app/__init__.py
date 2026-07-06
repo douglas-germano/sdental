@@ -55,11 +55,12 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(health.bp)
     app.register_blueprint(public.bp)
 
-    from .routes import agents, professionals, pipeline, billing
+    from .routes import agents, professionals, pipeline, billing, assistant
     app.register_blueprint(agents.bp)
     app.register_blueprint(professionals.bp)
     app.register_blueprint(pipeline.bp)
     app.register_blueprint(billing.bp)
+    app.register_blueprint(assistant.bp)
 
     # Initialize scheduler for background tasks (only in production or if explicitly enabled)
     if not app.config.get('TESTING', False) and os.getenv('ENABLE_SCHEDULER', 'true').lower() == 'true':
