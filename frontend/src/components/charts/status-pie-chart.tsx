@@ -17,7 +17,7 @@ const COLORS = {
 export function StatusPieChart({ overview }: StatusPieChartProps) {
   if (!overview) {
     return (
-      <div className="h-[200px] flex items-center justify-center">
+      <div className="h-[95px] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
       </div>
     )
@@ -32,21 +32,21 @@ export function StatusPieChart({ overview }: StatusPieChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+      <div className="h-[95px] flex items-center justify-center text-muted-foreground text-sm">
         Nenhum dado disponivel
       </div>
     )
   }
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
+    <ResponsiveContainer width="100%" height={95}>
       <PieChart>
         <Pie
           data={data}
           cx="50%"
           cy="50%"
-          innerRadius={50}
-          outerRadius={70}
+          innerRadius={32}
+          outerRadius={48}
           paddingAngle={3}
           dataKey="value"
         >
@@ -66,7 +66,7 @@ export function StatusPieChart({ overview }: StatusPieChartProps) {
         />
         <Legend
           verticalAlign="bottom"
-          height={36}
+          height={28}
           formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
         />
       </PieChart>

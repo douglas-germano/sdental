@@ -14,6 +14,8 @@ interface EmptyStateProps {
     icon?: LucideIcon
   }
   className?: string
+  /** Smaller icon/spacing for use inside compact widgets (e.g. dashboard cards). */
+  compact?: boolean
 }
 
 export function EmptyState({
@@ -22,13 +24,15 @@ export function EmptyState({
   description,
   action,
   className,
+  compact = false,
 }: EmptyStateProps) {
   const ActionIcon = action?.icon
 
   return (
     <div
       className={cn(
-        'relative flex flex-col items-center justify-center py-16 px-4 text-center',
+        'relative flex flex-col items-center justify-center px-4 text-center',
+        compact ? 'py-6' : 'py-16',
         className
       )}
     >
@@ -38,14 +42,20 @@ export function EmptyState({
       </div>
 
       <div className="relative">
-        <div className="h-14 w-14 rounded-xl bg-muted/60 border border-border flex items-center justify-center mb-5 mx-auto">
-          <Icon className="h-6 w-6 text-muted-foreground/60" />
+        <div className={cn(
+          'rounded-xl bg-muted/60 border border-border flex items-center justify-center mx-auto',
+          compact ? 'h-9 w-9 mb-2' : 'h-14 w-14 mb-5'
+        )}>
+          <Icon className={compact ? 'h-4 w-4 text-muted-foreground/60' : 'h-6 w-6 text-muted-foreground/60'} />
         </div>
-        <h3 className="font-semibold text-foreground mb-1.5">
+        <h3 className={cn('font-semibold text-foreground', compact ? 'text-sm mb-1' : 'mb-1.5')}>
           {title}
         </h3>
         {description && (
-          <p className="text-sm text-muted-foreground mb-6 max-w-[280px] mx-auto leading-relaxed">
+          <p className={cn(
+            'text-sm text-muted-foreground max-w-[280px] mx-auto leading-relaxed',
+            compact ? 'mb-2 text-xs' : 'mb-6'
+          )}>
             {description}
           </p>
         )}
