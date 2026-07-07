@@ -14,7 +14,7 @@ import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Tras
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'
-import type { BillingStatus, SubscriptionStatus } from '@/types'
+import type { BillingStatus, SubscriptionStatus, Service } from '@/types'
 
 type Section = 'profile' | 'whatsapp' | 'hours' | 'services' | 'automacao' | 'assinatura'
 
@@ -218,6 +218,10 @@ export default function SettingsPage() {
       instructions: newService.instructions.trim() || undefined
     }])
     setNewService({ name: '', duration: 30, price: '', instructions: '' })
+  }
+
+  const updateService = (index: number, field: keyof Service, value: string | number | undefined) => {
+    setServices(services.map((s, i) => (i === index ? { ...s, [field]: value } : s)))
   }
 
   const removeService = (index: number) => {
@@ -677,36 +681,82 @@ export default function SettingsPage() {
                           editingField === 'services' && "bg-muted/30 px-3 rounded-lg my-1"
                         )}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <Stethoscope className="h-4 w-4 text-primary" />
+                        {editingField === 'services' ? (
+                          <div className="flex flex-col gap-2 w-full">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <div className="relative flex-1">
+                                <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  value={service.name}
+                                  onChange={(e) => updateService(index, 'name', e.target.value)}
+                                  className="pl-10"
+                                />
+                              </div>
+                              <div className="relative w-full sm:w-28">
+                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  type="number"
+                                  placeholder="Min"
+                                  value={service.duration}
+                                  onChange={(e) => updateService(index, 'duration', parseInt(e.target.value) || 30)}
+                                  className="pl-10"
+                                />
+                              </div>
+                              <div className="relative w-full sm:w-32">
+                                <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="Preço"
+                                  value={service.price ?? ''}
+                                  onChange={(e) => updateService(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="pl-10"
+                                />
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeService(index)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="relative">
+                              <NotePencil className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                              <textarea
+                                placeholder="Instruções de preparo/pós-procedimento (opcional, enviadas pela IA quando solicitado)"
+                                value={service.instructions || ''}
+                                onChange={(e) => updateService(index, 'instructions', e.target.value || undefined)}
+                                rows={2}
+                                className="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                              />
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <span className="font-medium truncate block">{service.name}</span>
-                            {service.instructions && (
-                              <p className="text-xs text-muted-foreground truncate">{service.instructions}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {typeof service.price === 'number' && (
-                            <Badge variant="success" className="gap-1">
-                              <CurrencyDollar className="h-3 w-3" />
-                              R$ {service.price.toFixed(2)}
-                            </Badge>
-                          )}
-                          <Badge variant="outline">{service.duration} min</Badge>
-                          {editingField === 'services' && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeService(index)}
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <Stethoscope className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="font-medium truncate block">{service.name}</span>
+                                {service.instructions && (
+                                  <p className="text-xs text-muted-foreground truncate">{service.instructions}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {typeof service.price === 'number' && (
+                                <Badge variant="success" className="gap-1">
+                                  <CurrencyDollar className="h-3 w-3" />
+                                  R$ {service.price.toFixed(2)}
+                                </Badge>
+                              )}
+                              <Badge variant="outline">{service.duration} min</Badge>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>

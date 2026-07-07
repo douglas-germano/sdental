@@ -158,7 +158,8 @@ def create_appointment(current_clinic):
         scheduled_datetime=scheduled_datetime,
         duration_minutes=data.get('duration_minutes', 30),
         status=data.get('status', AppointmentStatus.CONFIRMED),
-        notes=data.get('notes')
+        notes=data.get('notes'),
+        price=service.get_service_price(data['service_name'])
     )
 
     db.session.add(appointment)

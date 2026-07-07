@@ -327,6 +327,17 @@ export const assistantApi = {
   deleteMemory: (id: string) => api.delete(`/assistant/memories/${id}`)
 }
 
+// Financial API (revenue forecast, derived from booked appointments)
+export const financialApi = {
+  getSummary: (days = 30) => api.get('/financial/summary', { params: { days } }),
+
+  getTimeseries: (params?: { past_days?: number; future_days?: number; group_by?: 'day' | 'week' | 'month' }) =>
+    api.get('/financial/timeseries', { params }),
+
+  getBreakdown: (params?: { days?: number; by?: 'service' | 'professional' }) =>
+    api.get('/financial/breakdown', { params })
+}
+
 // Public booking API (no auth required - used by the public /agendar/[slug] page)
 export const publicApi = {
   getClinic: (slug: string) => api.get(`/public/clinic/${slug}`),

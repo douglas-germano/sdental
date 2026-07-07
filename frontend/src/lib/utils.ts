@@ -7,6 +7,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function formatCurrency(value: number, options?: { compact?: boolean }): string {
+  if (options?.compact) {
+    const abs = Math.abs(value)
+    if (abs >= 1_000_000) {
+      return `R$ ${(value / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`
+    }
+    if (abs >= 1_000) {
+      return `R$ ${(value / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`
+    }
+    return `R$ ${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+  }
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 export function formatDate(dateString: string): string {
   const date = new Date(dateString)
   return date.toLocaleDateString('pt-BR', {
