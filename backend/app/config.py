@@ -106,6 +106,10 @@ class TestingConfig(Config):
         'TEST_DATABASE_URL',
         'postgresql://localhost:5432/sdental_test'
     )
+    # Deterministic secret so webhook-signature tests don't depend on the
+    # environment having WEBHOOK_SECRET set (webhook auth fails closed
+    # without one - see utils/webhook_auth.py).
+    WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', 'test-webhook-secret')
 
 
 config = {
@@ -146,7 +150,10 @@ def validate_config(app):
         warnings.append('BASE_URL nao definida. Configuracao automatica de webhook nao funcionara.')
 
     if not app.config.get('WEBHOOK_SECRET'):
-        warnings.append('WEBHOOK_SECRET nao definida. Webhooks sem autenticacao.')
+        warnings.append(
+            'WEBHOOK_SECRET nao definida. O webhook do WhatsApp (Evolution API) '
+            'vai rejeitar todas as chamadas ate a variavel ser configurada.'
+        )
 
     if not app.config.get('KIWIFY_WEBHOOK_TOKEN'):
         warnings.append(

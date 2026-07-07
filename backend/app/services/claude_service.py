@@ -563,9 +563,14 @@ class ClaudeService:
         if new_dt.replace(tzinfo=None) <= now.replace(tzinfo=None):
             return "Não é possível remarcar para uma data/hora que já passou. Por favor, escolha um horário futuro."
 
+        patient = self._resolve_patient(conversation)
+        if not patient:
+            return "Não encontrei um agendamento seu para remarcar."
+
         appointment, error = self.appointment_service.reschedule_appointment(
             tool_input['appointment_id'],
-            new_dt
+            new_dt,
+            patient_id=patient.id
         )
         if error:
             return f"Não foi possível remarcar: {error}"
@@ -577,9 +582,14 @@ class ClaudeService:
         )
 
     def _tool_confirm_appointment(self, tool_input: dict, conversation: Conversation) -> str:
+        patient = self._resolve_patient(conversation)
+        if not patient:
+            return "Não encontrei um agendamento seu para confirmar."
+
         appointment = Appointment.query.filter_by(
             id=tool_input['appointment_id'],
-            clinic_id=self.clinic.id
+            clinic_id=self.clinic.id,
+            patient_id=patient.id
         ).first()
         if not appointment:
             return "Agendamento não encontrado."
@@ -620,8 +630,13 @@ class ClaudeService:
         return "\n".join(lines)
 
     def _tool_cancel_appointment(self, tool_input: dict, conversation: Conversation) -> str:
+        patient = self._resolve_patient(conversation)
+        if not patient:
+            return "Não encontrei um agendamento seu para cancelar."
+
         success, error = self.appointment_service.cancel_appointment(
-            tool_input['appointment_id']
+            tool_input['appointment_id'],
+            patient_id=patient.id
         )
         if not success:
             return f"Não foi possível cancelar: {error}"

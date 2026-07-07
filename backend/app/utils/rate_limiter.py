@@ -4,13 +4,14 @@ Rate limiting configuration for the application.
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-# Initialize limiter with remote address as key
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",
-    strategy="fixed-window"
-)
+# storage_uri/strategy/default_limits are intentionally left unset here -
+# Limiter's constructor args take precedence over app.config, so passing
+# storage_uri="memory://" would silently ignore RATELIMIT_STORAGE_URI (Redis
+# in production) even when REDIS_URL is configured, letting each Gunicorn
+# worker keep its own independent (and much weaker) counter. They're picked
+# up from app.config (RATELIMIT_STORAGE_URI/RATELIMIT_STRATEGY/RATELIMIT_DEFAULT
+# in config.py) inside init_limiter() -> limiter.init_app(app) instead.
+limiter = Limiter(key_func=get_remote_address)
 
 
 def init_limiter(app):
