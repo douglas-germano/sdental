@@ -123,6 +123,24 @@ class ClaudeService:
             for t in tools
         ]
 
+    @staticmethod
+    def _first_choice(response):
+        """
+        Return response.choices[0], raising a clear, loggable error instead of
+        a bare "'NoneType' object is not subscriptable" when there isn't one.
+
+        Some OpenRouter providers (seen with free-tier/rate-limited models)
+        respond HTTP 200 with an error embedded in the body instead of raising
+        an HTTP error, which leaves `choices` empty/None on the parsed
+        response - this surfaces what actually happened upstream.
+        """
+        if not response.choices:
+            raise RuntimeError(
+                f"OpenRouter response had no choices (model likely rate-limited "
+                f"or unavailable). Raw response: {response.model_dump_json()[:500]}"
+            )
+        return response.choices[0]
+
     def _get_tools(self) -> list:
         """Define tools available to Claude."""
         return [
@@ -740,7 +758,7 @@ class ClaudeService:
                 {"role": "user", "content": user},
             ],
         )
-        return (response.choices[0].message.content or "").strip()
+        return (self._first_choice(response).message.content or "").strip()
 
     def _clinic_context_block(self) -> str:
         """Short clinic description reused across proactive prompts."""
@@ -955,8 +973,9 @@ class ClaudeService:
                 messages=api_messages,
             )
 
-            while response.choices[0].finish_reason == "tool_calls":
-                message = response.choices[0].message
+            choice = self._first_choice(response)
+            while choice.finish_reason == "tool_calls":
+                message = choice.message
                 tool_calls = message.tool_calls or []
 
                 api_messages.append({
@@ -981,8 +1000,9 @@ class ClaudeService:
                     tools=tools,
                     messages=api_messages,
                 )
+                choice = self._first_choice(response)
 
-            final_response = response.choices[0].message.content or ""
+            final_response = choice.message.content or ""
 
             # Add assistant response to history
             self.conversation_service.add_message(conversation, 'assistant', final_response)
