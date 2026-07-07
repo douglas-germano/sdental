@@ -9,6 +9,7 @@ import { assistantApi } from '@/lib/api'
 import { AssistantMessage } from '@/types'
 import { getErrorMessage } from '@/lib/error-messages'
 import { AssistantMessageBubble } from '@/components/assistant/assistant-message-bubble'
+import { AssistantMemoriesModal } from '@/components/assistant/assistant-memories-modal'
 import { cn } from '@/lib/utils'
 import {
   Sparkle,
@@ -17,6 +18,7 @@ import {
   ChartLineUp,
   UsersThree,
   CalendarX,
+  Brain,
 } from '@phosphor-icons/react'
 
 const SUGGESTIONS = [
@@ -49,6 +51,7 @@ export default function AssistantPage() {
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [memoriesOpen, setMemoriesOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -148,13 +151,21 @@ export default function AssistantPage() {
             <p className="text-xs text-muted-foreground truncate">Seu braço direito para decisões da clínica</p>
           </div>
         </div>
-        {messages.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1.5 shrink-0 text-muted-foreground">
-            <Trash2 className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Limpar conversa</span>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="ghost" size="sm" onClick={() => setMemoriesOpen(true)} className="gap-1.5 text-muted-foreground">
+            <Brain className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Memórias</span>
           </Button>
-        )}
+          {messages.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1.5 text-muted-foreground">
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Limpar conversa</span>
+            </Button>
+          )}
+        </div>
       </div>
+
+      <AssistantMemoriesModal open={memoriesOpen} onOpenChange={setMemoriesOpen} />
 
       {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">

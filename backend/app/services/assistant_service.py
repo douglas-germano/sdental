@@ -199,6 +199,40 @@ class AssistantService:
                 "input_schema": {"type": "object", "properties": {}, "required": []}
             },
             {
+                "name": "compare_periods",
+                "description": "Compara as métricas do período atual (últimos N dias) com o período anterior de mesma duração, para ver se a clínica está melhorando ou piorando (ex: 'como estou esse mês comparado ao mês passado?').",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "days": {"type": "integer", "description": "Tamanho de cada período em dias (padrão 30)"}
+                    },
+                    "required": []
+                }
+            },
+            {
+                "name": "get_professional_performance",
+                "description": "Retorna o desempenho de um ou todos os profissionais num período: total de consultas, concluídas, canceladas, faltas e faturamento estimado (baseado no preço cadastrado de cada serviço).",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "professional_name": {"type": "string", "description": "Filtrar por nome do profissional (opcional; se omitido, retorna todos)"},
+                        "days": {"type": "integer", "description": "Quantidade de dias para trás a considerar (padrão 30)"}
+                    },
+                    "required": []
+                }
+            },
+            {
+                "name": "get_patient_retention",
+                "description": "Retorna a taxa de recorrência de pacientes num período: quantos pacientes que tiveram consulta no período já vieram antes (recorrentes) vs quantos foram consulta única.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "days": {"type": "integer", "description": "Quantidade de dias para trás a considerar (padrão 90)"}
+                    },
+                    "required": []
+                }
+            },
+            {
                 "name": "remember_fact",
                 "description": "Salva um fato, meta ou preferência importante sobre a clínica para lembrar em conversas futuras (ex: metas do gestor, particularidades da operação). Use quando o gestor compartilhar algo que valha a pena lembrar depois.",
                 "input_schema": {
@@ -227,6 +261,9 @@ class AssistantService:
         "list_agent_actions": ("_tool_list_agent_actions", "listar ações da IA"),
         "get_billing_status": ("_tool_get_billing_status", "buscar assinatura"),
         "get_clinic_settings": ("_tool_get_clinic_settings", "buscar configurações"),
+        "compare_periods": ("_tool_compare_periods", "comparar períodos"),
+        "get_professional_performance": ("_tool_get_professional_performance", "buscar desempenho dos profissionais"),
+        "get_patient_retention": ("_tool_get_patient_retention", "buscar recorrência de pacientes"),
         "remember_fact": ("_tool_remember_fact", "salvar fato"),
     }
 
@@ -489,6 +526,123 @@ class AssistantService:
             'weekly_report_enabled': self.clinic.weekly_report_enabled,
         }
         return self._to_json(data)
+
+    def _period_snapshot(self, start: datetime, end: datetime) -> dict:
+        """Aggregate appointment/patient counts for an arbitrary [start, end) window."""
+        by_status = dict(
+            db.session.query(Appointment.status, db.func.count(Appointment.id))
+            .filter(
+                Appointment.clinic_id == self.clinic.id,
+                Appointment.scheduled_datetime >= start,
+                Appointment.scheduled_datetime < end,
+            )
+            .group_by(Appointment.status)
+            .all()
+        )
+        total = sum(by_status.values())
+        no_shows = by_status.get(AppointmentStatus.NO_SHOW, 0)
+        new_patients = Patient.query.filter(
+            Patient.clinic_id == self.clinic.id,
+            Patient.created_at >= start,
+            Patient.created_at < end,
+        ).count()
+        return {
+            'from': start.date().isoformat(),
+            'to': end.date().isoformat(),
+            'appointments_total': total,
+            'completed': by_status.get(AppointmentStatus.COMPLETED, 0),
+            'cancelled': by_status.get(AppointmentStatus.CANCELLED, 0),
+            'no_shows': no_shows,
+            'no_show_rate': round((no_shows / total) * 100, 1) if total else 0,
+            'new_patients': new_patients,
+        }
+
+    def _tool_compare_periods(self, tool_input: dict) -> str:
+        days = max(1, min(int(tool_input.get('days') or 30), 365))
+        now = datetime.utcnow()
+        current_start = now - timedelta(days=days)
+        previous_start = current_start - timedelta(days=days)
+
+        current = self._period_snapshot(current_start, now)
+        previous = self._period_snapshot(previous_start, current_start)
+        return self._to_json({'period_days': days, 'current': current, 'previous': previous})
+
+    def _service_price(self, service_name: str) -> float:
+        for s in (self.clinic.services or []):
+            if (s.get('name') or '').strip().lower() == (service_name or '').strip().lower():
+                try:
+                    return float(s.get('price') or 0)
+                except (TypeError, ValueError):
+                    return 0
+        return 0
+
+    def _tool_get_professional_performance(self, tool_input: dict) -> str:
+        days = max(1, min(int(tool_input.get('days') or 30), 365))
+        start = datetime.utcnow() - timedelta(days=days)
+
+        query = Professional.query.filter_by(clinic_id=self.clinic.id)
+        name = (tool_input.get('professional_name') or '').strip()
+        if name:
+            query = query.filter(Professional.name.ilike(f"%{name}%"))
+        professionals = query.all()
+        if not professionals:
+            return "Nenhum profissional encontrado com esse filtro."
+
+        results = []
+        for p in professionals:
+            appointments = Appointment.query.filter(
+                Appointment.clinic_id == self.clinic.id,
+                Appointment.professional_id == p.id,
+                Appointment.scheduled_datetime >= start,
+            ).all()
+            total = len(appointments)
+            completed = [a for a in appointments if a.status == AppointmentStatus.COMPLETED]
+            cancelled = sum(1 for a in appointments if a.status == AppointmentStatus.CANCELLED)
+            no_shows = sum(1 for a in appointments if a.status == AppointmentStatus.NO_SHOW)
+            revenue = sum(self._service_price(a.service_name) for a in completed)
+            results.append({
+                'professional_name': p.name,
+                'specialty': p.specialty,
+                'total_appointments': total,
+                'completed': len(completed),
+                'cancelled': cancelled,
+                'no_shows': no_shows,
+                'no_show_rate': round((no_shows / total) * 100, 1) if total else 0,
+                'estimated_revenue': round(revenue, 2),
+            })
+        results.sort(key=lambda r: r['total_appointments'], reverse=True)
+        return self._to_json({'period_days': days, 'professionals': results})
+
+    def _tool_get_patient_retention(self, tool_input: dict) -> str:
+        days = max(1, min(int(tool_input.get('days') or 90), 365))
+        start = datetime.utcnow() - timedelta(days=days)
+
+        active_patient_ids = db.session.query(Appointment.patient_id).filter(
+            Appointment.clinic_id == self.clinic.id,
+            Appointment.scheduled_datetime >= start,
+        ).distinct()
+
+        counts = dict(
+            db.session.query(Appointment.patient_id, db.func.count(Appointment.id))
+            .filter(
+                Appointment.clinic_id == self.clinic.id,
+                Appointment.patient_id.in_(active_patient_ids),
+            )
+            .group_by(Appointment.patient_id)
+            .all()
+        )
+
+        total_active = len(counts)
+        if not total_active:
+            return "Nenhum paciente com consultas nesse período."
+        recurring = sum(1 for c in counts.values() if c > 1)
+        return self._to_json({
+            'period_days': days,
+            'active_patients': total_active,
+            'recurring_patients': recurring,
+            'single_visit_patients': total_active - recurring,
+            'recurrence_rate': round((recurring / total_active) * 100, 1),
+        })
 
     def _tool_remember_fact(self, tool_input: dict) -> str:
         content = (tool_input.get('content') or '').strip()

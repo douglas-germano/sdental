@@ -318,7 +318,13 @@ export const assistantApi = {
 
   clearMessages: () => api.delete('/assistant/messages'),
 
-  listMemories: () => api.get('/assistant/memories')
+  listMemories: () => api.get('/assistant/memories'),
+
+  createMemory: (content: string) => api.post('/assistant/memories', { content }),
+
+  updateMemory: (id: string, content: string) => api.patch(`/assistant/memories/${id}`, { content }),
+
+  deleteMemory: (id: string) => api.delete(`/assistant/memories/${id}`)
 }
 
 // Public booking API (no auth required - used by the public /agendar/[slug] page)
