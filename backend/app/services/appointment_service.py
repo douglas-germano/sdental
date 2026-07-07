@@ -255,6 +255,16 @@ class AppointmentService:
             Professional.name.ilike(f'%{name}%')
         ).first()
 
+    def get_service_price(self, service_name: Optional[str]) -> Optional[float]:
+        """Look up a service's current price by name (case-insensitive) from clinic.services."""
+        if not service_name:
+            return None
+        for s in (self.clinic.services or []):
+            if (s.get('name') or '').strip().lower() == service_name.strip().lower():
+                price = s.get('price')
+                return float(price) if price is not None else None
+        return None
+
     def create_appointment(
         self,
         patient_name: str,
@@ -324,7 +334,8 @@ class AppointmentService:
             db.session.add(patient)
             db.session.flush()
 
-        # Create appointment
+        # Create appointment (price is snapshotted at booking time so a later
+        # change to the service's price never alters past financial reports)
         appointment = Appointment(
             clinic_id=self.clinic.id,
             patient_id=patient.id,
@@ -333,7 +344,8 @@ class AppointmentService:
             scheduled_datetime=scheduled_datetime,
             duration_minutes=duration_minutes,
             status=AppointmentStatus.CONFIRMED,
-            notes=notes
+            notes=notes,
+            price=self.get_service_price(service_name)
         )
 
         db.session.add(appointment)

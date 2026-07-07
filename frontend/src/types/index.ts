@@ -80,6 +80,7 @@ export interface Patient {
   created_at: string
   updated_at: string
   pipeline_stage_id?: string
+  pipeline_stage?: PipelineStage
   appointments?: Appointment[]
   address_zip_code?: string
   address_street?: string
@@ -239,6 +240,29 @@ export interface AssistantMemory {
   clinic_id: string
   content: string
   created_at: string
+}
+
+export interface FinancialSummary {
+  period_days: number
+  realized_revenue: number
+  realized_count: number
+  forecast_revenue: number
+  forecast_count: number
+  lost_revenue: number
+  lost_count: number
+}
+
+export interface RevenueTimeseriesPoint {
+  period: string
+  realized: number
+  forecast: number
+}
+
+export interface RevenueBreakdownItem {
+  name: string
+  realized: number
+  forecast: number
+  count: number
 }
 
 export interface PaginatedResponse<T> {

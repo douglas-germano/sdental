@@ -26,6 +26,12 @@ class Appointment(db.Model, SoftDeleteMixin, TimestampMixin):
     scheduled_datetime = db.Column(db.DateTime, nullable=False)
     duration_minutes = db.Column(db.Integer, default=30)
     status = db.Column(db.String(20), default=AppointmentStatus.PENDING)
+    # Snapshot of the service's price at booking time (Numeric, not Float, to
+    # avoid binary floating-point rounding errors on currency values). Kept
+    # independent from clinic.services so a later price change never alters
+    # past financial reports. Null for appointments booked before this field
+    # existed - callers should fall back to the clinic's current service price.
+    price = db.Column(db.Numeric(10, 2), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     cancelled_at = db.Column(db.DateTime, nullable=True)
     patient_confirmed_at = db.Column(db.DateTime, nullable=True)
@@ -69,6 +75,7 @@ class Appointment(db.Model, SoftDeleteMixin, TimestampMixin):
             'service_name': self.service_name,
             'scheduled_datetime': self.scheduled_datetime.isoformat() if self.scheduled_datetime else None,
             'duration_minutes': self.duration_minutes,
+            'price': float(self.price) if self.price is not None else None,
             'status': self.status,
             'notes': self.notes,
             'created_at': self.created_at.isoformat() if self.created_at else None,

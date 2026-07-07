@@ -9,8 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { conversationsApi, patientsApi } from '@/lib/api'
-import { Conversation, Message } from '@/types'
+import { Select, SelectOption } from '@/components/ui/select'
+import { conversationsApi, patientsApi, pipelineApi } from '@/lib/api'
+import { Conversation, Message, PipelineStage } from '@/types'
 import { formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
 import { ArrowLeft, User, WarningCircle as AlertCircle, CheckCircle, ArrowCounterClockwise as RotateCcw, FloppyDisk as Save, X, PencilSimple as Edit2, Info, CaretDown as ChevronDown, ArrowsClockwise as SyncIcon } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -69,6 +70,14 @@ export default function ConversationDetailPage() {
   const [saving, setSaving] = useState(false)
   const [syncingHistory, setSyncingHistory] = useState(false)
   const [patientForm, setPatientForm] = useState({ name: '', phone: '', email: '', notes: '' })
+  const [stages, setStages] = useState<PipelineStage[]>([])
+  const [movingStage, setMovingStage] = useState(false)
+
+  useEffect(() => {
+    pipelineApi.getStages()
+      .then((response) => setStages(response.data))
+      .catch((error) => console.error('Error fetching pipeline stages:', error))
+  }, [])
 
   const fetchConversation = useCallback(async () => {
     try {
@@ -273,6 +282,22 @@ export default function ConversationDetailPage() {
     }
   }
 
+  const handleMoveStage = async (stageId: string) => {
+    if (!conversation?.patient?.id || !stageId) return
+
+    setMovingStage(true)
+    try {
+      await pipelineApi.movePatient(conversation.patient.id, stageId)
+      toast({ title: 'Estágio atualizado', variant: 'success' })
+      fetchConversation()
+    } catch (error) {
+      console.error('Error moving pipeline stage:', error)
+      toast({ title: 'Erro ao mover estágio', variant: 'error' })
+    } finally {
+      setMovingStage(false)
+    }
+  }
+
   const handleCancelEdit = () => {
     if (conversation?.patient) {
       setPatientForm({
@@ -419,6 +444,25 @@ export default function ConversationDetailPage() {
               </Button>
             </div>
           </div>
+
+          {conversation.patient && stages.length > 0 && (
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide shrink-0">
+                Estágio no funil
+              </span>
+              <Select
+                value={conversation.patient.pipeline_stage_id || ''}
+                onChange={(e) => handleMoveStage(e.target.value)}
+                disabled={movingStage}
+                className="h-7 text-xs max-w-[220px] py-0"
+              >
+                <SelectOption value="" disabled>Selecionar estágio</SelectOption>
+                {stages.map((stage) => (
+                  <SelectOption key={stage.id} value={stage.id}>{stage.name}</SelectOption>
+                ))}
+              </Select>
+            </div>
+          )}
 
           {conversation.patient && !isEditing ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
