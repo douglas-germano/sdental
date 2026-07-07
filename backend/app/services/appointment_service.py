@@ -6,6 +6,7 @@ from uuid import UUID
 from app import db
 from app.models import Appointment, Patient, AvailabilitySlot, AppointmentStatus, Professional
 from app.utils.validators import normalize_phone
+from app.utils.business_hours import get_working_ranges, is_within_working_ranges
 
 logger = logging.getLogger(__name__)
 
@@ -87,18 +88,9 @@ class AppointmentService:
 
         day_config = business_hours.get(str(day_of_week), {})
 
-        if not day_config.get('active', False):
+        ranges = get_working_ranges(day_config)
+        if not ranges:
             return []
-
-        # Parse business hours
-        try:
-            start_hour, start_min = map(int, day_config['start'].split(':'))
-            end_hour, end_min = map(int, day_config['end'].split(':'))
-        except (KeyError, ValueError):
-            return []
-
-        business_start = time(start_hour, start_min)
-        business_end = time(end_hour, end_min)
 
         # Get service duration
         duration_minutes = 30  # default
@@ -125,39 +117,41 @@ class AppointmentService:
 
         existing_appointments = query.all()
 
-        # Generate all possible slots
+        # Generate all possible slots across each open range (splits around
+        # a lunch break when one is configured for the day)
         slots = []
-        current_time = datetime.combine(date, business_start)
-        end_time = datetime.combine(date, business_end)
+        for range_start, range_end in ranges:
+            current_time = datetime.combine(date, range_start)
+            end_time = datetime.combine(date, range_end)
 
-        while current_time + timedelta(minutes=duration_minutes) <= end_time:
-            slot_end = current_time + timedelta(minutes=duration_minutes)
+            while current_time + timedelta(minutes=duration_minutes) <= end_time:
+                slot_end = current_time + timedelta(minutes=duration_minutes)
 
-            # Check if slot conflicts with existing appointments
-            is_available = True
-            for apt in existing_appointments:
-                apt_end = apt.scheduled_datetime + timedelta(minutes=apt.duration_minutes)
-                # Check for overlap
-                if not (slot_end <= apt.scheduled_datetime or current_time >= apt_end):
-                    is_available = False
-                    break
+                # Check if slot conflicts with existing appointments
+                is_available = True
+                for apt in existing_appointments:
+                    apt_end = apt.scheduled_datetime + timedelta(minutes=apt.duration_minutes)
+                    # Check for overlap
+                    if not (slot_end <= apt.scheduled_datetime or current_time >= apt_end):
+                        is_available = False
+                        break
 
-            if is_available:
-                # Don't show past slots for today
-                if date == datetime.now().date() and current_time <= datetime.now():
-                    pass
-                else:
-                    slot_data = {
-                        'start_time': current_time.strftime('%H:%M'),
-                        'end_time': slot_end.strftime('%H:%M'),
-                        'datetime': current_time.isoformat()
-                    }
-                    if professional:
-                        slot_data['professional_id'] = str(professional.id)
-                        slot_data['professional_name'] = professional.name
-                    slots.append(slot_data)
+                if is_available:
+                    # Don't show past slots for today
+                    if date == datetime.now().date() and current_time <= datetime.now():
+                        pass
+                    else:
+                        slot_data = {
+                            'start_time': current_time.strftime('%H:%M'),
+                            'end_time': slot_end.strftime('%H:%M'),
+                            'datetime': current_time.isoformat()
+                        }
+                        if professional:
+                            slot_data['professional_id'] = str(professional.id)
+                            slot_data['professional_name'] = professional.name
+                        slots.append(slot_data)
 
-            current_time += timedelta(minutes=duration_minutes)
+                current_time += timedelta(minutes=duration_minutes)
 
         return slots
 
@@ -193,21 +187,14 @@ class AppointmentService:
         day_of_week = scheduled_datetime.weekday()
         day_config = business_hours.get(str(day_of_week), {})
 
-        if not day_config.get('active', False):
+        ranges = get_working_ranges(day_config)
+        if not ranges:
             return False
 
-        try:
-            start_hour, start_min = map(int, day_config['start'].split(':'))
-            end_hour, end_min = map(int, day_config['end'].split(':'))
-            business_start = time(start_hour, start_min)
-            business_end = time(end_hour, end_min)
+        slot_time = scheduled_datetime.time()
+        slot_end_time = (scheduled_datetime + timedelta(minutes=duration_minutes)).time()
 
-            slot_time = scheduled_datetime.time()
-            slot_end_time = (scheduled_datetime + timedelta(minutes=duration_minutes)).time()
-
-            if slot_time < business_start or slot_end_time > business_end:
-                return False
-        except (KeyError, ValueError):
+        if not is_within_working_ranges(ranges, slot_time, slot_end_time):
             return False
 
         # Check for conflicts

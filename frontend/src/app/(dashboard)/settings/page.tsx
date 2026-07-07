@@ -234,6 +234,24 @@ export default function SettingsPage() {
     })
   }
 
+  const toggleBusinessHourBreak = (day: string, enabled: boolean) => {
+    if (enabled) {
+      setBusinessHours({
+        ...businessHours,
+        [day]: {
+          ...businessHours[day],
+          break_start: businessHours[day]?.break_start || '12:00',
+          break_end: businessHours[day]?.break_end || '13:00'
+        }
+      })
+    } else {
+      const dayHours = { ...businessHours[day] }
+      delete dayHours.break_start
+      delete dayHours.break_end
+      setBusinessHours({ ...businessHours, [day]: dayHours })
+    }
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader title="Configuracoes" description="Gerencie as configuracoes da sua clinica e integracoes" />
@@ -468,58 +486,95 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  {[0, 1, 2, 3, 4, 5, 6].map((day) => (
-                    <div
-                      key={day}
-                      className={cn(
-                        "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60 last:border-0",
-                        editingField === 'hours' && "bg-muted/30 px-3 rounded-lg my-1"
-                      )}
-                    >
-                      <div className="flex items-center gap-3 w-36">
-                        {editingField === 'hours' && (
-                          <input
-                            type="checkbox"
-                            checked={businessHours[day]?.active || false}
-                            onChange={(e) => updateBusinessHour(String(day), 'active', e.target.checked)}
-                            className="rounded-md h-4 w-4 border-border text-primary focus:ring-primary"
-                          />
-                        )}
-                        <span className={cn(
-                          "font-medium",
-                          businessHours[day]?.active ? 'text-foreground' : 'text-muted-foreground'
-                        )}>
-                          {getDayName(day)}
-                        </span>
-                      </div>
+                  {[0, 1, 2, 3, 4, 5, 6].map((day) => {
+                    const dayHours = businessHours[day]
+                    const hasBreak = Boolean(dayHours?.break_start && dayHours?.break_end)
 
-                      {editingField === 'hours' ? (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="time"
-                            value={businessHours[day]?.start || '08:00'}
-                            onChange={(e) => updateBusinessHour(String(day), 'start', e.target.value)}
-                            disabled={!businessHours[day]?.active}
-                            className="w-28"
-                          />
-                          <span className="text-muted-foreground">até</span>
-                          <Input
-                            type="time"
-                            value={businessHours[day]?.end || '18:00'}
-                            onChange={(e) => updateBusinessHour(String(day), 'end', e.target.value)}
-                            disabled={!businessHours[day]?.active}
-                            className="w-28"
-                          />
+                    return (
+                      <div
+                        key={day}
+                        className={cn(
+                          "flex flex-col gap-2 py-3 border-b border-border/60 last:border-0",
+                          editingField === 'hours' && "bg-muted/30 px-3 rounded-lg my-1"
+                        )}
+                      >
+                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                          <div className="flex items-center gap-3 w-36">
+                            {editingField === 'hours' && (
+                              <input
+                                type="checkbox"
+                                checked={dayHours?.active || false}
+                                onChange={(e) => updateBusinessHour(String(day), 'active', e.target.checked)}
+                                className="rounded-md h-4 w-4 border-border text-primary focus:ring-primary"
+                              />
+                            )}
+                            <span className={cn(
+                              "font-medium",
+                              dayHours?.active ? 'text-foreground' : 'text-muted-foreground'
+                            )}>
+                              {getDayName(day)}
+                            </span>
+                          </div>
+
+                          {editingField === 'hours' ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="time"
+                                value={dayHours?.start || '08:00'}
+                                onChange={(e) => updateBusinessHour(String(day), 'start', e.target.value)}
+                                disabled={!dayHours?.active}
+                                className="w-28"
+                              />
+                              <span className="text-muted-foreground">até</span>
+                              <Input
+                                type="time"
+                                value={dayHours?.end || '18:00'}
+                                onChange={(e) => updateBusinessHour(String(day), 'end', e.target.value)}
+                                disabled={!dayHours?.active}
+                                className="w-28"
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              {dayHours?.active
+                                ? `${dayHours?.start || '08:00'} - ${dayHours?.end || '18:00'}`
+                                  + (hasBreak ? ` (almoço ${dayHours?.break_start}-${dayHours?.break_end})` : '')
+                                : 'Fechado'}
+                            </span>
+                          )}
                         </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          {businessHours[day]?.active
-                            ? `${businessHours[day]?.start || '08:00'} - ${businessHours[day]?.end || '18:00'}`
-                            : 'Fechado'}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+
+                        {editingField === 'hours' && dayHours?.active && (
+                          <div className="flex items-center gap-2 pl-0 sm:pl-[9.75rem]">
+                            <input
+                              type="checkbox"
+                              checked={hasBreak}
+                              onChange={(e) => toggleBusinessHourBreak(String(day), e.target.checked)}
+                              className="rounded-md h-4 w-4 border-border text-primary focus:ring-primary"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">Pausa para almoço</span>
+                            {hasBreak && (
+                              <>
+                                <Input
+                                  type="time"
+                                  value={dayHours?.break_start || '12:00'}
+                                  onChange={(e) => updateBusinessHour(String(day), 'break_start', e.target.value)}
+                                  className="w-28"
+                                />
+                                <span className="text-muted-foreground">até</span>
+                                <Input
+                                  type="time"
+                                  value={dayHours?.break_end || '13:00'}
+                                  onChange={(e) => updateBusinessHour(String(day), 'break_end', e.target.value)}
+                                  className="w-28"
+                                />
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}

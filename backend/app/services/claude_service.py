@@ -12,6 +12,7 @@ from app.models import Conversation, Patient, ConversationStatus, Professional, 
 from app.services.appointment_service import AppointmentService
 from app.services.conversation_service import ConversationService
 from app.services.evolution_service import EvolutionService
+from app.utils.business_hours import parse_time
 
 logger = logging.getLogger(__name__)
 
@@ -380,7 +381,10 @@ class ClaudeService:
         for i, day in enumerate(days):
             config = hours.get(str(i), {})
             if config.get('active'):
-                parts.append(f"{day}: {config.get('start', '08:00')} - {config.get('end', '18:00')}")
+                entry = f"{day}: {config.get('start', '08:00')} - {config.get('end', '18:00')}"
+                if config.get('break_start') and config.get('break_end'):
+                    entry += f" (pausa para almoço {config['break_start']}-{config['break_end']})"
+                parts.append(entry)
         return ", ".join(parts) if parts else "Segunda a Sexta: 08:00 - 18:00"
 
     def _format_professionals(self) -> str:
@@ -496,9 +500,24 @@ class ClaudeService:
             return "Não é possível agendar para uma data/hora que já passou. Por favor, escolha um horário futuro."
 
         # Validate it's a business day
-        day_config = self.clinic.business_hours.get(str(dt.weekday()), {})
+        day_config = (self.clinic.business_hours or {}).get(str(dt.weekday()), {})
         if not day_config.get('active', False):
             return f"A clínica não funciona às {WEEKDAY_NAMES[dt.weekday()]}s. Por favor, escolha outro dia."
+
+        # Give a friendlier error when the requested time falls inside the
+        # lunch break, instead of the generic "Horário não disponível" from
+        # the deeper slot-availability check.
+        break_start = day_config.get('break_start')
+        break_end = day_config.get('break_end')
+        if break_start and break_end:
+            try:
+                if parse_time(break_start) <= dt.time() < parse_time(break_end):
+                    return (
+                        f"A clínica fecha para almoço das {break_start} às {break_end}. "
+                        f"Por favor, escolha outro horário."
+                    )
+            except (ValueError, AttributeError):
+                pass
 
         professional_id = None
         professional_name = tool_input.get('professional_name')
@@ -906,9 +925,18 @@ class ClaudeService:
         # Build system prompt
         context_info = self.conversation_service.get_context_summary(conversation)
         
-        # Add custom advisor context if available
+        # Add custom advisor context if available. This is free text the
+        # clinic owner writes/edits by hand, so it can go stale (e.g. still
+        # mentioning old business hours after Configurações is updated) -
+        # the instruction below makes the always-fresh structured fields
+        # above (horários, serviços) win over anything conflicting here.
         if self.clinic.agent_context:
-            context_info = f"{context_info}\n\nINFORMAÇÕES ADICIONAIS:\n{self.clinic.agent_context}"
+            context_info = (
+                f"{context_info}\n\nINFORMAÇÕES ADICIONAIS (este texto é editado manualmente e pode "
+                f"estar desatualizado quanto a horários e serviços - em caso de conflito, confie sempre "
+                f"nos horários de funcionamento e serviços informados na seção INFORMAÇÕES DA CLÍNICA acima):"
+                f"\n{self.clinic.agent_context}"
+            )
         
         # Get current datetime in Brazil timezone
         now = datetime.now(ZoneInfo('America/Sao_Paulo'))

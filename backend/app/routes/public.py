@@ -1,7 +1,7 @@
 """
 Public booking routes - No authentication required.
 """
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request, current_app
 
 from app import db
@@ -9,6 +9,7 @@ from app.models.clinic import Clinic
 from app.models.patient import Patient
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.professional import Professional
+from app.utils.business_hours import get_working_ranges
 
 bp = Blueprint('public', __name__, url_prefix='/api/public')
 
@@ -125,18 +126,10 @@ def get_availability(slug: str):
 
     # Get business hours for this day (unified source of truth)
     day_config = _get_business_hours_for_day(clinic, day_of_week)
+    ranges = get_working_ranges(day_config)
 
-    if not day_config.get('active', False):
+    if not ranges:
         return jsonify({'available_slots': [], 'message': 'Clínica fechada neste dia'})
-
-    # Parse business hours
-    try:
-        start_hour, start_min = map(int, day_config['start'].split(':'))
-        end_hour, end_min = map(int, day_config['end'].split(':'))
-        business_start = time(start_hour, start_min)
-        business_end = time(end_hour, end_min)
-    except (KeyError, ValueError):
-        return jsonify({'available_slots': [], 'message': 'Horário não configurado'})
 
     # Get service duration (default 30 min)
     slot_duration = 30
@@ -157,26 +150,29 @@ def get_availability(slug: str):
         Appointment.status.notin_([AppointmentStatus.CANCELLED])
     ).all()
 
-    # Generate available time slots
+    # Generate available time slots across each open range (splits around a
+    # lunch break when one is configured for the day)
     available_slots = []
-    current_time = datetime.combine(target_date, business_start)
-    end_time = datetime.combine(target_date, business_end)
     now = datetime.now()
 
-    while current_time + timedelta(minutes=slot_duration) <= end_time:
-        # Skip past slots for today
-        if target_date == now.date() and current_time <= now:
+    for range_start, range_end in ranges:
+        current_time = datetime.combine(target_date, range_start)
+        end_time = datetime.combine(target_date, range_end)
+
+        while current_time + timedelta(minutes=slot_duration) <= end_time:
+            # Skip past slots for today
+            if target_date == now.date() and current_time <= now:
+                current_time += timedelta(minutes=slot_duration)
+                continue
+
+            # Check if slot conflicts with any existing appointment (considering duration)
+            if not _is_slot_conflicting(current_time, slot_duration, existing_appointments):
+                available_slots.append({
+                    'time': current_time.strftime('%H:%M'),
+                    'duration': slot_duration
+                })
+
             current_time += timedelta(minutes=slot_duration)
-            continue
-
-        # Check if slot conflicts with any existing appointment (considering duration)
-        if not _is_slot_conflicting(current_time, slot_duration, existing_appointments):
-            available_slots.append({
-                'time': current_time.strftime('%H:%M'),
-                'duration': slot_duration
-            })
-
-        current_time += timedelta(minutes=slot_duration)
 
     return jsonify({'available_slots': available_slots})
 
