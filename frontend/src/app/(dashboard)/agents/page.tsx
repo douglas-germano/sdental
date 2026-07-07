@@ -155,24 +155,16 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
     }, [clinic?.name])
 
     const getDefaultContext = useCallback(() => {
-        const hours = clinic?.business_hours
-        let hoursText = 'Horarios nao configurados'
-        if (hours) {
-            const days = ['Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado', 'Domingo']
-            const activeHours = Object.entries(hours)
-                .filter(([_, h]: [string, unknown]) => (h as { active: boolean }).active)
-                .map(([day, h]: [string, unknown]) => {
-                    const hour = h as { start: string; end: string }
-                    return `${days[parseInt(day)]}: ${hour.start} - ${hour.end}`
-                })
-            if (activeHours.length > 0) {
-                hoursText = activeHours.join('\n')
-            }
-        }
+        // Horarios de funcionamento e servicos ja sao montados dinamicamente
+        // a partir do banco de dados a cada mensagem (ver _format_business_hours
+        // e _format_services no backend) - nao devem ser duplicados aqui como
+        // texto fixo, ou esse texto fica desatualizado assim que o gestor
+        // mudar os horarios em Configuracoes.
+        return `Telefone: ${clinic?.phone || 'Nao informado'}
 
-        const services = clinic?.services?.map(s => `- ${s.name} (${s.duration} min)`).join('\n') || 'Servicos nao configurados'
+Adicione aqui outras informacoes que o agente deve saber e que nao vem automaticamente do sistema: endereco, ponto de referencia, estacionamento, formas de pagamento aceitas, convenios/planos atendidos, politica de cancelamento, etc.
 
-        return `Horarios de funcionamento:\n${hoursText}\n\nServicos oferecidos:\n${services}\n\nTelefone: ${clinic?.phone || 'Nao informado'}`
+Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente e atualizados em tempo real a partir de Configuracoes - nao e necessario repeti-los aqui.`
     }, [clinic])
 
     const fetchConfig = async () => {
@@ -627,7 +619,7 @@ Use emojis ocasionalmente para tornar a conversa mais leve.`
                                 <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                                 <div className="text-xs text-muted-foreground leading-relaxed">
                                     <p className="font-medium text-foreground mb-1">Como funciona?</p>
-                                    O agente consulta estas informacoes durante as conversas para dar respostas precisas sobre horarios, servicos e politicas da clinica. Clique em &quot;Sincronizar&quot; para atualizar com os dados atuais.
+                                    Horarios de funcionamento e servicos ja sao enviados automaticamente ao agente, sempre atualizados a partir de Configuracoes - nao precisam ser repetidos aqui. Use este campo para outras informacoes: endereco, estacionamento, formas de pagamento, politica de cancelamento, etc.
                                 </div>
                             </div>
 

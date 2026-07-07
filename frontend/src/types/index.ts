@@ -59,6 +59,8 @@ export interface BusinessHour {
   start: string
   end: string
   active: boolean
+  break_start?: string
+  break_end?: string
 }
 
 export interface Service {
