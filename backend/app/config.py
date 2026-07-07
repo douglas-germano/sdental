@@ -38,6 +38,10 @@ class Config:
     # changing OPENROUTER_MODEL, no code changes needed).
     OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
     OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5')
+    # Cheaper/faster tier for internal, non-patient-facing tasks (CRM funnel
+    # classification, handoff summaries) where full conversational quality
+    # isn't needed.
+    OPENROUTER_MODEL_LIGHT = os.getenv('OPENROUTER_MODEL_LIGHT', 'anthropic/claude-haiku-4.5')
     OPENROUTER_BASE_URL = os.getenv('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1')
 
     # Evolution API (default - can be overridden per clinic)

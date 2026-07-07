@@ -12,6 +12,7 @@ from .reminder import AppointmentReminder, ReminderStatus, ReminderType
 from .professional import Professional
 from .agent_action import AgentAction, AgentActionType, AgentActionStatus
 from .assistant import AssistantConversation, AssistantMemory
+from .ai_usage_log import AiUsageLog, AiUsageService
 
 __all__ = [
     'Clinic',
@@ -34,5 +35,7 @@ __all__ = [
     'AgentActionType',
     'AgentActionStatus',
     'AssistantConversation',
-    'AssistantMemory'
+    'AssistantMemory',
+    'AiUsageLog',
+    'AiUsageService'
 ]
