@@ -74,3 +74,50 @@ def list_memories(current_clinic):
         .all()
     )
     return jsonify({'memories': [m.to_dict() for m in memories]})
+
+
+@bp.route('/memories', methods=['POST'])
+@clinic_required
+def create_memory(current_clinic):
+    data = request.get_json() or {}
+    content = (data.get('content') or '').strip()
+    if not content:
+        return jsonify({'error': 'O conteúdo é obrigatório'}), 400
+    if len(content) > 500:
+        return jsonify({'error': 'Conteúdo muito longo (máx. 500 caracteres)'}), 400
+
+    memory = AssistantMemory(clinic_id=current_clinic.id, content=content)
+    db.session.add(memory)
+    db.session.commit()
+    return jsonify({'memory': memory.to_dict()}), 201
+
+
+@bp.route('/memories/<memory_id>', methods=['PATCH'])
+@clinic_required
+def update_memory(current_clinic, memory_id):
+    memory = AssistantMemory.query.filter_by(id=memory_id, clinic_id=current_clinic.id).first()
+    if not memory:
+        return jsonify({'error': 'Memória não encontrada'}), 404
+
+    data = request.get_json() or {}
+    content = (data.get('content') or '').strip()
+    if not content:
+        return jsonify({'error': 'O conteúdo é obrigatório'}), 400
+    if len(content) > 500:
+        return jsonify({'error': 'Conteúdo muito longo (máx. 500 caracteres)'}), 400
+
+    memory.content = content
+    db.session.commit()
+    return jsonify({'memory': memory.to_dict()})
+
+
+@bp.route('/memories/<memory_id>', methods=['DELETE'])
+@clinic_required
+def delete_memory(current_clinic, memory_id):
+    memory = AssistantMemory.query.filter_by(id=memory_id, clinic_id=current_clinic.id).first()
+    if not memory:
+        return jsonify({'error': 'Memória não encontrada'}), 404
+
+    db.session.delete(memory)
+    db.session.commit()
+    return jsonify({'message': 'Memória removida com sucesso'})

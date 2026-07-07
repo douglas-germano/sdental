@@ -10,10 +10,15 @@ db.session.remove()), so opening several separate `with app.app_context()`
 blocks in one test can silently discard session state between them - keep
 everything for one test in a single block.
 """
+import json
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from app import db
-from app.models import AssistantConversation, AssistantMemory, Patient, PipelineStage
+from app.models import (
+    AssistantConversation, AssistantMemory, Patient, PipelineStage,
+    Appointment, AppointmentStatus, Professional,
+)
 from app.services.assistant_service import AssistantService
 
 
@@ -92,6 +97,62 @@ class TestAssistantMemories:
         memories = response.get_json()['memories']
         assert len(memories) == 1
         assert memories[0]['content'] == 'Meta mensal: 100 consultas'
+
+    def test_create_memory(self, client, auth_headers):
+        response = client.post(
+            '/api/assistant/memories', json={'content': 'Prefere lembretes 1 dia antes'}, headers=auth_headers
+        )
+        assert response.status_code == 201
+        assert response.get_json()['memory']['content'] == 'Prefere lembretes 1 dia antes'
+
+    def test_create_memory_requires_content(self, client, auth_headers):
+        response = client.post('/api/assistant/memories', json={'content': '  '}, headers=auth_headers)
+        assert response.status_code == 400
+
+    def test_create_memory_rejects_too_long(self, client, auth_headers):
+        response = client.post(
+            '/api/assistant/memories', json={'content': 'a' * 501}, headers=auth_headers
+        )
+        assert response.status_code == 400
+
+    def test_update_memory(self, app, client, auth_headers, sample_clinic):
+        with app.app_context():
+            memory = AssistantMemory(clinic_id=sample_clinic.id, content='Meta antiga')
+            db.session.add(memory)
+            db.session.commit()
+            memory_id = str(memory.id)
+
+        response = client.patch(
+            f'/api/assistant/memories/{memory_id}', json={'content': 'Meta nova'}, headers=auth_headers
+        )
+        assert response.status_code == 200
+        assert response.get_json()['memory']['content'] == 'Meta nova'
+
+    def test_update_memory_not_found(self, client, auth_headers):
+        response = client.patch(
+            '/api/assistant/memories/00000000-0000-0000-0000-000000000000',
+            json={'content': 'x'}, headers=auth_headers
+        )
+        assert response.status_code == 404
+
+    def test_delete_memory(self, app, client, auth_headers, sample_clinic):
+        with app.app_context():
+            memory = AssistantMemory(clinic_id=sample_clinic.id, content='Vai ser removida')
+            db.session.add(memory)
+            db.session.commit()
+            memory_id = str(memory.id)
+
+        response = client.delete(f'/api/assistant/memories/{memory_id}', headers=auth_headers)
+        assert response.status_code == 200
+
+        follow_up = client.get('/api/assistant/memories', headers=auth_headers)
+        assert follow_up.get_json()['memories'] == []
+
+    def test_delete_memory_not_found(self, client, auth_headers):
+        response = client.delete(
+            '/api/assistant/memories/00000000-0000-0000-0000-000000000000', headers=auth_headers
+        )
+        assert response.status_code == 404
 
 
 class TestAssistantServiceTools:
@@ -178,6 +239,111 @@ class TestAssistantServiceTools:
             service = AssistantService(sample_clinic)
             result = service._tool_get_clinic_settings({})
             assert 'business_hours' in result
+
+    def test_compare_periods(self, app, sample_clinic, sample_patient):
+        with app.app_context():
+            appt = Appointment(
+                clinic_id=sample_clinic.id,
+                patient_id=sample_patient.id,
+                service_name='Consulta Geral',
+                scheduled_datetime=datetime.utcnow() - timedelta(days=5),
+                status=AppointmentStatus.COMPLETED,
+            )
+            db.session.add(appt)
+            db.session.commit()
+
+            sample_clinic.openrouter_api_key = 'test-key'
+            service = AssistantService(sample_clinic)
+            result = json.loads(service._tool_compare_periods({'days': 30}))
+            assert result['current']['completed'] == 1
+            assert result['previous']['completed'] == 0
+
+            db.session.delete(appt)
+            db.session.commit()
+
+    def test_get_professional_performance(self, app, sample_clinic, sample_patient):
+        with app.app_context():
+            sample_clinic.services = [{'name': 'Consulta Geral', 'duration': 30, 'price': 150}]
+            professional = Professional(clinic_id=sample_clinic.id, name='Dra. Ana', specialty='Ortodontia')
+            db.session.add(professional)
+            db.session.commit()
+
+            appt = Appointment(
+                clinic_id=sample_clinic.id,
+                patient_id=sample_patient.id,
+                professional_id=professional.id,
+                service_name='Consulta Geral',
+                scheduled_datetime=datetime.utcnow() - timedelta(days=2),
+                status=AppointmentStatus.COMPLETED,
+            )
+            db.session.add(appt)
+            db.session.commit()
+
+            sample_clinic.openrouter_api_key = 'test-key'
+            service = AssistantService(sample_clinic)
+            result = json.loads(service._tool_get_professional_performance({'days': 30}))
+            assert result['professionals'][0]['professional_name'] == 'Dra. Ana'
+            assert result['professionals'][0]['completed'] == 1
+            assert result['professionals'][0]['estimated_revenue'] == 150
+
+            db.session.delete(appt)
+            db.session.delete(professional)
+            db.session.commit()
+
+    def test_get_professional_performance_no_match(self, app, sample_clinic):
+        with app.app_context():
+            sample_clinic.openrouter_api_key = 'test-key'
+            service = AssistantService(sample_clinic)
+            result = service._tool_get_professional_performance({'professional_name': 'Ninguem'})
+            assert 'Nenhum profissional' in result
+
+    def test_get_patient_retention_counts_recurring(self, app, sample_clinic, sample_patient):
+        with app.app_context():
+            other_patient = Patient(clinic_id=sample_clinic.id, name='Outro Paciente', phone='5511777777777')
+            db.session.add(other_patient)
+            db.session.commit()
+
+            appts = [
+                Appointment(
+                    clinic_id=sample_clinic.id, patient_id=sample_patient.id,
+                    service_name='Consulta Geral',
+                    scheduled_datetime=datetime.utcnow() - timedelta(days=10),
+                    status=AppointmentStatus.COMPLETED,
+                ),
+                Appointment(
+                    clinic_id=sample_clinic.id, patient_id=sample_patient.id,
+                    service_name='Retorno',
+                    scheduled_datetime=datetime.utcnow() - timedelta(days=1),
+                    status=AppointmentStatus.COMPLETED,
+                ),
+                Appointment(
+                    clinic_id=sample_clinic.id, patient_id=other_patient.id,
+                    service_name='Consulta Geral',
+                    scheduled_datetime=datetime.utcnow() - timedelta(days=3),
+                    status=AppointmentStatus.COMPLETED,
+                ),
+            ]
+            db.session.add_all(appts)
+            db.session.commit()
+
+            sample_clinic.openrouter_api_key = 'test-key'
+            service = AssistantService(sample_clinic)
+            result = json.loads(service._tool_get_patient_retention({'days': 30}))
+            assert result['active_patients'] == 2
+            assert result['recurring_patients'] == 1
+            assert result['single_visit_patients'] == 1
+
+            for a in appts:
+                db.session.delete(a)
+            db.session.delete(other_patient)
+            db.session.commit()
+
+    def test_get_patient_retention_no_data(self, app, sample_clinic):
+        with app.app_context():
+            sample_clinic.openrouter_api_key = 'test-key'
+            service = AssistantService(sample_clinic)
+            result = service._tool_get_patient_retention({})
+            assert 'Nenhum paciente' in result
 
     def test_remember_fact_persists(self, app, sample_clinic):
         with app.app_context():
