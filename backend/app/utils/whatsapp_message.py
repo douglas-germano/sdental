@@ -25,6 +25,20 @@ MEDIA_PLACEHOLDER_TEXT = {
 }
 
 
+def _sanitize_media_url(url: Optional[str]) -> Optional[str]:
+    """
+    Only allow http(s) media URLs through. The frontend renders media_url
+    directly as an <img src>/<audio src>/download <a href> - without this,
+    a crafted Evolution API payload (e.g. a compromised/malicious gateway)
+    could plant a `javascript:` URI that runs when a staff member clicks it.
+    """
+    if not url or not isinstance(url, str):
+        return None
+    if not url.lower().startswith(('http://', 'https://')):
+        return None
+    return url
+
+
 def extract_media(message_obj: dict) -> Optional[tuple]:
     """Return (message_type, media_url, mimetype, caption) for the first media key found, or None."""
     for key, media_type in MEDIA_MESSAGE_KEYS.items():
@@ -35,7 +49,7 @@ def extract_media(message_obj: dict) -> Optional[tuple]:
         # level deeper: {"message": {"documentMessage": {...}}}
         if key == 'documentWithCaptionMessage':
             media = media.get('message', {}).get('documentMessage', media)
-        url = media.get('url') or media.get('directPath')
+        url = _sanitize_media_url(media.get('url') or media.get('directPath'))
         mimetype = media.get('mimetype') or media.get('mimeType')
         caption = media.get('caption', '')
         return media_type, url, mimetype, caption

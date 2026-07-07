@@ -5,7 +5,7 @@ import hmac
 import hashlib
 import os
 from functools import wraps
-from flask import request, jsonify
+from flask import current_app, request, jsonify
 
 
 def verify_webhook_signature(payload: bytes, signature: str, secret: str) -> bool:
@@ -41,15 +41,22 @@ def webhook_auth_required(fn):
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        # Allow bypass in development
-        if os.getenv('WEBHOOK_AUTH_DISABLED', '').lower() == 'true':
+        # Allow bypass in development only - never in production, even if the
+        # env var is accidentally left set after a local-dev copy/paste.
+        if (
+            os.getenv('WEBHOOK_AUTH_DISABLED', '').lower() == 'true'
+            and os.getenv('FLASK_ENV') != 'production'
+        ):
             return fn(*args, **kwargs)
 
-        webhook_secret = os.getenv('WEBHOOK_SECRET')
+        webhook_secret = current_app.config.get('WEBHOOK_SECRET')
 
-        # If no secret configured, allow all requests (backward compatibility)
+        # Fail closed: without a configured secret there is no way to tell a
+        # real Evolution API callback from a forged one (the instance name is
+        # derivable from the clinic UUID), so reject rather than let every
+        # webhook call through unauthenticated.
         if not webhook_secret:
-            return fn(*args, **kwargs)
+            return jsonify({'error': 'Webhook authentication not configured'}), 401
 
         # Check for simple secret header
         request_secret = request.headers.get('X-Webhook-Secret')

@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
+from marshmallow import ValidationError
 
 from app import db
+from app.schemas.clinic import BusinessHoursSchema, ServiceSchema
 from app.utils.auth import clinic_required
 
 bp = Blueprint('clinics', __name__, url_prefix='/api/clinics')
@@ -101,6 +103,11 @@ def update_business_hours(current_clinic):
     if 'business_hours' not in data:
         return jsonify({'error': 'business_hours is required'}), 400
 
+    try:
+        BusinessHoursSchema().load(data['business_hours'] or {})
+    except ValidationError as err:
+        return jsonify({'error': 'Invalid business_hours', 'details': err.messages}), 400
+
     current_clinic.business_hours = data['business_hours']
     db.session.commit()
 
@@ -119,14 +126,12 @@ def update_services(current_clinic):
     if 'services' not in data:
         return jsonify({'error': 'services is required'}), 400
 
-    # Validate services format
-    for service in data['services']:
-        if 'name' not in service:
-            return jsonify({'error': 'Each service must have a name'}), 400
-        if 'duration' not in service:
-            service['duration'] = 30  # Default duration
+    try:
+        validated_services = ServiceSchema(many=True).load(data['services'] or [])
+    except ValidationError as err:
+        return jsonify({'error': 'Invalid services', 'details': err.messages}), 400
 
-    current_clinic.services = data['services']
+    current_clinic.services = validated_services
     db.session.commit()
 
     return jsonify({

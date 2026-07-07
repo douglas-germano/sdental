@@ -20,11 +20,14 @@ def create_app(config_name: str = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
+    from .config import validate_config
+    validate_config(app)
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, resources={r"/api/*": {"origins": app.config['ALLOWED_ORIGINS']}})
 
     # Initialize rate limiter
     from .utils.rate_limiter import init_limiter

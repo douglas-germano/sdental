@@ -51,8 +51,13 @@ def kiwify_webhook():
         BillingService.process_event(event)
     except Exception:
         logger.exception('Failed to process Kiwify webhook event %s', event.id)
-        # Already persisted above - safe to ack so Kiwify doesn't retry-storm
-        # us; the raw payload stays in kiwify_webhook_events for reprocessing.
+        # The raw payload is already persisted above, but there is no
+        # background job that reprocesses failed events - acking with 200
+        # here would make Kiwify consider the event delivered and never
+        # retry it, leaving a clinic that just paid stuck locked out with no
+        # automatic recovery. Return 5xx so Kiwify's own retry mechanism
+        # gives this a second chance once the transient issue clears.
+        return jsonify({'received': True, 'error': 'Processing failed, will retry'}), 500
 
     return jsonify({'received': True}), 200
 

@@ -202,7 +202,13 @@ def update_patient(patient_id, current_clinic):
         patient.phone = new_phone
 
     if 'pipeline_stage_id' in data:
-        patient.pipeline_stage_id = data['pipeline_stage_id']
+        stage = PipelineStage.query.filter_by(
+            id=data['pipeline_stage_id'],
+            clinic_id=current_clinic.id
+        ).first()
+        if not stage:
+            return jsonify({'error': 'Pipeline stage not found'}), 404
+        patient.pipeline_stage_id = stage.id
 
     for field in ADDRESS_FIELDS:
         if field in data:

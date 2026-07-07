@@ -296,6 +296,19 @@ class AppointmentService:
         """
         phone = normalize_phone(patient_phone)
 
+        # A caller-supplied professional_id must belong to this clinic -
+        # otherwise a crafted request (e.g. the public booking endpoint,
+        # which forwards this field straight from the client) could assign
+        # the appointment to another clinic's professional and leak their
+        # PII through this clinic's appointment views.
+        if professional_id is not None:
+            owned = Professional.query.filter_by(
+                id=professional_id,
+                clinic_id=self.clinic.id
+            ).first()
+            if not owned:
+                return None, 'Profissional não encontrado'
+
         # If no professional specified, try to find one
         assigned_professional_id = professional_id
         if assigned_professional_id is None:
@@ -367,20 +380,26 @@ class AppointmentService:
 
         return appointment, None
 
-    def cancel_appointment(self, appointment_id: UUID) -> tuple[bool, Optional[str]]:
+    def cancel_appointment(
+        self, appointment_id: UUID, patient_id: Optional[UUID] = None
+    ) -> tuple[bool, Optional[str]]:
         """
         Cancel an appointment.
 
         Args:
             appointment_id: The appointment ID to cancel
+            patient_id: When given, the appointment must also belong to this
+                patient - required for callers acting on behalf of a single
+                patient (e.g. the WhatsApp bot), so one patient can't cancel
+                another patient's appointment by guessing/reusing its id.
 
         Returns:
             Tuple of (success, error_message)
         """
-        appointment = Appointment.query.filter_by(
-            id=appointment_id,
-            clinic_id=self.clinic.id
-        ).first()
+        filters = {'id': appointment_id, 'clinic_id': self.clinic.id}
+        if patient_id is not None:
+            filters['patient_id'] = patient_id
+        appointment = Appointment.query.filter_by(**filters).first()
 
         if not appointment:
             return False, 'Agendamento não encontrado'
@@ -406,7 +425,8 @@ class AppointmentService:
     def reschedule_appointment(
         self,
         appointment_id: UUID,
-        new_datetime: datetime
+        new_datetime: datetime,
+        patient_id: Optional[UUID] = None
     ) -> tuple[Optional[Appointment], Optional[str]]:
         """
         Move an existing appointment to a new date/time, keeping the same
@@ -416,14 +436,16 @@ class AppointmentService:
         Args:
             appointment_id: The appointment to reschedule
             new_datetime: The new scheduled datetime
+            patient_id: When given, the appointment must also belong to this
+                patient - see cancel_appointment for why.
 
         Returns:
             Tuple of (Appointment, error_message)
         """
-        appointment = Appointment.query.filter_by(
-            id=appointment_id,
-            clinic_id=self.clinic.id
-        ).first()
+        filters = {'id': appointment_id, 'clinic_id': self.clinic.id}
+        if patient_id is not None:
+            filters['patient_id'] = patient_id
+        appointment = Appointment.query.filter_by(**filters).first()
 
         if not appointment:
             return None, 'Agendamento não encontrado'

@@ -1,5 +1,6 @@
 import logging
 from flask import Blueprint, request, jsonify
+from flask_limiter.util import get_remote_address
 
 from app.models import Clinic, Conversation, ConversationStatus, Patient
 from app.services.claude_service import ClaudeService
@@ -33,8 +34,20 @@ def _find_clinic_by_instance(instance_name: str):
     ).first()
 
 
+def _webhook_rate_limit_key():
+    """
+    Key by the clinic's Evolution instance name instead of remote address.
+    All clinics' inbound traffic arrives from the same Evolution gateway IP,
+    so an IP-keyed limit is one shared bucket for the whole platform - a
+    burst from one clinic would starve every other clinic's webhook calls.
+    Falls back to the IP if the payload doesn't carry an instance name.
+    """
+    payload = request.get_json(silent=True) or {}
+    return payload.get('instance') or get_remote_address()
+
+
 @bp.route('/evolution', methods=['POST'])
-@limiter.limit("100 per minute")
+@limiter.limit("100 per minute", key_func=_webhook_rate_limit_key)
 @webhook_auth_required
 def evolution_webhook():
     """
@@ -319,7 +332,7 @@ def _handle_presence_update(instance_name: str, data: dict):
 
 
 @bp.route('/evolution/status', methods=['POST'])
-@limiter.limit("100 per minute")
+@limiter.limit("100 per minute", key_func=_webhook_rate_limit_key)
 @webhook_auth_required
 def evolution_status_webhook():
     """
