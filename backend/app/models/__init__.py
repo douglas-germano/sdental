@@ -18,6 +18,7 @@ from .finance import (
     CommissionRule, CommissionPayout,
     FinancialGoal,
 )
+from .ai_usage_log import AiUsageLog, AiUsageService
 
 __all__ = [
     'Clinic',
@@ -50,4 +51,6 @@ __all__ = [
     'CommissionRule',
     'CommissionPayout',
     'FinancialGoal',
+    'AiUsageLog',
+    'AiUsageService',
 ]

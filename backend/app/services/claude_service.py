@@ -8,19 +8,52 @@ from flask import current_app
 import openai
 
 from app import db
-from app.models import Conversation, Patient, ConversationStatus, Professional, PipelineStage, AppointmentStatus, Appointment
+from app.models import Conversation, Patient, ConversationStatus, Professional, PipelineStage, AppointmentStatus, Appointment, AiUsageService
 from app.services.appointment_service import AppointmentService
 from app.services.conversation_service import ConversationService
 from app.services.evolution_service import EvolutionService
 from app.utils.business_hours import parse_time
+from app.utils.cache import cache
+from app.utils.ai_usage import record_ai_usage, USAGE_INCLUDE_COST
 
 logger = logging.getLogger(__name__)
 
 WEEKDAY_NAMES = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo']
 
-SYSTEM_PROMPT_TEMPLATE = """{current_datetime}
+# Max rounds of tool-calls the agent loop will follow before giving up and
+# handing off to a human, so a model stuck repeatedly calling tools can't
+# loop (and burn tokens) indefinitely.
+MAX_TOOL_ROUNDS = 6
 
-Você é um assistente virtual de agendamento para a clínica {clinic_name}.
+
+@cache.memoize(timeout=60)
+def _cached_active_professionals_text(clinic_id: str) -> str:
+    """Module-level (not a method) so the cache key is keyed purely by
+    clinic_id, not by the ClaudeService instance - a new instance is created
+    per request, so keying on `self` would defeat the cache entirely."""
+    professionals = Professional.query.filter_by(clinic_id=clinic_id, active=True).all()
+    if not professionals:
+        return "Nenhum profissional específico cadastrado (qualquer horário disponível serve)"
+    return ", ".join([
+        f"{p.name}" + (f" ({p.specialty})" if p.specialty else "")
+        for p in professionals
+    ])
+
+
+@cache.memoize(timeout=60)
+def _cached_pipeline_stages_text(clinic_id: str) -> str:
+    stages = PipelineStage.query.filter_by(clinic_id=clinic_id).order_by(PipelineStage.order).all()
+    if not stages:
+        return "Nenhum estágio configurado"
+    return ", ".join([s.name for s in stages])
+
+
+# Static instructions block - identical for every message of every
+# conversation for a given clinic (until the clinic edits its config), so
+# it's sent as a separate, cache_control-marked content block in
+# process_message() and gets billed at the (much cheaper) cached-read rate
+# on OpenRouter/Anthropic instead of full price on every single turn.
+SYSTEM_PROMPT_STATIC_TEMPLATE = """Você é um assistente virtual de agendamento para a clínica {clinic_name}.
 
 INFORMAÇÕES DA CLÍNICA:
 - Serviços oferecidos: {services}
@@ -74,8 +107,6 @@ FORMATO DE RESPOSTAS:
 - Use quebras de linha para melhor legibilidade
 - Não use markdown ou formatação especial
 - Emojis podem ser usados moderadamente para tornar a conversa amigável
-
-{context_info}
 """
 
 SCOPE_GUARDRAIL_TEMPLATE = """
@@ -388,24 +419,12 @@ class ClaudeService:
         return ", ".join(parts) if parts else "Segunda a Sexta: 08:00 - 18:00"
 
     def _format_professionals(self) -> str:
-        """Format the clinic's active professionals for the prompt."""
-        professionals = Professional.query.filter_by(
-            clinic_id=self.clinic.id,
-            active=True
-        ).all()
-        if not professionals:
-            return "Nenhum profissional específico cadastrado (qualquer horário disponível serve)"
-        return ", ".join([
-            f"{p.name}" + (f" ({p.specialty})" if p.specialty else "")
-            for p in professionals
-        ])
+        """Format the clinic's active professionals for the prompt (60s cache - see module-level helper)."""
+        return _cached_active_professionals_text(str(self.clinic.id))
 
     def _format_pipeline_stages(self) -> str:
-        """Format the clinic's CRM pipeline stages for the prompt."""
-        stages = PipelineStage.query.filter_by(clinic_id=self.clinic.id).order_by(PipelineStage.order).all()
-        if not stages:
-            return "Nenhum estágio configurado"
-        return ", ".join([s.name for s in stages])
+        """Format the clinic's CRM pipeline stages for the prompt (60s cache - see module-level helper)."""
+        return _cached_pipeline_stages_text(str(self.clinic.id))
 
     def _find_service(self, service_name: Optional[str]) -> Optional[dict]:
         """Find a service config dict by name (case-insensitive)."""
@@ -779,19 +798,29 @@ class ClaudeService:
     # ------------------------------------------------------------------ #
 
     def _complete(self, system: str, user: str, max_tokens: int = 600,
-                  temperature: Optional[float] = None) -> str:
-        """Single-shot Claude completion returning plain text (no tools)."""
+                  temperature: Optional[float] = None, model: Optional[str] = None,
+                  task: str = 'complete') -> str:
+        """
+        Single-shot completion returning plain text (no tools).
+
+        `model` lets simple, non-patient-facing tasks (classification,
+        internal summaries) opt into the cheaper OPENROUTER_MODEL_LIGHT tier
+        instead of the default full-quality conversational model.
+        """
         if temperature is None:
             temperature = self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7
+        resolved_model = model or current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5')
         response = self.client.chat.completions.create(
-            model=current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5'),
+            model=resolved_model,
             max_tokens=max_tokens,
             temperature=temperature,
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
+            extra_body={"usage": USAGE_INCLUDE_COST},
         )
+        record_ai_usage(self.clinic.id, AiUsageService.AUTOMATION, task, resolved_model, response)
         return (self._first_choice(response).message.content or "").strip()
 
     def _clinic_context_block(self) -> str:
@@ -833,7 +862,7 @@ class ClaudeService:
             + (f"\n\nContexto adicional: {extra_context}" if extra_context else "")
             + "\n\nEscreva APENAS o texto da mensagem, pronto para enviar."
         )
-        return self._complete(system, user, max_tokens=400)
+        return self._complete(system, user, max_tokens=400, task='generate_proactive_message')
 
     def summarize_conversation_for_handoff(self, conversation: Conversation) -> str:
         """Summarize the conversation so a human taking over is instantly up to speed."""
@@ -852,7 +881,12 @@ class ClaudeService:
             "e nível de urgência. Não invente nada."
         )
         user = f"Transcrição:\n{transcript}\n\nResuma para o atendente."
-        return self._complete(system, user, max_tokens=350, temperature=0.3)
+        # Internal-only summary (a human reads it, not the patient) - light model is plenty.
+        light_model = current_app.config.get('OPENROUTER_MODEL_LIGHT')
+        return self._complete(
+            system, user, max_tokens=350, temperature=0.3,
+            model=light_model, task='summarize_conversation_for_handoff'
+        )
 
     def classify_conversation_funnel(self, conversation: Conversation, stage_names: list) -> Optional[dict]:
         """
@@ -875,7 +909,12 @@ class ClaudeService:
             "Se não houver sinal suficiente, use o primeiro estágio da lista."
         )
         user = f"Conversa:\n{transcript}"
-        raw = self._complete(system, user, max_tokens=200, temperature=0.2)
+        # Trivial classification task (short JSON output) - light model is plenty.
+        light_model = current_app.config.get('OPENROUTER_MODEL_LIGHT')
+        raw = self._complete(
+            system, user, max_tokens=200, temperature=0.2,
+            model=light_model, task='classify_conversation_funnel'
+        )
         try:
             start = raw.index('{')
             end = raw.rindex('}') + 1
@@ -899,7 +938,7 @@ class ClaudeService:
             f"Dados da clínica (JSON):\n{json.dumps(metrics, ensure_ascii=False, default=str)}\n\n"
             f"Pergunta do gestor: {question}"
         )
-        return self._complete(system, user, max_tokens=700, temperature=0.4)
+        return self._complete(system, user, max_tokens=700, temperature=0.4, task='answer_business_question')
 
     def generate_report_digest(self, metrics: dict) -> str:
         """Compose a short proactive weekly performance digest for the clinic owner."""
@@ -910,7 +949,7 @@ class ClaudeService:
             "tom profissional e amigável, sem markdown pesado, no máximo 8 linhas."
         )
         user = f"Métricas da semana (JSON):\n{json.dumps(metrics, ensure_ascii=False, default=str)}\n\nEscreva o resumo."
-        return self._complete(system, user, max_tokens=500, temperature=0.5)
+        return self._complete(system, user, max_tokens=500, temperature=0.5, task='generate_report_digest')
 
     def process_message(
         self,
@@ -959,10 +998,15 @@ class ClaudeService:
         weekday = weekday_names[now.weekday()]
         current_datetime_str = f"CONTEXTO TEMPORAL:\nHOJE É: {weekday}, {now.strftime('%d de %B de %Y')} às {now.strftime('%H:%M')} (Horário de Brasília)"
             
+        context_block = f"CONTEXTO DO PACIENTE:\n{context_info}" if context_info else ""
+
         # Determine strictness of system prompt
         if self.clinic.agent_system_prompt:
-            # If user provided a custom prompt, use it. 
-            # We try to format it with available variables if they are present in the text
+            # If user provided a custom prompt, use it.
+            # We try to format it with available variables if they are present in the text.
+            # A fully custom prompt bakes the ever-changing current_datetime/context_info
+            # into the text itself, so it's sent as a plain (uncached) string - splitting
+            # it into a stable cacheable prefix isn't safe to do generically here.
             try:
                 # Check what keys are in the custom prompt
                 system_prompt = self.clinic.agent_system_prompt.format(
@@ -972,7 +1016,7 @@ class ClaudeService:
                     professionals=self._format_professionals(),
                     pipeline_stages=self._format_pipeline_stages(),
                     business_hours=self._format_business_hours(),
-                    context_info=f"CONTEXTO DO PACIENTE:\n{context_info}" if context_info else ""
+                    context_info=context_block
                 )
             except KeyError:
                 # If custom prompt doesn't have matching keys, just use it as is (or append context manually)
@@ -981,22 +1025,37 @@ class ClaudeService:
                 if "{context_info}" not in self.clinic.agent_system_prompt and context_info:
                      system_prompt += f"\n\nCONTEXTO DO PACIENTE:\n{context_info}"
         else:
-            # Fallback to default template
-            system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
-                current_datetime=current_datetime_str,
+            # Default template: split into a static, cache_control-marked block
+            # (identical across every message for this clinic until its config
+            # changes - billed at the cheap cached-read rate after the first
+            # hit) and a dynamic suffix (today's date/time + this patient's
+            # context, which change on every single message and so are never
+            # cached).
+            static_block = SYSTEM_PROMPT_STATIC_TEMPLATE.format(
                 clinic_name=self.clinic.name,
                 services=self._format_services(),
                 professionals=self._format_professionals(),
                 pipeline_stages=self._format_pipeline_stages(),
                 business_hours=self._format_business_hours(),
-                context_info=f"CONTEXTO DO PACIENTE:\n{context_info}" if context_info else ""
             )
+            dynamic_suffix = f"{current_datetime_str}\n\n{context_block}"
+            system_prompt = [
+                {"type": "text", "text": static_block, "cache_control": {"type": "ephemeral"}},
+                {"type": "text", "text": dynamic_suffix},
+            ]
 
         # Always enforce the service scope guardrail, even when the clinic
         # customized agent_system_prompt - prevents the agent from answering
         # about procedures the clinic doesn't actually offer using its own
         # general training knowledge instead of the clinic's real service list.
-        system_prompt += SCOPE_GUARDRAIL_TEMPLATE.format(services=self._format_services())
+        guardrail_text = SCOPE_GUARDRAIL_TEMPLATE.format(services=self._format_services())
+        if isinstance(system_prompt, list):
+            # Default-template path: system_prompt is [static cached block,
+            # dynamic uncached block] - append to the last (uncached) block
+            # so the guardrail keeps landing at the very end of the prompt.
+            system_prompt[-1]["text"] += guardrail_text
+        else:
+            system_prompt += guardrail_text
 
         # Get message history
         history = self.conversation_service.get_message_history_for_claude(conversation)
@@ -1005,6 +1064,9 @@ class ClaudeService:
         model = current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5')
         temperature = self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7
         tools = self._to_openai_tools(self._get_tools())
+        if tools:
+            # Cache the (large, otherwise-identical-every-call) tool schema block too.
+            tools[-1] = {**tools[-1], "cache_control": {"type": "ephemeral"}}
 
         try:
             # Call OpenRouter
@@ -1014,10 +1076,29 @@ class ClaudeService:
                 temperature=temperature,
                 tools=tools,
                 messages=api_messages,
+                extra_body={"usage": USAGE_INCLUDE_COST},
             )
+            record_ai_usage(self.clinic.id, AiUsageService.WHATSAPP, 'process_message', model, response)
 
             choice = self._first_choice(response)
+            rounds = 0
             while choice.finish_reason == "tool_calls":
+                rounds += 1
+                if rounds > MAX_TOOL_ROUNDS:
+                    logger.warning(
+                        'Tool loop exceeded %d rounds for clinic %s, conversation %s - handing off to human',
+                        MAX_TOOL_ROUNDS, self.clinic.id, conversation.id
+                    )
+                    final_response = (
+                        "Desculpe, não estou conseguindo concluir sua solicitação agora. "
+                        "Vou transferir você para um de nossos atendentes."
+                    )
+                    self.conversation_service.transfer_to_human(
+                        conversation, 'Limite de chamadas de ferramentas excedido', urgent=False
+                    )
+                    self.conversation_service.add_message(conversation, 'assistant', final_response)
+                    return final_response
+
                 message = choice.message
                 tool_calls = message.tool_calls or []
 
@@ -1042,7 +1123,9 @@ class ClaudeService:
                     temperature=temperature,
                     tools=tools,
                     messages=api_messages,
+                    extra_body={"usage": USAGE_INCLUDE_COST},
                 )
+                record_ai_usage(self.clinic.id, AiUsageService.WHATSAPP, 'process_message', model, response)
                 choice = self._first_choice(response)
 
             final_response = choice.message.content or ""
