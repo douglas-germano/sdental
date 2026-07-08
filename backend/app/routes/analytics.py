@@ -263,6 +263,21 @@ def agent_actions(current_clinic):
 
     actions = query.order_by(AgentAction.created_at.desc()).limit(limit).all()
 
+    patient_ids = {a.patient_id for a in actions if a.patient_id}
+    patient_names = {}
+    if patient_ids:
+        patient_names = dict(
+            db.session.query(Patient.id, Patient.name)
+            .filter(Patient.id.in_(patient_ids))
+            .all()
+        )
+
+    actions_data = []
+    for a in actions:
+        item = a.to_dict()
+        item['patient_name'] = patient_names.get(a.patient_id)
+        actions_data.append(item)
+
     # Small summary of sent actions in the last 30 days, for a headline stat.
     since = datetime.utcnow() - timedelta(days=30)
     summary = dict(
@@ -277,6 +292,6 @@ def agent_actions(current_clinic):
     )
 
     return jsonify({
-        'actions': [a.to_dict() for a in actions],
+        'actions': actions_data,
         'summary_30d': summary,
     })

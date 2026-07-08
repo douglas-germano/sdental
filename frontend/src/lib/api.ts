@@ -265,8 +265,8 @@ export const analyticsApi = {
   servicesSummary: (days?: number) =>
     api.get('/analytics/services-summary', { params: { days } }),
 
-  ask: (question: string) =>
-    api.post('/analytics/ask', { question }),
+  ask: (question: string, days?: number) =>
+    api.post('/analytics/ask', { question }, { params: days ? { days } : undefined }),
 
   agentActions: (params?: { limit?: number; type?: string }) =>
     api.get('/analytics/agent-actions', { params })

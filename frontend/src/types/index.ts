@@ -42,17 +42,41 @@ export interface BillingStatus {
   checkout_url: string | null
 }
 
+export type AgentActionType =
+  | 'noshow_recovery'
+  | 'cancellation_recovery'
+  | 'waitlist_offer'
+  | 'recall'
+  | 'handoff_summary'
+  | 'funnel_qualification'
+  | 'weekly_report'
+  | 'proactive_message'
+
+export type AgentActionStatus = 'sent' | 'skipped' | 'failed'
+
 export interface AgentAction {
   id: string
+  clinic_id: string
   patient_id: string | null
+  patient_name: string | null
   conversation_id: string | null
   appointment_id: string | null
-  action_type: string
+  action_type: AgentActionType
   channel: string | null
-  status: string
+  status: AgentActionStatus
   detail: string | null
   meta: Record<string, unknown>
   created_at: string
+}
+
+export interface AgentActionsResponse {
+  actions: AgentAction[]
+  summary_30d: Partial<Record<AgentActionType, number>>
+}
+
+export interface AskAnswerResponse {
+  answer: string
+  metrics: Record<string, unknown>
 }
 
 export interface BusinessHour {
