@@ -12,6 +12,12 @@ from .reminder import AppointmentReminder, ReminderStatus, ReminderType
 from .professional import Professional
 from .agent_action import AgentAction, AgentActionType, AgentActionStatus
 from .assistant import AssistantConversation, AssistantMemory
+from .finance import (
+    Payment, PaymentMethod, PaymentStatus,
+    Expense, ExpenseCategory, ExpenseStatus,
+    CommissionRule, CommissionPayout,
+    FinancialGoal,
+)
 from .ai_usage_log import AiUsageLog, AiUsageService
 
 __all__ = [
@@ -36,6 +42,15 @@ __all__ = [
     'AgentActionStatus',
     'AssistantConversation',
     'AssistantMemory',
+    'Payment',
+    'PaymentMethod',
+    'PaymentStatus',
+    'Expense',
+    'ExpenseCategory',
+    'ExpenseStatus',
+    'CommissionRule',
+    'CommissionPayout',
+    'FinancialGoal',
     'AiUsageLog',
-    'AiUsageService'
+    'AiUsageService',
 ]

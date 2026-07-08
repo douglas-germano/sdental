@@ -17,7 +17,11 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 from typing import Callable
 
-from app.models import Appointment, AppointmentStatus
+from app import db
+from app.models import (
+    Appointment, AppointmentStatus, CommissionPayout, Expense, ExpenseStatus,
+    FinancialGoal, Payment, PaymentStatus,
+)
 
 REALIZED = 'realized'
 FORECAST = 'forecast'
@@ -162,3 +166,90 @@ class FinancialService:
 
     def get_breakdown_by_professional(self, days: int = 30) -> list[dict]:
         return self._breakdown(days, lambda a: a.professional.name if a.professional else 'Sem profissional')
+
+    def get_cash_flow(self, days: int = 30) -> dict:
+        """
+        Real cash movement (as opposed to the appointment-based forecast
+        above): money actually received (Payment.paid_amount, by paid_at)
+        minus money actually paid out (Expense + CommissionPayout, by
+        paid_at/paid_at), for the trailing `days`.
+        """
+        days = max(1, min(days, 365))
+        start = datetime.utcnow() - timedelta(days=days)
+
+        payments = Payment.query.filter(
+            Payment.clinic_id == self.clinic.id,
+            Payment.paid_at >= start,
+            Payment.status.in_([PaymentStatus.PAID, PaymentStatus.PARTIAL]),
+        ).all()
+        expenses = Expense.query.filter(
+            Expense.clinic_id == self.clinic.id,
+            Expense.status == ExpenseStatus.PAID,
+            Expense.paid_at >= start,
+        ).all()
+        payouts = CommissionPayout.query.filter(
+            CommissionPayout.clinic_id == self.clinic.id,
+            CommissionPayout.paid_at >= start,
+        ).all()
+
+        cash_in = sum(float(p.paid_amount or 0) for p in payments)
+        cash_out = sum(float(e.amount) for e in expenses) + sum(float(p.amount) for p in payouts)
+
+        return {
+            'period_days': days,
+            'cash_in': round(cash_in, 2),
+            'cash_out': round(cash_out, 2),
+            'net_cash_flow': round(cash_in - cash_out, 2),
+            'payments_count': len(payments),
+            'expenses_count': len(expenses),
+            'payouts_count': len(payouts),
+        }
+
+    def get_goal_progress(self, period: str = None) -> dict:
+        """Progress of the clinic's revenue goal for `period` (YYYY-MM,
+        defaults to the current month) against realized revenue in that month."""
+        period = period or datetime.utcnow().strftime('%Y-%m')
+        year, month = (int(p) for p in period.split('-'))
+        month_start = datetime(year, month, 1)
+        month_end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+
+        goal = FinancialGoal.query.filter_by(clinic_id=self.clinic.id, period=period).first()
+
+        realized_appts = Appointment.query.filter(
+            Appointment.clinic_id == self.clinic.id,
+            Appointment.status == AppointmentStatus.COMPLETED,
+            Appointment.scheduled_datetime >= month_start,
+            Appointment.scheduled_datetime < month_end,
+        ).all()
+        realized = round(sum(self._price_for(a) for a in realized_appts), 2)
+
+        target = float(goal.target_amount) if goal else None
+        progress_pct = round((realized / target) * 100, 1) if target else None
+
+        return {
+            'period': period,
+            'target_amount': target,
+            'realized_revenue': realized,
+            'progress_pct': progress_pct,
+            'has_goal': goal is not None,
+        }
+
+    def set_goal(self, period: str, target_amount: float, notes: str = None) -> FinancialGoal:
+        """Create or update the revenue goal for `period` (YYYY-MM)."""
+        goal = FinancialGoal.query.filter_by(clinic_id=self.clinic.id, period=period).first()
+        if goal:
+            goal.target_amount = target_amount
+            goal.notes = notes
+        else:
+            goal = FinancialGoal(
+                clinic_id=self.clinic.id, period=period, target_amount=target_amount, notes=notes
+            )
+            db.session.add(goal)
+        db.session.commit()
+        return goal
+
+    def list_goals(self, limit: int = 12) -> list[dict]:
+        goals = FinancialGoal.query.filter_by(clinic_id=self.clinic.id).order_by(
+            FinancialGoal.period.desc()
+        ).limit(limit).all()
+        return [g.to_dict() for g in goals]
