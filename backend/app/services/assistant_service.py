@@ -24,8 +24,10 @@ import openai
 from app import db
 from app.models import (
     Patient, Appointment, AppointmentStatus, Professional, PipelineStage,
-    Conversation, AgentAction, AssistantMemory,
+    Conversation, AgentAction, AssistantMemory, AiUsageService,
 )
+from app.utils.cache import cache
+from app.utils.ai_usage import record_ai_usage, USAGE_INCLUDE_COST
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +36,33 @@ WEEKDAY_NAMES = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira'
 MAX_HISTORY_MESSAGES = 30
 MAX_MEMORIES_IN_PROMPT = 30
 
-SYSTEM_PROMPT_TEMPLATE = """{current_datetime}
+# Max rounds of tool-calls the loop will follow before giving up, so a model
+# stuck repeatedly calling tools can't loop (and burn tokens) indefinitely.
+MAX_TOOL_ROUNDS = 6
 
-Você é o braço direito do dono/gestor da clínica {clinic_name} - um assistente interno de análise e apoio à decisão, acessado pelo painel administrativo.
+
+@cache.memoize(timeout=60)
+def _cached_memories_block(clinic_id: str) -> str:
+    """Module-level (not a method) so the cache key is keyed purely by
+    clinic_id, not by the AssistantService instance - a new instance is
+    created per request, so keying on `self` would defeat the cache."""
+    memories = (
+        AssistantMemory.query.filter_by(clinic_id=clinic_id)
+        .order_by(AssistantMemory.created_at.desc())
+        .limit(MAX_MEMORIES_IN_PROMPT)
+        .all()
+    )
+    if not memories:
+        return ""
+    lines = "\n".join(f"- {m.content}" for m in reversed(memories))
+    return f"O QUE VOCÊ JÁ APRENDEU SOBRE ESTA CLÍNICA:\n{lines}"
+
+
+# Static instructions block - identical for every message for a given clinic,
+# so it's sent as a separate, cache_control-marked content block in
+# process_message() and gets billed at the cheap cached-read rate on
+# OpenRouter/Anthropic instead of full price on every single turn.
+SYSTEM_PROMPT_STATIC_TEMPLATE = """Você é o braço direito do dono/gestor da clínica {clinic_name} - um assistente interno de análise e apoio à decisão, acessado pelo painel administrativo.
 
 Você é DIFERENTE do assistente de WhatsApp que atende pacientes: você conversa apenas com a equipe da clínica, nunca com pacientes, e não participa do agendamento.
 
@@ -51,8 +77,6 @@ REGRAS IMPORTANTES:
 - Sempre que a pergunta envolver números ou fatos sobre a clínica, use uma ferramenta antes de responder.
 - Seja direto, objetivo e traga números concretos. Pode usar listas simples, sem markdown pesado.
 - Português do Brasil.
-
-{memories_block}
 """
 
 
@@ -658,29 +682,30 @@ class AssistantService:
     # ------------------------------------------------------------------ #
 
     def _memories_block(self) -> str:
-        memories = (
-            AssistantMemory.query.filter_by(clinic_id=self.clinic.id)
-            .order_by(AssistantMemory.created_at.desc())
-            .limit(MAX_MEMORIES_IN_PROMPT)
-            .all()
-        )
-        if not memories:
-            return ""
-        lines = "\n".join(f"- {m.content}" for m in reversed(memories))
-        return f"O QUE VOCÊ JÁ APRENDEU SOBRE ESTA CLÍNICA:\n{lines}"
+        """60s-cached - see module-level _cached_memories_block."""
+        return _cached_memories_block(str(self.clinic.id))
 
-    def _build_system_prompt(self) -> str:
+    def _build_system_prompt(self) -> list:
+        """
+        Returns the system message content as a list of blocks: a static,
+        cache_control-marked prefix (instructions + memories - stable across
+        messages for this clinic) followed by an uncached dynamic suffix
+        (today's date/time, which changes every message).
+        """
         now = datetime.now(ZoneInfo('America/Sao_Paulo'))
         weekday = WEEKDAY_NAMES[now.weekday()]
         current_datetime_str = (
             f"CONTEXTO TEMPORAL:\nHOJE É: {weekday}, {now.strftime('%d de %B de %Y')} "
             f"às {now.strftime('%H:%M')} (Horário de Brasília)"
         )
-        return SYSTEM_PROMPT_TEMPLATE.format(
-            current_datetime=current_datetime_str,
-            clinic_name=self.clinic.name,
-            memories_block=self._memories_block(),
+        static_block = (
+            SYSTEM_PROMPT_STATIC_TEMPLATE.format(clinic_name=self.clinic.name)
+            + f"\n{self._memories_block()}"
         )
+        return [
+            {"type": "text", "text": static_block, "cache_control": {"type": "ephemeral"}},
+            {"type": "text", "text": current_datetime_str},
+        ]
 
     def _history_for_claude(self, conversation) -> list:
         messages = (conversation.messages or [])[-MAX_HISTORY_MESSAGES:]
@@ -696,6 +721,9 @@ class AssistantService:
         api_messages = [{"role": "system", "content": system_prompt}] + history
         model = current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5')
         tools = self._to_openai_tools(self._get_tools())
+        if tools:
+            # Cache the (large, otherwise-identical-every-call) tool schema block too.
+            tools[-1] = {**tools[-1], "cache_control": {"type": "ephemeral"}}
 
         try:
             response = self.client.chat.completions.create(
@@ -704,9 +732,25 @@ class AssistantService:
                 temperature=0.4,
                 tools=tools,
                 messages=api_messages,
+                extra_body={"usage": USAGE_INCLUDE_COST},
             )
+            record_ai_usage(self.clinic.id, AiUsageService.ASSISTANT, 'process_message', model, response)
 
+            rounds = 0
             while response.choices[0].finish_reason == "tool_calls":
+                rounds += 1
+                if rounds > MAX_TOOL_ROUNDS:
+                    logger.warning(
+                        'Assistant tool loop exceeded %d rounds for clinic %s', MAX_TOOL_ROUNDS, self.clinic.id
+                    )
+                    final_response = (
+                        "Desculpe, não consegui concluir essa análise agora. "
+                        "Tente reformular a pergunta ou peça algo mais específico."
+                    )
+                    conversation.add_message('assistant', final_response)
+                    db.session.commit()
+                    return final_response
+
                 message = response.choices[0].message
                 tool_calls = message.tool_calls or []
 
@@ -731,7 +775,9 @@ class AssistantService:
                     temperature=0.4,
                     tools=tools,
                     messages=api_messages,
+                    extra_body={"usage": USAGE_INCLUDE_COST},
                 )
+                record_ai_usage(self.clinic.id, AiUsageService.ASSISTANT, 'process_message', model, response)
 
             final_response = response.choices[0].message.content or ""
 
