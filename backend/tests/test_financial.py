@@ -89,7 +89,13 @@ class TestPriceSnapshot:
             clinic = db.session.get(Clinic, sample_clinic.id)
             _set_services_with_price(clinic, price=250)
 
-        future_date = (datetime.utcnow() + timedelta(days=20)).isoformat()
+        # Ensure a weekday within default business hours (Mon-Fri), same as
+        # the other price-snapshot tests above - otherwise this test is flaky
+        # depending on what time of day/week it happens to run.
+        future_dt = datetime.utcnow().replace(hour=10, minute=0, second=0, microsecond=0) + timedelta(days=20)
+        while future_dt.weekday() > 4:
+            future_dt += timedelta(days=1)
+        future_date = future_dt.isoformat()
         response = client.post('/api/appointments', headers=auth_headers, json={
             'patient_id': str(sample_patient.id),
             'service_name': 'Consulta Geral',

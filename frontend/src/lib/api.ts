@@ -327,7 +327,8 @@ export const assistantApi = {
   deleteMemory: (id: string) => api.delete(`/assistant/memories/${id}`)
 }
 
-// Financial API (revenue forecast, derived from booked appointments)
+// Financial API (revenue forecast, derived from booked appointments, plus
+// real payments/expenses/commissions/goals - see backend financial_service.py)
 export const financialApi = {
   getSummary: (days = 30) => api.get('/financial/summary', { params: { days } }),
 
@@ -335,7 +336,78 @@ export const financialApi = {
     api.get('/financial/timeseries', { params }),
 
   getBreakdown: (params?: { days?: number; by?: 'service' | 'professional' }) =>
-    api.get('/financial/breakdown', { params })
+    api.get('/financial/breakdown', { params }),
+
+  // Cash flow & goals
+  getCashFlow: (days = 30) => api.get('/financial/cash-flow', { params: { days } }),
+
+  getReceivables: (days = 30) => api.get('/financial/receivables', { params: { days } }),
+
+  getPayables: (days = 30) => api.get('/financial/payables', { params: { days } }),
+
+  getGoals: (period?: string) => api.get('/financial/goals', { params: period ? { period } : undefined }),
+
+  setGoal: (data: { period: string; target_amount: number; notes?: string }) =>
+    api.post('/financial/goals', data),
+
+  // Payments
+  listPayments: (params?: { status?: string; patient_id?: string; appointment_id?: string; page?: number; per_page?: number }) =>
+    api.get('/financial/payments', { params }),
+
+  createPayment: (data: {
+    patient_id: string; amount: number; method?: string; appointment_id?: string | null
+    due_date?: string | null; installments?: number; notes?: string
+  }) => api.post('/financial/payments', data),
+
+  updatePayment: (id: string, data: { method?: string; due_date?: string | null; notes?: string }) =>
+    api.put(`/financial/payments/${id}`, data),
+
+  registerPayment: (id: string, data: { paid_amount: number; method?: string; paid_at?: string }) =>
+    api.post(`/financial/payments/${id}/register`, data),
+
+  cancelPayment: (id: string) => api.delete(`/financial/payments/${id}`),
+
+  // Expenses
+  listExpenses: (params?: { status?: string; category?: string; page?: number; per_page?: number }) =>
+    api.get('/financial/expenses', { params }),
+
+  createExpense: (data: {
+    description: string; amount: number; category?: string; due_date?: string | null
+    professional_id?: string | null; notes?: string; repeat_months?: number
+  }) => api.post('/financial/expenses', data),
+
+  updateExpense: (id: string, data: Partial<{
+    description: string; amount: number; category: string; due_date: string | null
+    professional_id: string | null; notes: string
+  }>) => api.put(`/financial/expenses/${id}`, data),
+
+  payExpense: (id: string) => api.post(`/financial/expenses/${id}/pay`),
+
+  deleteExpense: (id: string) => api.delete(`/financial/expenses/${id}`),
+
+  // Commission rules & payouts
+  listCommissionRules: () => api.get('/financial/commission-rules'),
+
+  createCommissionRule: (data: {
+    professional_id?: string | null; service_name?: string | null
+    percentage?: number | null; fixed_amount?: number | null
+  }) => api.post('/financial/commission-rules', data),
+
+  updateCommissionRule: (id: string, data: Partial<{
+    professional_id: string | null; service_name: string | null
+    percentage: number | null; fixed_amount: number | null; active: boolean
+  }>) => api.put(`/financial/commission-rules/${id}`, data),
+
+  deleteCommissionRule: (id: string) => api.delete(`/financial/commission-rules/${id}`),
+
+  getCommissions: (days = 30) => api.get('/financial/commissions', { params: { days } }),
+
+  listCommissionPayouts: (professionalId?: string) =>
+    api.get('/financial/commission-payouts', { params: professionalId ? { professional_id: professionalId } : undefined }),
+
+  createCommissionPayout: (data: {
+    professional_id: string; period_start: string; period_end: string; amount: number; notes?: string
+  }) => api.post('/financial/commission-payouts', data)
 }
 
 // Public booking API (no auth required - used by the public /agendar/[slug] page)

@@ -272,6 +272,120 @@ export interface PaginatedResponse<T> {
   current_page: number
 }
 
+export type PaymentMethod = 'cash' | 'pix' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'health_insurance' | 'other'
+export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled'
+
+export interface Payment {
+  id: string
+  clinic_id: string
+  patient_id: string
+  patient_name: string | null
+  appointment_id: string | null
+  amount: number
+  paid_amount: number
+  method: PaymentMethod
+  status: PaymentStatus
+  due_date: string | null
+  paid_at: string | null
+  installment_group_id: string | null
+  installment_number: number
+  installment_total: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ExpenseCategory = 'rent' | 'supplies' | 'salaries' | 'marketing' | 'equipment' | 'taxes' | 'utilities' | 'other'
+export type ExpenseStatus = 'pending' | 'paid' | 'cancelled'
+
+export interface Expense {
+  id: string
+  clinic_id: string
+  professional_id: string | null
+  professional_name: string | null
+  category: ExpenseCategory
+  description: string
+  amount: number
+  status: ExpenseStatus
+  due_date: string | null
+  paid_at: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CommissionRule {
+  id: string
+  clinic_id: string
+  professional_id: string | null
+  professional_name: string | null
+  service_name: string | null
+  percentage: number | null
+  fixed_amount: number | null
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CommissionSummaryItem {
+  professional_id: string
+  professional_name: string
+  earned_period: number
+  earned_total: number
+  paid_total: number
+  balance: number
+}
+
+export interface CommissionPayout {
+  id: string
+  clinic_id: string
+  professional_id: string
+  professional_name: string | null
+  period_start: string
+  period_end: string
+  amount: number
+  paid_at: string
+  notes: string | null
+  created_at: string
+}
+
+export interface FinancialGoal {
+  id: string
+  clinic_id: string
+  period: string
+  target_amount: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface GoalProgress {
+  period: string
+  target_amount: number | null
+  realized_revenue: number
+  progress_pct: number | null
+  has_goal: boolean
+}
+
+export interface CashFlow {
+  period_days: number
+  cash_in: number
+  cash_out: number
+  net_cash_flow: number
+  payments_count: number
+  expenses_count: number
+  payouts_count: number
+}
+
+export interface ReceivablesPayablesItem {
+  total: number
+  overdue_total: number
+  overdue_count: number
+  upcoming_total: number
+  upcoming_count: number
+  items: (Payment | Expense)[]
+}
+
 export interface AuthResponse {
   message: string
   clinic: Clinic

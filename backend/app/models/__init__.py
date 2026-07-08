@@ -12,6 +12,12 @@ from .reminder import AppointmentReminder, ReminderStatus, ReminderType
 from .professional import Professional
 from .agent_action import AgentAction, AgentActionType, AgentActionStatus
 from .assistant import AssistantConversation, AssistantMemory
+from .finance import (
+    Payment, PaymentMethod, PaymentStatus,
+    Expense, ExpenseCategory, ExpenseStatus,
+    CommissionRule, CommissionPayout,
+    FinancialGoal,
+)
 
 __all__ = [
     'Clinic',
@@ -34,5 +40,14 @@ __all__ = [
     'AgentActionType',
     'AgentActionStatus',
     'AssistantConversation',
-    'AssistantMemory'
+    'AssistantMemory',
+    'Payment',
+    'PaymentMethod',
+    'PaymentStatus',
+    'Expense',
+    'ExpenseCategory',
+    'ExpenseStatus',
+    'CommissionRule',
+    'CommissionPayout',
+    'FinancialGoal',
 ]
