@@ -29,7 +29,10 @@ export function SyncIndicator({
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true)
-      if (status === 'offline') setStatus('synced')
+      // Functional update: this handler is registered once on mount, so
+      // reading `status` directly here would capture a stale value and the
+      // indicator would stay stuck on "Offline" after reconnecting.
+      setStatus((prev) => (prev === 'offline' ? 'synced' : prev))
     }
 
     const handleOffline = () => {

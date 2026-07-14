@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,7 +29,7 @@ export default function ProfessionalsPage() {
   const [showNewModal, setShowNewModal] = useState(false)
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null)
 
-  const fetchProfessionals = async () => {
+  const fetchProfessionals = useCallback(async () => {
     setLoading(true)
     try {
       const response = await professionalsApi.list()
@@ -44,11 +44,11 @@ export default function ProfessionalsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
   useEffect(() => {
     fetchProfessionals()
-  }, [])
+  }, [fetchProfessionals])
 
   const handleDelete = async (professionalId: string) => {
     if (!confirm('Tem certeza que deseja desativar este profissional?')) return

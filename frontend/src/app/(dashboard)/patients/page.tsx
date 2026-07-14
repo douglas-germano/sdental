@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,7 +39,7 @@ export default function PatientsPage() {
   const [showNewModal, setShowNewModal] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
 
-  const fetchPatients = async () => {
+  const fetchPatients = useCallback(async () => {
     setLoading(true)
     try {
       const response = await patientsApi.list({
@@ -58,11 +58,11 @@ export default function PatientsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, search, toast])
 
   useEffect(() => {
     fetchPatients()
-  }, [page, search])
+  }, [fetchPatients])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
