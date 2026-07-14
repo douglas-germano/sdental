@@ -11,9 +11,9 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectOption } from '@/components/ui/select'
 import { conversationsApi, patientsApi, pipelineApi } from '@/lib/api'
-import { Conversation, Message, PipelineStage } from '@/types'
+import { Conversation, Message, PipelineStage, QuickReply } from '@/types'
 import { formatPhone, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { ArrowLeft, User, WarningCircle as AlertCircle, CheckCircle, ArrowCounterClockwise as RotateCcw, FloppyDisk as Save, X, PencilSimple as Edit2, Info, CaretDown as ChevronDown, ArrowsClockwise as SyncIcon } from '@phosphor-icons/react'
+import { ArrowLeft, User, WarningCircle as AlertCircle, CheckCircle, ArrowCounterClockwise as RotateCcw, FloppyDisk as Save, X, PencilSimple as Edit2, Info, CaretDown as ChevronDown, ArrowsClockwise as SyncIcon, ArrowDown } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -21,7 +21,13 @@ import { PageLoader } from '@/components/ui/page-loader'
 import { MessageBubble } from '@/components/conversations/message-bubble'
 import { TypingIndicator } from '@/components/conversations/typing-indicator'
 import { ChatComposer, MediaPayload } from '@/components/conversations/chat-composer'
+import { QuickRepliesModal } from '@/components/conversations/quick-replies-modal'
 import { useConversations } from '@/components/conversations/conversations-provider'
+
+// Long threads (post history-sync they can reach thousands of messages) are
+// rendered incrementally: last INITIAL_VISIBLE first, older on demand.
+const INITIAL_VISIBLE = 100
+const LOAD_EARLIER_STEP = 200
 
 function getMessageGroups(messages: Message[]) {
   const groups: { date: string; label: string; messages: Message[] }[] = []
@@ -58,12 +64,16 @@ export default function ConversationDetailPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { confirm, ConfirmDialogComponent } = useConfirm()
-  const { subscribe, typingConversationIds, refresh: refreshList } = useConversations()
+  const {
+    subscribe, typingConversationIds, refresh: refreshList,
+    setActiveConversationId, markReadLocal
+  } = useConversations()
 
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [loading, setLoading] = useState(true)
   const [showInfo, setShowInfo] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const conversationId = params.id as string
 
   const [isEditing, setIsEditing] = useState(false)
@@ -72,12 +82,31 @@ export default function ConversationDetailPage() {
   const [patientForm, setPatientForm] = useState({ name: '', phone: '', email: '', notes: '' })
   const [stages, setStages] = useState<PipelineStage[]>([])
   const [movingStage, setMovingStage] = useState(false)
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([])
+  const [showQuickReplies, setShowQuickReplies] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
+  const [showNewMsgPill, setShowNewMsgPill] = useState(false)
+  const initialScrollDoneRef = useRef(false)
+  const pendingScrollAdjustRef = useRef<number | null>(null)
 
   useEffect(() => {
     pipelineApi.getStages()
       .then((response) => setStages(response.data))
       .catch((error) => console.error('Error fetching pipeline stages:', error))
+    conversationsApi.getQuickReplies()
+      .then((response) => setQuickReplies(response.data.quick_replies || []))
+      .catch((error) => console.error('Error fetching quick replies:', error))
   }, [])
+
+  // Tell the provider which chat is open (suppresses its unread counting /
+  // notifications for this conversation) and mark it read on entry.
+  useEffect(() => {
+    setActiveConversationId(conversationId)
+    conversationsApi.markRead(conversationId)
+      .then(() => markReadLocal(conversationId))
+      .catch(() => { /* non-fatal */ })
+    return () => setActiveConversationId(null)
+  }, [conversationId, setActiveConversationId, markReadLocal])
 
   const fetchConversation = useCallback(async () => {
     try {
@@ -103,6 +132,9 @@ export default function ConversationDetailPage() {
     setLoading(true)
     setShowInfo(false)
     setIsEditing(false)
+    setVisibleCount(INITIAL_VISIBLE)
+    setShowNewMsgPill(false)
+    initialScrollDoneRef.current = false
     fetchConversation()
   }, [fetchConversation])
 
@@ -119,6 +151,12 @@ export default function ConversationDetailPage() {
           if (prev.messages?.some((m) => m.id === message.id)) return prev
           return { ...prev, status: status as Conversation['status'], messages: [...(prev.messages || []), message] }
         })
+        // Chat is open: keep the read marker current for patient messages
+        if (message.role === 'user' && document.visibilityState === 'visible') {
+          conversationsApi.markRead(conversationId)
+            .then(() => markReadLocal(conversationId))
+            .catch(() => { /* non-fatal */ })
+        }
       }
 
       if (event.type === 'message_status') {
@@ -136,13 +174,53 @@ export default function ConversationDetailPage() {
       }
     })
     return unsubscribe
-  }, [subscribe, conversationId])
+  }, [subscribe, conversationId, markReadLocal])
 
+  const isNearBottom = useCallback(() => {
+    const el = scrollContainerRef.current
+    if (!el) return true
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 140
+  }, [])
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior })
+    setShowNewMsgPill(false)
+  }, [])
+
+  // Scroll orchestration: jump on first load; afterwards only follow new
+  // messages when the user is already at the bottom - never yank them out
+  // of reading history. "Load earlier" keeps the viewport anchored.
   useEffect(() => {
-    if (conversation?.messages && conversation.messages.length > 0) {
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    if (!conversation?.messages?.length) return
+
+    const el = scrollContainerRef.current
+    if (pendingScrollAdjustRef.current !== null && el) {
+      el.scrollTop = el.scrollHeight - pendingScrollAdjustRef.current
+      pendingScrollAdjustRef.current = null
+      return
     }
-  }, [conversation?.messages])
+
+    if (!initialScrollDoneRef.current) {
+      initialScrollDoneRef.current = true
+      setTimeout(() => scrollToBottom('auto'), 50)
+      return
+    }
+
+    if (isNearBottom()) {
+      setTimeout(() => scrollToBottom('smooth'), 50)
+    } else {
+      setShowNewMsgPill(true)
+    }
+  }, [conversation?.messages, isNearBottom, scrollToBottom])
+
+  const handleLoadEarlier = () => {
+    const el = scrollContainerRef.current
+    // Anchor: remember the distance from the bottom, restore it after render
+    pendingScrollAdjustRef.current = el ? el.scrollHeight - el.scrollTop : null
+    setVisibleCount((count) => count + LOAD_EARLIER_STEP)
+    // Force the effect to run even though messages identity didn't change
+    setConversation((prev) => (prev ? { ...prev } : prev))
+  }
 
   const isTyping = typingConversationIds.has(conversationId)
 
@@ -212,13 +290,24 @@ export default function ConversationDetailPage() {
     }
   }
 
+  const notifyTakeover = () => {
+    toast({
+      title: 'Você assumiu a conversa',
+      description: 'A IA foi pausada neste chat. Use "Devolver ao Bot" quando terminar.',
+      variant: 'warning',
+    })
+    refreshList()
+  }
+
   const handleSendText = async (text: string) => {
-    await conversationsApi.sendMessage(conversationId, text)
+    const response = await conversationsApi.sendMessage(conversationId, text)
+    if (response.data?.took_over) notifyTakeover()
     fetchConversation()
   }
 
   const handleSendMedia = async (payload: MediaPayload) => {
-    await conversationsApi.sendMedia(conversationId, payload)
+    const response = await conversationsApi.sendMedia(conversationId, payload)
+    if (response.data?.took_over) notifyTakeover()
     fetchConversation()
   }
 
@@ -323,7 +412,10 @@ export default function ConversationDetailPage() {
     )
   }
 
-  const messageGroups = getMessageGroups(conversation.messages || [])
+  const allMessages = conversation.messages || []
+  const visibleMessages = allMessages.slice(-visibleCount)
+  const hiddenCount = allMessages.length - visibleMessages.length
+  const messageGroups = getMessageGroups(visibleMessages)
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -523,41 +615,76 @@ export default function ConversationDetailPage() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent bg-[radial-gradient(circle_at_1px_1px,hsl(var(--muted-foreground)/0.08)_1px,transparent_0)] bg-[size:20px_20px]">
-        {(!conversation.messages || conversation.messages.length === 0) ? (
-          <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-            <p className="text-sm">Nenhuma mensagem nesta conversa</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {messageGroups.map((group) => (
-              <div key={group.date}>
-                <div className="flex items-center justify-center my-3">
-                  <span className="text-[10px] font-medium text-muted-foreground bg-card border border-border/60 rounded-full px-3 py-1">
-                    {group.label}
-                  </span>
+      <div className="relative flex-1 min-h-0">
+        <div
+          ref={scrollContainerRef}
+          onScroll={() => { if (isNearBottom()) setShowNewMsgPill(false) }}
+          className="h-full overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent bg-[radial-gradient(circle_at_1px_1px,hsl(var(--muted-foreground)/0.08)_1px,transparent_0)] bg-[size:20px_20px]"
+        >
+          {allMessages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+              <p className="text-sm">Nenhuma mensagem nesta conversa</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {hiddenCount > 0 && (
+                <div className="flex justify-center">
+                  <Button variant="outline" size="sm" onClick={handleLoadEarlier} className="h-7 text-xs">
+                    Carregar mensagens anteriores ({hiddenCount})
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  {group.messages.map((msg, index) => (
-                    <MessageBubble key={msg.id || index} message={msg} />
-                  ))}
+              )}
+              {messageGroups.map((group) => (
+                <div key={group.date}>
+                  <div className="flex items-center justify-center my-3">
+                    <span className="text-[10px] font-medium text-muted-foreground bg-card border border-border/60 rounded-full px-3 py-1">
+                      {group.label}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {group.messages.map((msg, index) => (
+                      <MessageBubble key={msg.id || index} message={msg} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-            {isTyping && <TypingIndicator />}
-            <div ref={messagesEndRef} />
-          </div>
+              ))}
+              {isTyping && <TypingIndicator />}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {showNewMsgPill && (
+          <button
+            type="button"
+            onClick={() => scrollToBottom('smooth')}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3.5 py-1.5 shadow-border hover:opacity-90 transition-opacity"
+          >
+            <ArrowDown className="h-3.5 w-3.5" /> Novas mensagens
+          </button>
         )}
       </div>
 
       {/* Composer */}
       {conversation.status !== 'completed' ? (
-        <ChatComposer onSendText={handleSendText} onSendMedia={handleSendMedia} />
+        <ChatComposer
+          onSendText={handleSendText}
+          onSendMedia={handleSendMedia}
+          quickReplies={quickReplies}
+          onManageQuickReplies={() => setShowQuickReplies(true)}
+        />
       ) : (
         <div className="border-t border-border p-3 text-center text-xs text-muted-foreground shrink-0">
           Esta conversa foi concluida.
         </div>
       )}
+
+      <QuickRepliesModal
+        open={showQuickReplies}
+        onOpenChange={setShowQuickReplies}
+        quickReplies={quickReplies}
+        onSaved={setQuickReplies}
+      />
 
       {ConfirmDialogComponent}
     </div>

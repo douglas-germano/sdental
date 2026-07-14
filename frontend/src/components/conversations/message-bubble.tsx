@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { Message } from '@/types'
 import { cn } from '@/lib/utils'
-import { Robot as Bot, User, Check, Checks as CheckCheck, Clock, Warning as AlertTriangle, FileText, DownloadSimple as Download, DeviceMobile as Phone } from '@phosphor-icons/react'
+import { resolveMediaUrl } from '@/lib/api'
+import { Robot as Bot, User, Check, Checks as CheckCheck, Clock, Warning as AlertTriangle, FileText, DownloadSimple as Download, DeviceMobile as Phone, Headset } from '@phosphor-icons/react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 
 function MessageStatusTicks({ status }: { status?: string }) {
@@ -24,8 +25,9 @@ function MessageStatusTicks({ status }: { status?: string }) {
 
 function MessageMedia({ message }: { message: Message }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const mediaSrc = resolveMediaUrl(message.media_url)
 
-  if (message.type === 'image' && message.media_url) {
+  if (message.type === 'image' && mediaSrc) {
     return (
       <>
         <button
@@ -34,30 +36,30 @@ function MessageMedia({ message }: { message: Message }) {
           className="block rounded-lg overflow-hidden mb-1 max-w-[260px] hover:opacity-90 transition-opacity"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={message.media_url} alt={message.caption || 'Imagem'} className="w-full h-auto max-h-[260px] object-cover" />
+          <img src={mediaSrc} alt={message.caption || 'Imagem'} className="w-full h-auto max-h-[260px] object-cover" />
         </button>
         <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
           <DialogContent className="sm:max-w-2xl p-2 bg-transparent border-0 shadow-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={message.media_url} alt={message.caption || 'Imagem'} className="w-full h-auto rounded-lg" />
+            <img src={mediaSrc} alt={message.caption || 'Imagem'} className="w-full h-auto rounded-lg" />
           </DialogContent>
         </Dialog>
       </>
     )
   }
 
-  if (message.type === 'audio' && message.media_url) {
+  if (message.type === 'audio' && mediaSrc) {
     return (
-      <audio controls src={message.media_url} className="max-w-[260px] h-10 mb-1">
+      <audio controls src={mediaSrc} className="max-w-[260px] h-10 mb-1">
         Seu navegador nao suporta audio.
       </audio>
     )
   }
 
-  if (message.type === 'document' && message.media_url) {
+  if (message.type === 'document' && mediaSrc) {
     return (
       <a
-        href={message.media_url}
+        href={mediaSrc}
         download
         className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-background/60 px-3 py-2 mb-1 max-w-[260px] hover:bg-background transition-colors"
       >
@@ -77,21 +79,28 @@ export function MessageBubble({ message }: { message: Message }) {
   const outgoing = message.role === 'assistant'
   const hasMedia = message.type && message.type !== 'text'
   const textContent = hasMedia ? message.caption : message.content
+  const fromDashboard = message.sent_via === 'dashboard'
+  const fromPhone = message.sent_via === 'whatsapp_app'
+
+  const OutgoingIcon = fromDashboard || fromPhone ? Headset : Bot
 
   return (
     <div className={cn('flex gap-2 items-end', outgoing ? 'flex-row-reverse' : 'flex-row')}>
       <div
         className={cn(
           'shrink-0 w-7 h-7 rounded-full flex items-center justify-center',
-          outgoing ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+          outgoing ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
         )}
+        title={outgoing ? (fromDashboard ? 'Equipe (painel)' : fromPhone ? 'Equipe (celular)' : 'Assistente IA') : 'Paciente'}
       >
-        {outgoing ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+        {outgoing ? <OutgoingIcon className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
       </div>
       <div
         className={cn(
           'max-w-[75%] sm:max-w-[65%] rounded-2xl px-3 py-2',
-          outgoing ? 'bg-primary/10 rounded-br-sm' : 'bg-muted rounded-bl-sm'
+          outgoing
+            ? 'bg-primary/15 border border-primary/10 rounded-br-sm'
+            : 'bg-muted rounded-bl-sm'
         )}
       >
         <MessageMedia message={message} />
@@ -99,12 +108,20 @@ export function MessageBubble({ message }: { message: Message }) {
           <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{textContent}</p>
         )}
         <div className={cn('flex items-center gap-1 mt-1', outgoing ? 'justify-end' : 'justify-start')}>
-          {message.sent_via === 'whatsapp_app' && (
+          {fromPhone && (
             <span
               className="flex items-center gap-0.5 text-[10px] text-muted-foreground/80"
               title="Enviado diretamente pelo WhatsApp, fora da plataforma"
             >
               <Phone className="h-2.5 w-2.5" /> WhatsApp
+            </span>
+          )}
+          {fromDashboard && (
+            <span
+              className="flex items-center gap-0.5 text-[10px] text-muted-foreground/80"
+              title="Enviado manualmente pela equipe, por este painel"
+            >
+              <Headset className="h-2.5 w-2.5" /> Equipe
             </span>
           )}
           <span className="text-[10px] text-muted-foreground">
