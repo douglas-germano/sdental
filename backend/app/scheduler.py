@@ -1,5 +1,10 @@
 """
 APScheduler configuration for background tasks.
+
+Every Gunicorn worker process starts its own scheduler instance, so each
+job is wrapped in a cross-process lock (utils/job_lock.py) guaranteeing a
+single runner per tick - otherwise patients would receive duplicate
+reminders/outreach with WEB_CONCURRENCY > 1.
 """
 import logging
 import atexit
@@ -7,6 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.utils.datetime_utils import utcnow
+from app.utils.job_lock import try_acquire
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +103,57 @@ def weekly_report_job():
                      lambda c: c.weekly_report_enabled)
 
 
+def ai_cost_alert_job():
+    """
+    Daily guardrail on AI spend. Sums the last 24h of OpenRouter cost per
+    clinic (ai_usage_logs) and e-mails the platform operator
+    (ADMIN_ALERT_EMAIL) when any clinic crosses AI_DAILY_COST_ALERT_USD -
+    a runaway conversation loop should never be discovered on the invoice.
+    """
+    from datetime import timedelta
+    from flask import current_app
+    from sqlalchemy import func
+    from app import db
+    from app.models import AiUsageLog, Clinic
+    from app.services.email_service import EmailService
+
+    threshold = float(current_app.config.get('AI_DAILY_COST_ALERT_USD') or 0)
+    if threshold <= 0:
+        return
+
+    since = utcnow() - timedelta(hours=24)
+    rows = (
+        db.session.query(AiUsageLog.clinic_id, func.sum(AiUsageLog.cost_usd))
+        .filter(AiUsageLog.created_at >= since, AiUsageLog.cost_usd.isnot(None))
+        .group_by(AiUsageLog.clinic_id)
+        .all()
+    )
+    offenders = [(clinic_id, float(total)) for clinic_id, total in rows if total and float(total) >= threshold]
+    if not offenders:
+        return
+
+    lines = []
+    for clinic_id, total in sorted(offenders, key=lambda r: r[1], reverse=True):
+        clinic = db.session.get(Clinic, clinic_id)
+        name = clinic.name if clinic else str(clinic_id)
+        lines.append(f'{name}: US$ {total:.2f}')
+        logger.warning('AI cost alert: clinic %s spent US$ %.2f in the last 24h', clinic_id, total)
+
+    admin_email = current_app.config.get('ADMIN_ALERT_EMAIL')
+    if admin_email:
+        try:
+            EmailService().send(
+                admin_email,
+                'Operador SDental',
+                f'Alerta de custo de IA - {len(offenders)} clínica(s) acima de US$ {threshold:.2f}/dia',
+                '<p>Consumo de IA nas últimas 24 horas acima do limite configurado:</p><ul>'
+                + ''.join(f'<li>{line}</li>' for line in lines)
+                + '</ul><p>Verifique as conversas da(s) clínica(s) no painel.</p>'
+            )
+        except Exception:
+            logger.exception('Failed to send AI cost alert email')
+
+
 def suspend_late_subscriptions_job():
     """
     Suspend clinics whose Kiwify subscription has been "late" for longer
@@ -139,16 +196,24 @@ def init_scheduler(app):
         logger.warning('Scheduler already running, skipping initialization')
         return
 
-    # Create a wrapper that provides app context
-    def with_app_context(func):
+    # Wrapper: app context + single-runner-per-tick lock. Every worker
+    # process runs a scheduler; only the one that wins the lock executes.
+    def with_app_context(func, job_id, lock_ttl=900):
         def wrapper():
             with app.app_context():
-                func()
+                release = try_acquire(job_id, ttl_seconds=lock_ttl)
+                if release is None:
+                    logger.debug('Job %s already running in another process, skipping', job_id)
+                    return
+                try:
+                    func()
+                finally:
+                    release()
         return wrapper
 
     # Add job to check and send reminders every 5 minutes
     scheduler.add_job(
-        func=with_app_context(send_pending_reminders_job),
+        func=with_app_context(send_pending_reminders_job, 'send_reminders', lock_ttl=240),
         trigger=IntervalTrigger(minutes=5),
         id='send_reminders',
         name='Send pending appointment reminders',
@@ -157,7 +222,7 @@ def init_scheduler(app):
 
     # Add job to retry failed reminders every 30 minutes
     scheduler.add_job(
-        func=with_app_context(retry_failed_reminders_job),
+        func=with_app_context(retry_failed_reminders_job, 'retry_reminders'),
         trigger=IntervalTrigger(minutes=30),
         id='retry_reminders',
         name='Retry failed reminders',
@@ -167,7 +232,7 @@ def init_scheduler(app):
     # --- Autonomous / proactive AI jobs -----------------------------------
     # No-show/cancellation recovery + waitlist offers every 30 minutes.
     scheduler.add_job(
-        func=with_app_context(recovery_job),
+        func=with_app_context(recovery_job, 'agent_recovery', lock_ttl=1500),
         trigger=IntervalTrigger(minutes=30),
         id='agent_recovery',
         name='Autonomous recovery and waitlist outreach',
@@ -175,7 +240,7 @@ def init_scheduler(app):
     )
     # Recall of inactive patients, twice a day.
     scheduler.add_job(
-        func=with_app_context(recall_job),
+        func=with_app_context(recall_job, 'agent_recall', lock_ttl=1800),
         trigger=IntervalTrigger(hours=12),
         id='agent_recall',
         name='Autonomous patient recall',
@@ -183,7 +248,7 @@ def init_scheduler(app):
     )
     # CRM funnel qualification every 2 hours.
     scheduler.add_job(
-        func=with_app_context(funnel_job),
+        func=with_app_context(funnel_job, 'agent_funnel', lock_ttl=3600),
         trigger=IntervalTrigger(hours=2),
         id='agent_funnel',
         name='Autonomous CRM funnel qualification',
@@ -191,7 +256,7 @@ def init_scheduler(app):
     )
     # Weekly performance digest - checked daily, sent at most once per week.
     scheduler.add_job(
-        func=with_app_context(weekly_report_job),
+        func=with_app_context(weekly_report_job, 'agent_weekly_report', lock_ttl=3600),
         trigger=IntervalTrigger(hours=24),
         id='agent_weekly_report',
         name='Proactive weekly performance report',
@@ -200,10 +265,19 @@ def init_scheduler(app):
 
     # Suspend clinics whose Kiwify payment has been late past the grace period.
     scheduler.add_job(
-        func=with_app_context(suspend_late_subscriptions_job),
+        func=with_app_context(suspend_late_subscriptions_job, 'suspend_late_subscriptions'),
         trigger=IntervalTrigger(hours=24),
         id='suspend_late_subscriptions',
         name='Suspend clinics past the billing grace period',
+        replace_existing=True
+    )
+
+    # Daily AI spend guardrail (see ai_cost_alert_job).
+    scheduler.add_job(
+        func=with_app_context(ai_cost_alert_job, 'ai_cost_alert'),
+        trigger=IntervalTrigger(hours=24),
+        id='ai_cost_alert',
+        name='Alert operator on abnormal AI spend',
         replace_existing=True
     )
 

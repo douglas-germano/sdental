@@ -40,6 +40,17 @@ def create_app(config_name: str = None) -> Flask:
     from .config import validate_config
     validate_config(app)
 
+    # Error monitoring - a solo operator finds out about 500s from Sentry,
+    # not from customer complaints. No-op unless SENTRY_DSN is configured.
+    if app.config.get('SENTRY_DSN'):
+        import sentry_sdk
+        sentry_sdk.init(
+            dsn=app.config['SENTRY_DSN'],
+            environment=config_name,
+            send_default_pii=False,
+            traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0')),
+        )
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
