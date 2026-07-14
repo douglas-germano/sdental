@@ -252,7 +252,7 @@ class ConversationService:
     def get_message_history_for_claude(
         self,
         conversation: Conversation,
-        max_messages: int = 20
+        max_messages: int = 30
     ) -> list:
         """
         Get message history formatted for Claude API.
@@ -312,6 +312,11 @@ class ConversationService:
 
         if context.get('preferred_time'):
             parts.append(f"Horário preferido: {context['preferred_time']}")
+
+        # Rolling summary of everything older than the history window (see
+        # ClaudeService._maybe_update_rolling_summary)
+        if context.get('summary'):
+            parts.append(f"Resumo do histórico anterior desta conversa:\n{context['summary']}")
 
         return '\n'.join(parts) if parts else 'Novo contato, sem histórico.'
 

@@ -48,6 +48,16 @@ class Config:
     EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL')
     EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY')
 
+    # Inbound chat processing. Patient messages are answered by the AI in a
+    # background worker after a short quiet window, so rapid-fire messages
+    # ("oi" / "queria marcar" / "pra amanhã") get ONE combined reply instead
+    # of one reply each. 0 disables aggregation and processes inline
+    # (synchronously) - used by the test suite.
+    MESSAGE_AGGREGATION_SECONDS = float(os.getenv('MESSAGE_AGGREGATION_SECONDS', '8'))
+    # Multimodal model used to transcribe patient voice notes so the bot can
+    # keep handling them (any audio-capable model on OpenRouter works).
+    AUDIO_TRANSCRIPTION_MODEL = os.getenv('AUDIO_TRANSCRIPTION_MODEL', 'google/gemini-2.5-flash')
+
     # Webhook authentication
     WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')
 
@@ -115,6 +125,9 @@ class TestingConfig(Config):
     )
     # The base config's pool sizing args are invalid for SQLite's StaticPool.
     SQLALCHEMY_ENGINE_OPTIONS = {}
+    # Process chat messages inline (no aggregation window, no background
+    # thread) so tests stay deterministic.
+    MESSAGE_AGGREGATION_SECONDS = 0.0
     # Deterministic secret so webhook-signature tests don't depend on the
     # environment having WEBHOOK_SECRET set (webhook auth fails closed
     # without one - see utils/webhook_auth.py).

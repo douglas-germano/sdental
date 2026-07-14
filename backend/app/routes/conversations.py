@@ -4,12 +4,13 @@ import binascii
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 
 from app import db
-from app.models import Conversation, BotTransfer, ConversationStatus, Patient
+from app.models import Conversation, BotTransfer, ConversationStatus, Patient, MediaAsset
 from app.services.conversation_service import ConversationService
 from app.services.evolution_service import EvolutionService
 from app.services.patient_service import PatientService
 from app.services import realtime_service
 from app.utils.auth import clinic_required, clinic_required_stream
+from app.utils.datetime_utils import utcnow
 from app.utils.pagination import get_pagination_params
 from app.utils.validators import normalize_phone
 
@@ -17,6 +18,9 @@ bp = Blueprint('conversations', __name__, url_prefix='/api/conversations')
 
 MAX_MEDIA_BYTES = 8 * 1024 * 1024  # 8MB, base64-decoded size
 ALLOWED_MEDIA_TYPES = {'image', 'audio', 'document'}
+# WhatsApp rejects text bodies longer than this
+MAX_TEXT_LENGTH = 4096
+MAX_QUICK_REPLIES = 50
 
 
 @bp.route('/stream', methods=['GET'])
@@ -68,7 +72,11 @@ def list_conversations(current_clinic):
         query = query.join(Patient, Conversation.patient_id == Patient.id, isouter=True).filter(
             db.or_(
                 Patient.name.ilike(search_term),
-                Conversation.phone_number.ilike(search_term)
+                Conversation.phone_number.ilike(search_term),
+                # Also match message content ("cadê aquela conversa sobre
+                # clareamento?"). Casting the JSONB to text is a full scan,
+                # acceptable at per-clinic volumes.
+                db.cast(Conversation.messages, db.Text).ilike(search_term)
             )
         )
 
@@ -84,7 +92,8 @@ def list_conversations(current_clinic):
         'needs_attention_count': Conversation.query.filter_by(
             clinic_id=current_clinic.id,
             status=ConversationStatus.TRANSFERRED_TO_HUMAN
-        ).count()
+        ).count(),
+        'whatsapp_connection_state': current_clinic.whatsapp_connection_state
     })
 
 
@@ -149,6 +158,61 @@ def sync_conversation_history(conversation_id, current_clinic):
         'added': added,
         'conversation': conversation.to_dict(include_messages=True)
     })
+
+
+@bp.route('/<conversation_id>/read', methods=['POST'])
+@clinic_required
+def mark_conversation_read(conversation_id, current_clinic):
+    """Mark all messages in the conversation as read by the clinic staff."""
+    conversation = Conversation.query.filter_by(
+        id=conversation_id,
+        clinic_id=current_clinic.id
+    ).first()
+
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    conversation.last_read_at = utcnow()
+    db.session.commit()
+
+    return jsonify({'unread_count': 0, 'last_read_at': conversation.last_read_at.isoformat() + 'Z'})
+
+
+@bp.route('/quick-replies', methods=['GET'])
+@clinic_required
+def get_quick_replies(current_clinic):
+    """Canned responses available in the chat composer."""
+    return jsonify({'quick_replies': current_clinic.quick_replies or []})
+
+
+@bp.route('/quick-replies', methods=['PUT'])
+@clinic_required
+def update_quick_replies(current_clinic):
+    """Replace the clinic's canned responses ([{title, text}, ...])."""
+    data = request.get_json() or {}
+    items = data.get('quick_replies')
+
+    if not isinstance(items, list):
+        return jsonify({'error': 'quick_replies deve ser uma lista'}), 400
+    if len(items) > MAX_QUICK_REPLIES:
+        return jsonify({'error': f'Máximo de {MAX_QUICK_REPLIES} respostas rápidas'}), 400
+
+    cleaned = []
+    for item in items:
+        if not isinstance(item, dict):
+            return jsonify({'error': 'Cada resposta rápida deve ter title e text'}), 400
+        title = str(item.get('title') or '').strip()
+        text = str(item.get('text') or '').strip()
+        if not title or not text:
+            return jsonify({'error': 'Cada resposta rápida deve ter title e text'}), 400
+        if len(title) > 60 or len(text) > MAX_TEXT_LENGTH:
+            return jsonify({'error': 'Título até 60 caracteres e texto até 4096'}), 400
+        cleaned.append({'title': title, 'text': text})
+
+    current_clinic.quick_replies = cleaned
+    db.session.commit()
+
+    return jsonify({'quick_replies': cleaned})
 
 
 @bp.route('/<conversation_id>/transfer', methods=['POST'])
@@ -301,6 +365,9 @@ def send_manual_message(conversation_id, current_clinic):
     if not message:
         return jsonify({'error': 'Message is required'}), 400
 
+    if len(message) > MAX_TEXT_LENGTH:
+        return jsonify({'error': f'Mensagem muito longa (máximo {MAX_TEXT_LENGTH} caracteres)'}), 400
+
     evolution = EvolutionService(current_clinic)
 
     try:
@@ -314,15 +381,26 @@ def send_manual_message(conversation_id, current_clinic):
     evolution_message_id = ((result or {}).get('key') or {}).get('id')
 
     conversation_service = ConversationService(current_clinic)
+
+    # Replying manually means a human took over this chat: pause the AI so
+    # it doesn't answer on top of the staff member.
+    took_over = conversation.status == ConversationStatus.ACTIVE
+    if took_over:
+        conversation_service.transfer_to_human(
+            conversation, 'Atendente assumiu a conversa pelo painel'
+        )
+
     conversation_service.add_message(
         conversation,
         'assistant',
         message,
-        evolution_id=evolution_message_id
+        evolution_id=evolution_message_id,
+        sent_via='dashboard'
     )
 
     return jsonify({
         'message': 'Message sent successfully',
+        'took_over': took_over,
         'conversation': conversation.to_dict(include_messages=False)
     })
 
@@ -383,20 +461,42 @@ def send_media_message(conversation_id, current_clinic):
 
     evolution_message_id = ((result or {}).get('key') or {}).get('id')
 
+    # Persist our own copy and reference it by URL - storing multi-MB data
+    # URIs inside the conversation JSONB bloats every later read of the
+    # thread.
+    asset = MediaAsset(
+        clinic_id=current_clinic.id,
+        mimetype=mimetype,
+        filename=filename,
+        data=base64.b64decode(b64_data),
+    )
+    db.session.add(asset)
+    db.session.commit()
+
     conversation_service = ConversationService(current_clinic)
+
+    # Sending media manually is a human takeover, same as text.
+    took_over = conversation.status == ConversationStatus.ACTIVE
+    if took_over:
+        conversation_service.transfer_to_human(
+            conversation, 'Atendente assumiu a conversa pelo painel'
+        )
+
     message = conversation_service.add_message(
         conversation,
         'assistant',
         caption,
         evolution_id=evolution_message_id,
         message_type=media_type,
-        media_url=f'data:{mimetype};base64,{b64_data}',
+        media_url=asset.public_path,
         media_mimetype=mimetype,
-        caption=caption or None
+        caption=caption or None,
+        sent_via='dashboard'
     )
 
     return jsonify({
         'message': 'Media sent successfully',
+        'took_over': took_over,
         'sent_message': message,
         'conversation': conversation.to_dict(include_messages=False)
     })

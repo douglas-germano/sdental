@@ -75,7 +75,8 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(health.bp)
     app.register_blueprint(public.bp)
 
-    from .routes import agents, professionals, pipeline, billing, assistant, financial
+    from .routes import agents, professionals, pipeline, billing, assistant, financial, media
+    app.register_blueprint(media.bp)
     app.register_blueprint(agents.bp)
     app.register_blueprint(professionals.bp)
     app.register_blueprint(pipeline.bp)

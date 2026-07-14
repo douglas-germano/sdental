@@ -1,13 +1,23 @@
+import base64
+import binascii
 import logging
+
 from flask import Blueprint, request, jsonify
 from flask_limiter.util import get_remote_address
 
-from app.models import Clinic, Conversation, ConversationStatus, Patient
+from app import db
+from app.models import (
+    Clinic, Conversation, ConversationStatus, Patient,
+    MediaAsset, MAX_MEDIA_BYTES,
+)
 from app.services.claude_service import ClaudeService
 from app.services.evolution_service import EvolutionService
 from app.services.conversation_service import ConversationService
+from app.services.email_service import EmailService
+from app.services.message_processor import enqueue_reply
 from app.services.outreach_service import is_opt_out_message
 from app.services.realtime_service import publish_event
+from app.utils.datetime_utils import utcnow
 from app.utils.validators import normalize_phone
 from app.utils.webhook_auth import webhook_auth_required
 from app.utils.rate_limiter import limiter
@@ -51,24 +61,13 @@ def _webhook_rate_limit_key():
 @webhook_auth_required
 def evolution_webhook():
     """
-    Receive messages from Evolution API webhook.
+    Receive events from Evolution API webhook: inbound messages
+    (messages.upsert), delivery/read ACKs (messages.update), typing presence
+    (presence.update) and connection state changes (connection.update).
 
-    Expected payload structure:
-    {
-        "event": "messages.upsert",
-        "instance": "instance_name",
-        "data": {
-            "key": {
-                "remoteJid": "5511999999999@s.whatsapp.net",
-                "fromMe": false,
-                "id": "message_id"
-            },
-            "message": {
-                "conversation": "message text"
-            },
-            "messageTimestamp": "1234567890"
-        }
-    }
+    Inbound patient messages are STORED synchronously (so they are never
+    lost and duplicates are detectable) and answered asynchronously by the
+    message_processor pipeline, which debounces bursts and retries delivery.
     """
     try:
         payload = request.get_json()
@@ -84,6 +83,9 @@ def evolution_webhook():
 
         if event == 'presence.update':
             return _handle_presence_update(instance_name, payload.get('data', {}))
+
+        if event == 'connection.update':
+            return _handle_connection_update(instance_name, payload.get('data', {}))
 
         if event != 'messages.upsert':
             return jsonify({'status': 'ignored', 'reason': 'Not a handled event'})
@@ -120,12 +122,29 @@ def evolution_webhook():
         conversation_service = ConversationService(clinic)
         conversation = conversation_service.get_or_create_conversation(phone)
 
-        # Sent directly from the linked WhatsApp app/phone (not through this
-        # platform) - e.g. a staff member replying manually. Keep it in the
-        # conversation so it shows up in the dashboard and the AI has full
-        # context, but hand off to a human since someone is already handling
-        # this chat outside the bot.
+        # Idempotency: Evolution retries webhook deliveries (e.g. on slow
+        # responses) and, depending on instance config, also echoes messages
+        # sent through its own API back as fromMe upserts. A message id we
+        # already stored means this delivery is a duplicate.
+        if evolution_message_id and conversation.find_message(evolution_message_id):
+            return jsonify({'status': 'duplicate', 'reason': 'Message already processed'})
+
+        # Sent from the clinic's own WhatsApp number (fromMe)
         if from_me:
+            # The echo of a bot reply can arrive before the send result had
+            # its id attached - recognize it by content instead of treating
+            # it as a human takeover.
+            if message_text and conversation.attach_evolution_id_by_content(
+                evolution_message_id, message_text
+            ):
+                db.session.commit()
+                return jsonify({'status': 'processed', 'reason': 'Own message echo'})
+
+            # Genuinely sent from the linked phone (e.g. a staff member
+            # replying manually). Keep it in the conversation so it shows up
+            # in the dashboard and the AI has full context, but hand off to a
+            # human since someone is already handling this chat outside the
+            # bot.
             if media:
                 media_type, media_url, mimetype, caption = media
                 content = caption or MEDIA_PLACEHOLDER_TEXT.get(media_type, 'Midia enviada')
@@ -152,51 +171,30 @@ def evolution_webhook():
             )
             return jsonify({'status': 'processed', 'reason': 'Message from self stored'})
 
-        # Media messages: the bot can't process them, store and hand off to a human
         if media:
-            media_type, media_url, mimetype, caption = media
-            logger.info('Received %s message from %s', media_type, phone)
-
-            # Transfer first so the new_message event we publish next carries
-            # the already-updated status - otherwise the open chat UI shows a
-            # stale "active" status until the page is reloaded.
-            if conversation.status != ConversationStatus.TRANSFERRED_TO_HUMAN:
-                conversation_service.transfer_to_human(
-                    conversation,
-                    f'Paciente enviou {media_type} - requer atendimento humano'
-                )
-
-            # Content is never left empty: an empty string here would later be
-            # sent to the Claude API as an empty text block and get rejected.
-            content = caption or MEDIA_PLACEHOLDER_TEXT.get(media_type, 'Midia enviada')
-            conversation_service.add_message(
-                conversation,
-                'user',
-                content,
-                evolution_id=evolution_message_id,
-                message_type=media_type,
-                media_url=media_url,
-                media_mimetype=mimetype,
-                caption=caption or None
+            return _handle_inbound_media(
+                clinic, conversation_service, conversation,
+                media, evolution_message_id, phone
             )
 
-            return jsonify({'status': 'processed', 'reason': 'Media message routed to human'})
-
         logger.info('Received message from %s: %s', phone, message_text[:50])
+
+        # Store the patient's message immediately: it must reach the
+        # dashboard (and the dedup check above) regardless of what happens
+        # to the AI reply.
+        conversation_service.add_message(
+            conversation, 'user', message_text, evolution_id=evolution_message_id
+        )
 
         # Opt-out handling. If the patient asks to stop proactive contact
         # ("SAIR"), honour it immediately - independently of the agent being
         # enabled - and confirm. Reactive replies keep working; only
         # agent-initiated (proactive) messages are suppressed.
         if is_opt_out_message(message_text):
-            conversation_service.add_message(
-                conversation, 'user', message_text, evolution_id=evolution_message_id
-            )
             patient = conversation.patient or Patient.query.filter_by(
                 clinic_id=clinic.id, phone=phone
             ).first()
             if patient and not patient.whatsapp_opt_out:
-                from app import db
                 patient.opt_out_whatsapp()
                 db.session.commit()
             opt_out_reply = (
@@ -207,51 +205,104 @@ def evolution_webhook():
             EvolutionService(clinic).send_message(phone, opt_out_reply)
             return jsonify({'status': 'processed', 'reason': 'Opt-out recorded'})
 
-        # Check if AI agent is enabled
+        # Agent switched off: this is "manual mode", never a black hole - the
+        # message stays stored and visible in the dashboard, we just don't
+        # generate a reply.
         if not clinic.agent_enabled:
-            logger.info('Agent disabled for clinic %s, ignoring message', clinic.name)
-            return jsonify({'status': 'ignored', 'reason': 'Agent disabled'})
+            logger.info('Agent disabled for clinic %s, message stored for manual handling', clinic.name)
+            return jsonify({'status': 'stored', 'reason': 'Agent disabled - stored for manual handling'})
 
-        # Process message
-        try:
-            # Check if conversation is paused (transferred to human)
-            if conversation.status == ConversationStatus.TRANSFERRED_TO_HUMAN:
-                logger.info('Conversation %s is paused (human support), ignoring message', conversation.id)
-                conversation_service.add_message(
-                    conversation, 'user', message_text, evolution_id=evolution_message_id
-                )
-                return jsonify({'status': 'ignored', 'reason': 'Conversation paused'})
+        # Conversation paused (human support): same, store-only.
+        if conversation.status == ConversationStatus.TRANSFERRED_TO_HUMAN:
+            logger.info('Conversation %s is paused (human support), message stored', conversation.id)
+            return jsonify({'status': 'stored', 'reason': 'Conversation paused'})
 
-            claude_service = ClaudeService(clinic)
-            response_text = claude_service.process_message(conversation, message_text)
-
-            # Attach the inbound Evolution id to the just-stored user message
-            conversation_service.attach_evolution_id_to_last_inbound(conversation, evolution_message_id)
-
-            # Send response via Evolution API
-            evolution_service = EvolutionService(clinic)
-            send_result = evolution_service.send_message(phone, response_text)
-
-            if 'error' in send_result:
-                logger.error('Failed to send response: %s', send_result['error'])
-            else:
-                reply_evolution_id = (send_result.get('key') or {}).get('id')
-                if reply_evolution_id:
-                    conversation_service.attach_evolution_id_to_last_reply(conversation, reply_evolution_id)
-
-            return jsonify({
-                'status': 'processed',
-                'response_sent': 'error' not in send_result
-            })
-
-        except ValueError as e:
-            # Claude API not configured
-            logger.error('Service error: %s', str(e))
-            return jsonify({'error': str(e)}), 500
+        # Hand off to the background pipeline (debounced burst aggregation,
+        # send retries, failure marking).
+        mode = enqueue_reply(clinic, conversation, phone)
+        return jsonify({'status': 'processed', 'mode': mode})
 
     except Exception as e:
         logger.exception('Error processing webhook: %s', str(e))
         return jsonify({'error': 'Internal server error'}), 500
+
+
+def _handle_inbound_media(clinic, conversation_service, conversation, media, evolution_message_id, phone):
+    """
+    Store an inbound media message. Media bytes are copied into our own
+    storage when possible (WhatsApp CDN URLs are E2E-encrypted and expire).
+    Voice notes are transcribed so the bot can keep handling the
+    conversation; other media (or failed transcriptions) hand off to a human.
+    """
+    media_type, media_url, mimetype, caption = media
+    logger.info('Received %s message from %s', media_type, phone)
+
+    # Try to persist our own copy of the media
+    asset_b64 = None
+    fetched = EvolutionService(clinic).get_media_base64(evolution_message_id)
+    if fetched:
+        try:
+            raw = base64.b64decode(fetched['base64'], validate=True)
+            if 0 < len(raw) <= MAX_MEDIA_BYTES:
+                asset = MediaAsset(
+                    clinic_id=clinic.id,
+                    mimetype=fetched.get('mimetype') or mimetype or 'application/octet-stream',
+                    data=raw,
+                )
+                db.session.add(asset)
+                db.session.commit()
+                media_url = asset.public_path
+                mimetype = asset.mimetype
+                asset_b64 = fetched['base64']
+        except (binascii.Error, ValueError) as e:
+            logger.warning('Discarding undecodable media payload: %s', e)
+
+    # Voice notes: transcribe and keep the bot in the loop
+    if (
+        media_type == 'audio'
+        and asset_b64
+        and clinic.agent_enabled
+        and conversation.status == ConversationStatus.ACTIVE
+    ):
+        transcript = ClaudeService(clinic).transcribe_audio(asset_b64, mimetype)
+        if transcript:
+            conversation_service.add_message(
+                conversation,
+                'user',
+                transcript,
+                evolution_id=evolution_message_id,
+                message_type='audio',
+                media_url=media_url,
+                media_mimetype=mimetype,
+                caption=transcript
+            )
+            mode = enqueue_reply(clinic, conversation, phone)
+            return jsonify({'status': 'processed', 'mode': mode, 'transcribed': True})
+
+    # Everything else (images, documents, failed transcription): store and
+    # hand off to a human. Transfer first so the new_message event carries
+    # the already-updated status.
+    if conversation.status != ConversationStatus.TRANSFERRED_TO_HUMAN:
+        conversation_service.transfer_to_human(
+            conversation,
+            f'Paciente enviou {media_type} - requer atendimento humano'
+        )
+
+    # Content is never left empty: an empty string here would later be
+    # sent to the LLM as an empty text block and get rejected.
+    content = caption or MEDIA_PLACEHOLDER_TEXT.get(media_type, 'Midia enviada')
+    conversation_service.add_message(
+        conversation,
+        'user',
+        content,
+        evolution_id=evolution_message_id,
+        message_type=media_type,
+        media_url=media_url,
+        media_mimetype=mimetype,
+        caption=caption or None
+    )
+
+    return jsonify({'status': 'processed', 'reason': 'Media message routed to human'})
 
 
 def _handle_status_update(instance_name: str, data):
@@ -331,21 +382,68 @@ def _handle_presence_update(instance_name: str, data: dict):
     return jsonify({'status': 'processed'})
 
 
+def _handle_connection_update(instance_name: str, data: dict):
+    """
+    Track the WhatsApp instance's connection state and alert the clinic when
+    it drops - a disconnected instance means the bot silently stops working,
+    so this is the product's fire alarm.
+    """
+    state = (data or {}).get('state') or (data or {}).get('connection')
+    if not state:
+        return jsonify({'status': 'ignored', 'reason': 'No state in payload'})
+    state = str(state).lower()
+
+    clinic = Clinic.query.filter_by(evolution_instance_name=instance_name).first()
+    if not clinic:
+        return jsonify({'status': 'ignored', 'reason': 'Clinic not found'})
+
+    previous = clinic.whatsapp_connection_state
+    clinic.whatsapp_connection_state = state
+    clinic.whatsapp_connection_updated_at = utcnow()
+    db.session.commit()
+
+    publish_event(str(clinic.id), 'connection_status', {'state': state})
+    logger.info('WhatsApp connection for clinic %s: %s -> %s', clinic.id, previous, state)
+
+    if state == 'close' and previous != 'close':
+        try:
+            EmailService().send(
+                clinic.email,
+                clinic.name,
+                'WhatsApp desconectado - ação necessária',
+                (
+                    f'<p>Olá, {clinic.name}!</p>'
+                    '<p>O WhatsApp da sua clínica foi <strong>desconectado</strong> e o '
+                    'assistente parou de receber mensagens dos pacientes.</p>'
+                    '<p>Acesse <strong>Configurações &rarr; WhatsApp</strong> no painel '
+                    'SDental e escaneie o QR Code novamente para reconectar.</p>'
+                )
+            )
+        except Exception as e:
+            logger.error('Failed to send disconnect alert email: %s', e)
+
+    return jsonify({'status': 'processed', 'state': state})
+
+
 @bp.route('/evolution/status', methods=['POST'])
 @limiter.limit("100 per minute", key_func=_webhook_rate_limit_key)
 @webhook_auth_required
 def evolution_status_webhook():
     """
-    Receive connection status updates from Evolution API.
+    Receive connection status updates from Evolution API (dedicated URL -
+    the same connection.update payload may also arrive on the main webhook).
     """
     try:
-        payload = request.get_json()
+        payload = request.get_json() or {}
 
         event = payload.get('event')
         instance = payload.get('instance')
-        state = payload.get('data', {}).get('state')
+        data = payload.get('data', {}) or {}
 
-        logger.info('Evolution status update: %s - %s - %s', instance, event, state)
+        logger.info('Evolution status update: %s - %s - %s', instance, event, data.get('state'))
+
+        if event == 'connection.update' or data.get('state'):
+            return _handle_connection_update(instance, data)
 
         return jsonify({'status': 'received'})
 

@@ -951,17 +951,121 @@ class ClaudeService:
         user = f"Métricas da semana (JSON):\n{json.dumps(metrics, ensure_ascii=False, default=str)}\n\nEscreva o resumo."
         return self._complete(system, user, max_tokens=500, temperature=0.5, task='generate_report_digest')
 
+    # How many stored messages go verbatim to the model; older ones are
+    # folded into the rolling summary below.
+    HISTORY_WINDOW = 30
+
+    def _maybe_update_rolling_summary(self, conversation: Conversation) -> None:
+        """
+        Keep a persistent summary of everything older than HISTORY_WINDOW in
+        conversation.context, so the bot doesn't forget what was agreed 30+
+        messages ago. Best-effort: any failure just means the summary lags.
+        """
+        try:
+            messages = conversation.messages or []
+            cut = len(messages) - self.HISTORY_WINDOW
+            context = conversation.context or {}
+            if cut <= 0 or context.get('summary_upto', 0) >= cut:
+                return
+
+            older = [
+                m for m in messages[:cut]
+                if m.get('content') and m.get('role') in ('user', 'assistant')
+            ]
+            if not older:
+                return
+
+            transcript = "\n".join(
+                f"{'Paciente' if m['role'] == 'user' else 'Assistente'}: {m['content']}"
+                for m in older[-80:]
+            )
+            previous = context.get('summary')
+            if previous:
+                transcript = f"Resumo anterior:\n{previous}\n\nMensagens seguintes:\n{transcript}"
+
+            system = (
+                "Você mantém a memória de longo prazo de uma conversa de WhatsApp "
+                "entre um paciente e a assistente de uma clínica. Resuma em até 8 "
+                "linhas, em português do Brasil, apenas fatos úteis para continuar o "
+                "atendimento: nome e dados do paciente, o que ele quer, o que já foi "
+                "combinado ou agendado, preferências e pendências. Não invente nada."
+            )
+            summary = self._complete(
+                system, transcript, max_tokens=350, temperature=0.2,
+                model=current_app.config.get('OPENROUTER_MODEL_LIGHT'),
+                task='rolling_summary'
+            )
+            if summary:
+                self.conversation_service.update_context(conversation, {
+                    'summary': summary.strip(),
+                    'summary_upto': cut,
+                })
+        except Exception as e:
+            logger.warning('Rolling summary update failed (non-fatal): %s', e)
+
+    def transcribe_audio(self, base64_data: str, mimetype: str = None) -> Optional[str]:
+        """
+        Transcribe a patient voice note so the bot can keep handling the
+        conversation instead of handing every audio off to a human.
+
+        Uses an audio-capable multimodal model through OpenRouter
+        (AUDIO_TRANSCRIPTION_MODEL). Returns the transcript, or None on any
+        failure - callers fall back to the human-handoff path.
+        """
+        if not base64_data:
+            return None
+        try:
+            audio_format = 'ogg'
+            if mimetype and '/' in mimetype:
+                audio_format = mimetype.split('/')[-1].split(';')[0].strip() or 'ogg'
+
+            model = current_app.config.get('AUDIO_TRANSCRIPTION_MODEL')
+            response = self.client.chat.completions.create(
+                model=model,
+                max_tokens=800,
+                temperature=0,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                "Transcreva este áudio em português do Brasil. "
+                                "Responda somente com a transcrição literal, sem comentários."
+                            ),
+                        },
+                        {
+                            "type": "input_audio",
+                            "input_audio": {"data": base64_data, "format": audio_format},
+                        },
+                    ],
+                }],
+                extra_body={"usage": USAGE_INCLUDE_COST},
+            )
+            record_ai_usage(self.clinic.id, AiUsageService.WHATSAPP, 'transcribe_audio', model, response)
+            text = (self._first_choice(response).message.content or '').strip()
+            return text or None
+        except Exception as e:
+            logger.warning('Audio transcription failed (falling back to human handoff): %s', e)
+            return None
+
     def process_message(
         self,
         conversation: Conversation,
-        new_message: str
+        new_message: str = None,
+        store_user_message: bool = True
     ) -> str:
         """
-        Process an incoming message and generate a response.
+        Generate the AI reply for the conversation's current state.
 
         Args:
             conversation: The conversation context
-            new_message: The new message from the user
+            new_message: The new user message. Required when
+                store_user_message is True (test-chat/preview flows); the
+                webhook pipeline stores messages up front and passes
+                store_user_message=False, in which case the reply is built
+                purely from the stored history (which lets one reply cover a
+                whole burst of aggregated messages).
 
         Returns:
             Response message to send back
@@ -973,8 +1077,14 @@ class ClaudeService:
                 "Por favor, aguarde."
             )
 
-        # Add user message to history
-        self.conversation_service.add_message(conversation, 'user', new_message)
+        if store_user_message:
+            if not new_message:
+                raise ValueError('new_message is required when store_user_message=True')
+            self.conversation_service.add_message(conversation, 'user', new_message)
+
+        # Keep long conversations coherent: fold everything older than the
+        # history window into a rolling summary stored on the conversation.
+        self._maybe_update_rolling_summary(conversation)
 
         # Build system prompt
         context_info = self.conversation_service.get_context_summary(conversation)

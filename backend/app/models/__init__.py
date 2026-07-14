@@ -19,6 +19,7 @@ from .finance import (
     FinancialGoal,
 )
 from .ai_usage_log import AiUsageLog, AiUsageService
+from .media_asset import MediaAsset, MAX_MEDIA_BYTES
 
 __all__ = [
     'Clinic',
@@ -53,4 +54,6 @@ __all__ = [
     'FinancialGoal',
     'AiUsageLog',
     'AiUsageService',
+    'MediaAsset',
+    'MAX_MEDIA_BYTES',
 ]
