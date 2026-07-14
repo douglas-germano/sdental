@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -64,7 +64,7 @@ export default function AppointmentsPage() {
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [filtersExpanded, setFiltersExpanded] = useState(false)
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     setLoading(true)
     try {
       const response = await appointmentsApi.list({
@@ -82,7 +82,7 @@ export default function AppointmentsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, statusFilter, professionalFilter, dateFrom, dateTo])
 
   const fetchProfessionals = async () => {
     try {
@@ -99,7 +99,7 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     fetchAppointments()
-  }, [page, statusFilter, professionalFilter, dateFrom, dateTo])
+  }, [fetchAppointments])
 
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {
     try {

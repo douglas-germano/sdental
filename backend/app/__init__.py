@@ -1,13 +1,30 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy.query import Query
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 
 from .config import config
 
-db = SQLAlchemy()
+
+class SoftDeleteQuery(Query):
+    """
+    Query class registered on all models. Soft-deleted rows are hidden
+    globally by the `do_orm_execute` listener in `app.models.mixins`;
+    `with_deleted()` is the per-query opt-out.
+
+    Defined here (not in models.mixins) because it must exist before `db`
+    is constructed, and mixins imports `db` from this module.
+    """
+
+    def with_deleted(self):
+        """Include soft-deleted records in this query."""
+        return self.execution_options(include_deleted=True)
+
+
+db = SQLAlchemy(query_class=SoftDeleteQuery)
 migrate = Migrate()
 jwt = JWTManager()
 
@@ -58,7 +75,8 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(health.bp)
     app.register_blueprint(public.bp)
 
-    from .routes import agents, professionals, pipeline, billing, assistant, financial
+    from .routes import agents, professionals, pipeline, billing, assistant, financial, media
+    app.register_blueprint(media.bp)
     app.register_blueprint(agents.bp)
     app.register_blueprint(professionals.bp)
     app.register_blueprint(pipeline.bp)

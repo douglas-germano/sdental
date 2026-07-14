@@ -3,11 +3,10 @@ Professional model for managing dentists/doctors in a clinic.
 """
 import uuid
 import re
-from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import validates
 
 from app import db
+from app.models.types import JSONB, UUID
 from .mixins import TimestampMixin
 
 

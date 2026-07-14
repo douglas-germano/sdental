@@ -7,10 +7,10 @@ keeps learning about the clinic over time instead of starting from zero
 every conversation.
 """
 import uuid
-from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
+from app.utils.datetime_utils import utcnow
 from app import db
+from app.models.types import JSONB, UUID
 from .mixins import TimestampMixin
 
 
@@ -30,10 +30,10 @@ class AssistantConversation(db.Model, TimestampMixin):
             'id': uuid.uuid4().hex,
             'role': role,
             'content': content,
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'timestamp': utcnow().isoformat() + 'Z',
         }
         self.messages = (self.messages or []) + [message]
-        self.last_message_at = datetime.utcnow()
+        self.last_message_at = utcnow()
         return message
 
     def to_dict(self) -> dict:

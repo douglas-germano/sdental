@@ -11,7 +11,15 @@ import { PageLoader } from '@/components/ui/page-loader'
 import { useConversations, FilterStatus } from './conversations-provider'
 import { Conversation } from '@/types'
 import { formatRelativeTime, formatPhone, cn } from '@/lib/utils'
-import { Chat as MessageSquare, ArrowsClockwise as RefreshCw, MagnifyingGlass as Search, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Image as ImageIcon, Microphone as Mic, FileText } from '@phosphor-icons/react'
+import { Chat as MessageSquare, ArrowsClockwise as RefreshCw, MagnifyingGlass as Search, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Image as ImageIcon, Microphone as Mic, FileText, SpeakerHigh, SpeakerSlash, Bell, BellSlash } from '@phosphor-icons/react'
+
+function avatarInitial(conv: Conversation): string {
+  const name = conv.patient?.name?.trim()
+  if (name) return name.charAt(0).toUpperCase()
+  // Unknown contact: last two phone digits beat an anonymous "?"
+  const digits = (conv.phone_number || '').replace(/\D/g, '')
+  return digits.slice(-2) || '?'
+}
 
 const FILTERS: { value: FilterStatus; label: string }[] = [
   { value: 'all', label: 'Todas' },
@@ -54,7 +62,8 @@ export function ConversationsSidebar() {
   const {
     conversations, loading, refreshing, page, setPage, totalPages,
     needsAttentionCount, filter, setFilter, searchInput, setSearchInput,
-    refresh, connected, typingConversationIds
+    refresh, connected, typingConversationIds,
+    soundEnabled, desktopEnabled, toggleSound, toggleDesktop
   } = useConversations()
 
   return (
@@ -71,14 +80,32 @@ export function ConversationsSidebar() {
               <TooltipContent>{connected ? 'Tempo real conectado' : 'Reconectando...'}</TooltipContent>
             </Tooltip>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" onClick={refresh} disabled={refreshing}>
-                <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Atualizar</TooltipContent>
-          </Tooltip>
+          <div className="flex items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" onClick={toggleSound}>
+                  {soundEnabled ? <SpeakerHigh className="h-4 w-4" /> : <SpeakerSlash className="h-4 w-4 text-muted-foreground/50" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{soundEnabled ? 'Som ligado' : 'Som desligado'}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" onClick={toggleDesktop}>
+                  {desktopEnabled ? <Bell className="h-4 w-4" /> : <BellSlash className="h-4 w-4 text-muted-foreground/50" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{desktopEnabled ? 'Notificações do navegador ativas' : 'Ativar notificações do navegador'}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" onClick={refresh} disabled={refreshing}>
+                  <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Atualizar</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         <div className="relative mb-3">
@@ -141,7 +168,7 @@ export function ConversationsSidebar() {
                         'h-11 w-11 rounded-full flex items-center justify-center text-white font-semibold text-sm',
                         conv.urgent ? 'bg-destructive' : isUrgent(conv) ? 'bg-warning' : 'bg-primary'
                       )}>
-                        {conv.patient?.name?.charAt(0).toUpperCase() || '?'}
+                        {avatarInitial(conv)}
                       </div>
                       {isRecent(conv) && (
                         <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-card" />
@@ -150,7 +177,10 @@ export function ConversationsSidebar() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className={cn('text-sm truncate', active ? 'font-semibold text-primary' : 'font-medium text-foreground')}>
+                        <span className={cn(
+                          'text-sm truncate',
+                          active ? 'font-semibold text-primary' : (conv.unread_count || 0) > 0 ? 'font-semibold text-foreground' : 'font-medium text-foreground'
+                        )}>
                           {conv.patient?.name || formatPhone(conv.phone_number)}
                         </span>
                         <span className="text-[11px] text-muted-foreground shrink-0">
@@ -158,18 +188,31 @@ export function ConversationsSidebar() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2 mt-0.5">
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className={cn(
+                          'text-xs truncate',
+                          (conv.unread_count || 0) > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'
+                        )}>
                           {typing ? (
                             <span className="text-primary font-medium">digitando...</span>
                           ) : (
                             <LastMessagePreview conv={conv} />
                           )}
                         </p>
-                        {conv.urgent ? (
-                          <Badge variant="destructive" size="sm" dot className="shrink-0">Urgente</Badge>
-                        ) : isUrgent(conv) && (
-                          <Badge variant="warning" size="sm" className="shrink-0">Aguardando</Badge>
-                        )}
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          {conv.urgent ? (
+                            <Badge variant="destructive" size="sm" dot>Urgente</Badge>
+                          ) : isUrgent(conv) && (
+                            <Badge variant="warning" size="sm">Aguardando</Badge>
+                          )}
+                          {(conv.unread_count || 0) > 0 && (
+                            <span
+                              className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10.5px] font-bold flex items-center justify-center"
+                              aria-label={`${conv.unread_count} mensagens não lidas`}
+                            >
+                              {(conv.unread_count || 0) > 99 ? '99+' : conv.unread_count}
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </Link>

@@ -5,6 +5,8 @@ import logging
 from flask import jsonify
 from werkzeug.exceptions import HTTPException
 
+from app import db
+
 from .exceptions import AppError
 
 logger = logging.getLogger(__name__)
@@ -45,6 +47,10 @@ def register_error_handlers(app):
     @app.errorhandler(Exception)
     def handle_generic_exception(error):
         """Handle unexpected exceptions."""
+        # A failed flush/commit leaves the session in an unusable state;
+        # roll back so anything running later in the request lifecycle
+        # (after_request hooks, teardown) sees a clean session.
+        db.session.rollback()
         logger.exception('unexpected_error: %s', str(error))
         response = jsonify({'error': 'Internal server error'})
         response.status_code = 500

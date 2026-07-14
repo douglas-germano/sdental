@@ -153,10 +153,17 @@ export interface Conversation {
   context?: Record<string, unknown>
   status: ConversationStatus
   urgent?: boolean
+  unread_count?: number
+  last_read_at?: string | null
   last_message_at: string
   created_at: string
   updated_at: string
   transfers?: BotTransfer[]
+}
+
+export interface QuickReply {
+  title: string
+  text: string
 }
 
 export type ConversationStatus =
@@ -178,10 +185,10 @@ export interface Message {
   media_url?: string
   media_mimetype?: string
   caption?: string
-  /** Set to 'whatsapp_app' for messages sent directly from the linked phone
-   *  (not through this platform) - e.g. staff replying manually. Omitted for
-   *  normal bot/dashboard-sent messages. */
-  sent_via?: 'whatsapp_app'
+  /** 'whatsapp_app' = sent directly from the linked phone (outside the
+   *  platform); 'dashboard' = sent manually by staff from this panel.
+   *  Omitted for normal bot replies. */
+  sent_via?: 'whatsapp_app' | 'dashboard'
 }
 
 export interface BotTransfer {

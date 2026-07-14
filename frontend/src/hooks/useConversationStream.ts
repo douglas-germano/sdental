@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { conversationsApi } from '@/lib/api'
 
-export type StreamEventType = 'new_message' | 'message_status' | 'typing'
+export type StreamEventType = 'new_message' | 'message_status' | 'typing' | 'connection_status'
 
 export interface StreamEvent {
   type: StreamEventType
@@ -58,6 +58,7 @@ export function useConversationStream() {
       es.addEventListener('new_message', emit('new_message'))
       es.addEventListener('message_status', emit('message_status'))
       es.addEventListener('typing', emit('typing'))
+      es.addEventListener('connection_status', emit('connection_status'))
 
       es.onerror = () => {
         setConnected(false)

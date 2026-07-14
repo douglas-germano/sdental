@@ -3,6 +3,7 @@ Professional management routes.
 """
 from flask import Blueprint, request, jsonify
 
+from app.utils.datetime_utils import local_now
 from app import db
 from app.models import Professional
 from app.utils.auth import clinic_required
@@ -180,7 +181,7 @@ def get_professional_appointments(professional_id, current_clinic):
     )
 
     if not include_past:
-        query = query.filter(Appointment.scheduled_datetime >= datetime.now())
+        query = query.filter(Appointment.scheduled_datetime >= local_now())
 
     if date_from:
         query = query.filter(Appointment.scheduled_datetime >= datetime.fromisoformat(date_from))

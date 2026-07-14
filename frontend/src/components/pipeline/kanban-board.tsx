@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import {
     DndContext,
     closestCorners,
@@ -55,18 +55,7 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
         })
     )
 
-    useEffect(() => {
-        fetchBoard()
-    }, [])
-
-    // Expose refresh method to parent via ref
-    useImperativeHandle(ref, () => ({
-        refresh: () => {
-            fetchBoard()
-        }
-    }))
-
-    const fetchBoard = async () => {
+    const fetchBoard = useCallback(async () => {
         try {
             const response = await pipelineApi.getBoard()
             setStages(response.data.map((stage: Stage) => ({
@@ -84,7 +73,18 @@ export const KanbanBoard = forwardRef<KanbanBoardRef>((props, ref) => {
         } finally {
             setLoading(false)
         }
-    }
+    }, [toast])
+
+    useEffect(() => {
+        fetchBoard()
+    }, [fetchBoard])
+
+    // Expose refresh method to parent via ref
+    useImperativeHandle(ref, () => ({
+        refresh: () => {
+            fetchBoard()
+        }
+    }))
 
     // Find which stage a patient belongs to
     const findPatientStage = (patientId: string) => {

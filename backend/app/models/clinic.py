@@ -2,12 +2,13 @@ import hashlib
 import secrets
 import uuid
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import validates
 
+from app.utils.datetime_utils import utcnow
 from app import db
+from app.models.types import JSONB, UUID
 from .mixins import TimestampMixin
 
 PASSWORD_RESET_TOKEN_TTL = timedelta(hours=1)
@@ -39,6 +40,14 @@ class Clinic(db.Model, TimestampMixin):
     evolution_api_url = db.Column(db.String(500), nullable=True)
     evolution_api_key = db.Column(db.String(255), nullable=True)
     evolution_instance_name = db.Column(db.String(100), nullable=True)
+
+    # Last known WhatsApp connection state, fed by Evolution's
+    # connection.update webhook ('open' / 'connecting' / 'close').
+    whatsapp_connection_state = db.Column(db.String(20), nullable=True)
+    whatsapp_connection_updated_at = db.Column(db.DateTime, nullable=True)
+
+    # Canned responses for the dashboard chat composer: [{title, text}, ...]
+    quick_replies = db.Column(JSONB, default=list)
 
     # AI provider (OpenRouter) API key override (nullable - use global key by default)
     openrouter_api_key = db.Column(db.String(255), nullable=True)
@@ -161,14 +170,14 @@ class Clinic(db.Model, TimestampMixin):
         """Create a password reset token, store only its hash, and return the raw token to send by e-mail."""
         raw_token = secrets.token_urlsafe(32)
         self.password_reset_token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
-        self.password_reset_expires_at = datetime.utcnow() + PASSWORD_RESET_TOKEN_TTL
+        self.password_reset_expires_at = utcnow() + PASSWORD_RESET_TOKEN_TTL
         return raw_token
 
     def verify_password_reset_token(self, token: str) -> bool:
         """Check a raw token against the stored hash and expiry, using a constant-time comparison."""
         if not token or not self.password_reset_token_hash or not self.password_reset_expires_at:
             return False
-        if datetime.utcnow() > self.password_reset_expires_at:
+        if utcnow() > self.password_reset_expires_at:
             return False
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         return secrets.compare_digest(token_hash, self.password_reset_token_hash)
@@ -189,6 +198,8 @@ class Clinic(db.Model, TimestampMixin):
             'business_hours': self.business_hours,
             'services': self.services,
             'active': self.active,
+            'whatsapp_connection_state': self.whatsapp_connection_state,
+            'quick_replies': self.quick_replies or [],
             'subscription_status': self.subscription_status,
             'subscription_period_end': self.subscription_period_end.isoformat() if self.subscription_period_end else None,
             'proactive_outreach_enabled': self.proactive_outreach_enabled,

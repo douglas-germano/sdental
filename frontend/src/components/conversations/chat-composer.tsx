@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
-import { PaperPlaneTilt as Send, Paperclip, Microphone as Mic, Square, X, Image as ImageIcon, FileText, CircleNotch as Loader2, MusicNote as Music } from '@phosphor-icons/react'
+import { QuickReply } from '@/types'
+import { PaperPlaneTilt as Send, Paperclip, Microphone as Mic, Square, X, Image as ImageIcon, FileText, CircleNotch as Loader2, MusicNote as Music, Lightning, GearSix } from '@phosphor-icons/react'
 
 export interface MediaPayload {
   media_type: 'image' | 'audio' | 'document'
@@ -18,6 +19,9 @@ interface ChatComposerProps {
   onSendText: (text: string) => Promise<void>
   onSendMedia: (payload: MediaPayload) => Promise<void>
   disabled?: boolean
+  /** Canned responses shown when the message starts with "/" */
+  quickReplies?: QuickReply[]
+  onManageQuickReplies?: () => void
 }
 
 interface PendingAttachment {
@@ -48,7 +52,7 @@ function fileToBase64(file: Blob): Promise<string> {
   })
 }
 
-export function ChatComposer({ onSendText, onSendMedia, disabled }: ChatComposerProps) {
+export function ChatComposer({ onSendText, onSendMedia, disabled, quickReplies = [], onManageQuickReplies }: ChatComposerProps) {
   const { toast } = useToast()
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -197,7 +201,29 @@ export function ChatComposer({ onSendText, onSendMedia, disabled }: ChatComposer
     }
   }
 
+  // "/" opens the quick-replies palette (only when the input starts with it)
+  const slashQuery = !attachment && text.startsWith('/') ? text.slice(1).toLowerCase() : null
+  const slashMatches = slashQuery !== null
+    ? quickReplies.filter((q) => q.title.toLowerCase().includes(slashQuery))
+    : []
+  const slashOpen = slashQuery !== null && (quickReplies.length > 0 || !!onManageQuickReplies)
+
+  const applyQuickReply = (reply: QuickReply) => {
+    setText(reply.text)
+    textareaRef.current?.focus()
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (slashOpen && e.key === 'Escape') {
+      e.preventDefault()
+      setText('')
+      return
+    }
+    if (slashOpen && (e.key === 'Tab' || e.key === 'Enter') && slashMatches.length > 0 && !e.shiftKey) {
+      e.preventDefault()
+      applyQuickReply(slashMatches[0])
+      return
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -207,7 +233,46 @@ export function ChatComposer({ onSendText, onSendMedia, disabled }: ChatComposer
   const formatSeconds = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <div className="border-t border-border shrink-0 bg-card">
+    <div className="relative border-t border-border shrink-0 bg-card">
+      {slashOpen && (
+        <div className="absolute bottom-full left-3 right-3 mb-1 rounded-card border border-border bg-popover shadow-border overflow-hidden z-10">
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/60">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+              <Lightning className="h-3 w-3" /> Respostas rápidas
+            </span>
+            {onManageQuickReplies && (
+              <button
+                type="button"
+                onClick={onManageQuickReplies}
+                className="text-[11px] text-primary font-medium flex items-center gap-1 hover:underline"
+              >
+                <GearSix className="h-3 w-3" /> Gerenciar
+              </button>
+            )}
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {slashMatches.length === 0 ? (
+              <p className="px-3 py-2.5 text-xs text-muted-foreground">
+                {quickReplies.length === 0
+                  ? 'Nenhuma resposta rápida cadastrada ainda.'
+                  : 'Nenhum atalho corresponde à busca.'}
+              </p>
+            ) : (
+              slashMatches.map((reply) => (
+                <button
+                  key={reply.title}
+                  type="button"
+                  onClick={() => applyQuickReply(reply)}
+                  className="w-full text-left px-3 py-2 hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none transition-colors"
+                >
+                  <span className="block text-xs font-semibold">/{reply.title}</span>
+                  <span className="block text-xs text-muted-foreground truncate">{reply.text}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
       {attachment && (
         <div className="flex items-center gap-3 px-4 pt-3">
           <div className="relative">

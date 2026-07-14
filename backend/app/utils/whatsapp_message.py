@@ -10,6 +10,8 @@ content" and how media/timestamps are read.
 from datetime import datetime
 from typing import Optional
 
+from app.utils.datetime_utils import utcnow, utcfromtimestamp
+
 MEDIA_MESSAGE_KEYS = {
     'imageMessage': 'image',
     'audioMessage': 'audio',
@@ -78,9 +80,9 @@ def parse_message_timestamp(raw_ts) -> datetime:
             seconds = int(raw_ts.get('low', 0))
         else:
             seconds = int(raw_ts)
-        return datetime.utcfromtimestamp(seconds)
+        return utcfromtimestamp(seconds)
     except (TypeError, ValueError, OSError):
-        return datetime.utcnow()
+        return utcnow()
 
 
 def normalize_raw_message(raw: dict) -> Optional[dict]:

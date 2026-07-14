@@ -7,6 +7,7 @@ export const runtime = 'edge'
 import { usePathname } from 'next/navigation'
 import { ConversationsProvider } from '@/components/conversations/conversations-provider'
 import { ConversationsSidebar } from '@/components/conversations/conversations-sidebar'
+import { ConnectionBanner } from '@/components/conversations/connection-banner'
 import { cn } from '@/lib/utils'
 
 export default function ConversationsLayout({
@@ -19,18 +20,21 @@ export default function ConversationsLayout({
 
   return (
     <ConversationsProvider>
-      <div className="flex h-[100dvh] lg:h-[calc(100dvh-2rem)] lg:rounded-card lg:border lg:border-border overflow-hidden bg-card">
-        <div className={cn(
-          'w-full lg:w-[360px] xl:w-[400px] shrink-0 border-r border-border flex flex-col',
-          hasSelectedConversation ? 'hidden lg:flex' : 'flex'
-        )}>
-          <ConversationsSidebar />
-        </div>
-        <div className={cn(
-          'flex-1 min-w-0 flex flex-col',
-          hasSelectedConversation ? 'flex' : 'hidden lg:flex'
-        )}>
-          {children}
+      <div className="flex flex-col h-[100dvh] lg:h-[calc(100dvh-2rem)] lg:rounded-card lg:border lg:border-border overflow-hidden bg-card">
+        <ConnectionBanner />
+        <div className="flex flex-1 min-h-0">
+          <div className={cn(
+            'w-full lg:w-[360px] xl:w-[400px] shrink-0 border-r border-border flex flex-col',
+            hasSelectedConversation ? 'hidden lg:flex' : 'flex'
+          )}>
+            <ConversationsSidebar />
+          </div>
+          <div className={cn(
+            'flex-1 min-w-0 flex flex-col',
+            hasSelectedConversation ? 'flex' : 'hidden lg:flex'
+          )}>
+            {children}
+          </div>
         </div>
       </div>
     </ConversationsProvider>

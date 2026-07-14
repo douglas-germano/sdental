@@ -2,10 +2,10 @@
 Service for managing appointment reminders.
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import List, Optional
-from zoneinfo import ZoneInfo
 
+from app.utils.datetime_utils import local_now
 from app import db
 from app.models import (
     Appointment,
@@ -19,9 +19,6 @@ from app.services.evolution_service import EvolutionService
 from app.services.email_service import EmailService
 
 logger = logging.getLogger(__name__)
-
-# Timezone for Brazil
-BR_TZ = ZoneInfo('America/Sao_Paulo')
 
 # Default reminder message templates
 DEFAULT_REMINDER_24H = """Olá {patient_name}! 👋
@@ -77,7 +74,7 @@ class ReminderService:
             return []
 
         reminders = []
-        now = datetime.now(BR_TZ).replace(tzinfo=None)
+        now = local_now()
         scheduled_dt = appointment.scheduled_datetime
 
         # Schedule 24h reminder
@@ -156,7 +153,7 @@ class ReminderService:
         Returns:
             List of pending reminders ready to send
         """
-        now = datetime.now(BR_TZ).replace(tzinfo=None)
+        now = local_now()
 
         return AppointmentReminder.query.filter(
             AppointmentReminder.status == ReminderStatus.PENDING,

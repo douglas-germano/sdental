@@ -5,6 +5,7 @@ from urllib.parse import quote
 
 from flask import current_app
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models import Clinic, KiwifyWebhookEvent, SubscriptionStatus
 
@@ -100,7 +101,7 @@ class BillingService:
         elif event_type in LATE_EVENTS:
             clinic.subscription_status = SubscriptionStatus.LATE
             if not clinic.subscription_late_since:
-                clinic.subscription_late_since = datetime.utcnow()
+                clinic.subscription_late_since = utcnow()
             # Access is left untouched here on purpose: the clinic keeps
             # working during the grace period. See scheduler.py's
             # suspend_late_subscriptions_job for the suspension itself.

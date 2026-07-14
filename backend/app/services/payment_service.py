@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
+from app.utils.datetime_utils import local_today, utcnow
 from app import db
 from app.models import Payment, PaymentMethod, PaymentStatus, Patient, Appointment
 
@@ -115,7 +116,7 @@ class PaymentService:
         payment.paid_amount = (payment.paid_amount or Decimal('0')) + received
         if method:
             payment.method = method
-        payment.paid_at = paid_at or datetime.utcnow()
+        payment.paid_at = paid_at or utcnow()
 
         if payment.paid_amount >= payment.amount:
             payment.status = PaymentStatus.PAID
@@ -148,7 +149,7 @@ class PaymentService:
     def get_receivables(self, days: int = 30) -> dict:
         """Pending/partial charges due within the next `days` (plus already overdue)."""
         days = max(1, min(days, 365))
-        today = date.today()
+        today = local_today()
         horizon = today + timedelta(days=days)
 
         pending = self._query().filter(

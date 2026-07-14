@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
+from app.utils.datetime_utils import utcnow
 from app import db
+from app.models.types import JSONB, UUID
 from .mixins import SoftDeleteMixin, TimestampMixin
 
 
@@ -36,8 +37,11 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     messages = db.Column(JSONB, default=list)  # [{role, content, timestamp}]
     context = db.Column(JSONB, default=dict)  # Context for Claude
     status = db.Column(db.String(30), default=ConversationStatus.ACTIVE)
-    last_message_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_message_at = db.Column(db.DateTime, default=utcnow)
     urgent = db.Column(db.Boolean, default=False, nullable=False)
+    # When clinic staff last opened this conversation in the dashboard -
+    # patient messages newer than this count as unread.
+    last_read_at = db.Column(db.DateTime, nullable=True)
 
     # Relationships
     bot_transfers = db.relationship(
@@ -62,6 +66,11 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
         nullable side of an outer join - going through `Session.refresh()`
         would pull that join in and fail.
         """
+        # Core selects bypass the session's autoflush (it only runs for ORM
+        # statements), so push any pending local mutations first - otherwise
+        # the read-back below would overwrite messages added earlier in this
+        # same transaction with the stale committed value.
+        db.session.flush()
         row = db.session.execute(
             db.select(self.__table__.c.messages)
             .where(self.__table__.c.id == self.id)
@@ -104,7 +113,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             'evolution_id': evolution_id,
             'role': role,
             'content': content,
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'timestamp': utcnow().isoformat() + 'Z',
             'status': status,
             'type': message_type
         }
@@ -118,7 +127,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             message['sent_via'] = sent_via
 
         self.messages = self.messages + [message]
-        self.last_message_at = datetime.utcnow()
+        self.last_message_at = utcnow()
         return message
 
     def find_message(self, message_id: str) -> dict:
@@ -172,6 +181,32 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             self.messages = new_messages
             return new_messages[i]
 
+        return None
+
+    def attach_evolution_id_by_content(
+        self, evolution_id: str, content: str, role: str = 'assistant', lookback: int = 8
+    ) -> dict:
+        """
+        Attach an evolution_id to the most recent message matching `content`
+        that doesn't have one yet. Used to recognize the webhook echo of a
+        reply this platform just sent, when the echo races ahead of the send
+        result being recorded (otherwise the echo would be mistaken for a
+        staff member typing on the phone and pause the bot).
+        """
+        if not evolution_id or not content:
+            return None
+
+        self._lock_row()
+
+        messages = list(self.messages or [])
+        for i in range(len(messages) - 1, max(len(messages) - 1 - lookback, -1), -1):
+            msg = messages[i]
+            if msg.get('role') != role or msg.get('evolution_id') or msg.get('sent_via'):
+                continue
+            if (msg.get('content') or '') == content:
+                messages[i] = {**msg, 'evolution_id': evolution_id}
+                self.messages = messages
+                return messages[i]
         return None
 
     def merge_history_messages(self, historical: list) -> int:
@@ -233,6 +268,21 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
 
         return len(new_entries)
 
+    def unread_count(self) -> int:
+        """
+        Number of patient messages newer than last_read_at. Message
+        timestamps are fixed-format ISO strings ('...Z'), so lexicographic
+        comparison is chronologically correct.
+        """
+        messages = self.messages or []
+        if not messages:
+            return 0
+        cutoff = self.last_read_at.isoformat() + 'Z' if self.last_read_at else ''
+        return sum(
+            1 for m in messages
+            if m.get('role') == 'user' and (m.get('timestamp') or '') > cutoff
+        )
+
     def to_dict(self, include_messages: bool = True, include_last_message_only: bool = False) -> dict:
         data = {
             'id': str(self.id),
@@ -242,6 +292,8 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             'phone_number': self.phone_number,
             'status': self.status,
             'urgent': self.urgent,
+            'unread_count': self.unread_count(),
+            'last_read_at': self.last_read_at.isoformat() + 'Z' if self.last_read_at else None,
             'last_message_at': self.last_message_at.isoformat() + 'Z' if self.last_message_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,

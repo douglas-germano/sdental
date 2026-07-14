@@ -168,6 +168,52 @@ class EvolutionService:
             logger.error('Failed to send message via Evolution API: %s', str(e))
             return {'error': str(e)}
 
+    def send_presence(self, phone: str, presence: str = 'composing', delay_ms: int = 10000) -> None:
+        """
+        Best-effort "typing..." indicator to the patient while the bot is
+        thinking. Never raises - presence is cosmetic and must not interfere
+        with message processing.
+        """
+        if not self.api_url or not self.api_key:
+            return
+        try:
+            requests.post(
+                f'{self.api_url}/chat/sendPresence/{self.instance_name}',
+                json={'number': phone, 'presence': presence, 'delay': delay_ms},
+                headers=self._get_headers(),
+                timeout=5
+            )
+        except requests.exceptions.RequestException as e:
+            logger.debug('sendPresence failed (non-fatal): %s', e)
+
+    def get_media_base64(self, evolution_message_id: str) -> Optional[dict]:
+        """
+        Download (and decrypt) a received media message through Evolution API.
+
+        Returns {'base64': str, 'mimetype': str|None} or None on any failure.
+        The raw CDN URL in the webhook payload is E2E-encrypted and expires,
+        so this is the only reliable way to get displayable bytes.
+        """
+        if not self.api_url or not self.api_key or not evolution_message_id:
+            return None
+
+        url = f'{self.api_url}/chat/getBase64FromMediaMessage/{self.instance_name}'
+        payload = {
+            'message': {'key': {'id': evolution_message_id}},
+            'convertToMp4': False,
+        }
+        try:
+            response = requests.post(url, json=payload, headers=self._get_headers(), timeout=30)
+            response.raise_for_status()
+            data = response.json() or {}
+            b64 = data.get('base64') or data.get('media')
+            if not b64:
+                return None
+            return {'base64': b64, 'mimetype': data.get('mimetype')}
+        except (requests.exceptions.RequestException, ValueError) as e:
+            logger.warning('Failed to fetch media %s via Evolution API: %s', evolution_message_id, e)
+            return None
+
     def send_media(
         self,
         phone: str,

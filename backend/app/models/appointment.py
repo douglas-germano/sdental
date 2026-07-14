@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID
+from app.utils.datetime_utils import utcnow
+from app.models.types import UUID
 from sqlalchemy.orm import validates
 
 from app import db
@@ -87,12 +88,12 @@ class Appointment(db.Model, SoftDeleteMixin, TimestampMixin):
 
     def cancel(self) -> None:
         self.status = AppointmentStatus.CANCELLED
-        self.cancelled_at = datetime.utcnow()
+        self.cancelled_at = utcnow()
 
     def confirm_by_patient(self) -> None:
         """Record that the patient themselves confirmed attendance (e.g. via WhatsApp)."""
         self.status = AppointmentStatus.CONFIRMED
-        self.patient_confirmed_at = datetime.utcnow()
+        self.patient_confirmed_at = utcnow()
 
     def __repr__(self) -> str:
         return f'<Appointment {self.id} - {self.service_name}>'

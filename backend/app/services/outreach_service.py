@@ -19,10 +19,10 @@ so the AI never takes an irreversible action without a human (the patient)
 in the loop.
 """
 import logging
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import timedelta
 from typing import Optional
 
+from app.utils.datetime_utils import local_now
 from app import db
 from app.models import (
     Patient,
@@ -38,7 +38,6 @@ from app.services.evolution_service import EvolutionService
 
 logger = logging.getLogger(__name__)
 
-BR_TZ = ZoneInfo('America/Sao_Paulo')
 
 # Guardrail defaults
 QUIET_HOURS_START = 8    # do not send before 08:00 BRT
@@ -86,7 +85,7 @@ class OutreachService:
         if getattr(patient, 'whatsapp_opt_out', False):
             return False, 'opted_out'
         if not ignore_quiet_hours:
-            hour = datetime.now(BR_TZ).hour
+            hour = local_now().hour
             if hour < QUIET_HOURS_START or hour >= QUIET_HOURS_END:
                 return False, 'quiet_hours'
         recent = AgentAction.count_recent_for_patient(patient.id, timedelta(hours=24))

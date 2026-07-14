@@ -242,6 +242,14 @@ export const conversationsApi = {
   syncAllHistory: () =>
     api.post('/conversations/sync-all-history'),
 
+  markRead: (id: string) =>
+    api.post(`/conversations/${id}/read`),
+
+  getQuickReplies: () => api.get('/conversations/quick-replies'),
+
+  updateQuickReplies: (quickReplies: { title: string; text: string }[]) =>
+    api.put('/conversations/quick-replies', { quick_replies: quickReplies }),
+
   /**
    * URL for the SSE realtime stream. EventSource can't set an Authorization
    * header, so the access token is passed as a query param instead.
@@ -250,6 +258,21 @@ export const conversationsApi = {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
     return `${API_URL}/conversations/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
   }
+}
+
+/**
+ * Resolve a message's media_url to something the browser can load.
+ *
+ * Internal assets ('/api/media/<id>') live on the API host and need the JWT
+ * appended as ?token= because <img>/<audio> tags can't send headers. External
+ * (legacy WhatsApp CDN) URLs pass through untouched.
+ */
+export function resolveMediaUrl(mediaUrl?: string): string | undefined {
+  if (!mediaUrl) return undefined
+  if (!mediaUrl.startsWith('/api/')) return mediaUrl
+  const base = API_URL.replace(/\/api\/?$/, '')
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+  return `${base}${mediaUrl}${token ? `?token=${encodeURIComponent(token)}` : ''}`
 }
 
 // Analytics API

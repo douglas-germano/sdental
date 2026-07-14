@@ -10,7 +10,7 @@ the product - before this existed there was no way to answer "how much AI
 usage is this clinic generating" without leaving the app.
 """
 import uuid
-from sqlalchemy.dialects.postgresql import UUID
+from app.models.types import UUID
 
 from app import db
 from .mixins import TimestampMixin

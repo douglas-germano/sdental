@@ -214,6 +214,9 @@ export function WhatsappConnectionWizard() {
           </p>
 
           <div className="relative bg-white p-4 rounded-card border border-border/60">
+            {/* eslint-disable-next-line @next/next/no-img-element -- QR code
+                arrives as a base64 data URI from Evolution API; next/image
+                adds no optimization for data URIs. */}
             <img
               src={qrCode.startsWith('data:image') ? qrCode : `data:image/png;base64,${qrCode}`}
               alt="WhatsApp QR Code"

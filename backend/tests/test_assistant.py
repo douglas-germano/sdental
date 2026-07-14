@@ -11,9 +11,10 @@ blocks in one test can silently discard session state between them - keep
 everything for one test in a single block.
 """
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import patch
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models import (
     AssistantConversation, AssistantMemory, Patient, PipelineStage,
@@ -246,7 +247,7 @@ class TestAssistantServiceTools:
                 clinic_id=sample_clinic.id,
                 patient_id=sample_patient.id,
                 service_name='Consulta Geral',
-                scheduled_datetime=datetime.utcnow() - timedelta(days=5),
+                scheduled_datetime=utcnow() - timedelta(days=5),
                 status=AppointmentStatus.COMPLETED,
             )
             db.session.add(appt)
@@ -273,7 +274,7 @@ class TestAssistantServiceTools:
                 patient_id=sample_patient.id,
                 professional_id=professional.id,
                 service_name='Consulta Geral',
-                scheduled_datetime=datetime.utcnow() - timedelta(days=2),
+                scheduled_datetime=utcnow() - timedelta(days=2),
                 status=AppointmentStatus.COMPLETED,
             )
             db.session.add(appt)
@@ -307,19 +308,19 @@ class TestAssistantServiceTools:
                 Appointment(
                     clinic_id=sample_clinic.id, patient_id=sample_patient.id,
                     service_name='Consulta Geral',
-                    scheduled_datetime=datetime.utcnow() - timedelta(days=10),
+                    scheduled_datetime=utcnow() - timedelta(days=10),
                     status=AppointmentStatus.COMPLETED,
                 ),
                 Appointment(
                     clinic_id=sample_clinic.id, patient_id=sample_patient.id,
                     service_name='Retorno',
-                    scheduled_datetime=datetime.utcnow() - timedelta(days=1),
+                    scheduled_datetime=utcnow() - timedelta(days=1),
                     status=AppointmentStatus.COMPLETED,
                 ),
                 Appointment(
                     clinic_id=sample_clinic.id, patient_id=other_patient.id,
                     service_name='Consulta Geral',
-                    scheduled_datetime=datetime.utcnow() - timedelta(days=3),
+                    scheduled_datetime=utcnow() - timedelta(days=3),
                     status=AppointmentStatus.COMPLETED,
                 ),
             ]

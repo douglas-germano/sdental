@@ -1,10 +1,10 @@
 """
 Health check endpoints.
 """
-from datetime import datetime
 from flask import Blueprint, jsonify
 from sqlalchemy import text
 
+from app.utils.datetime_utils import utcnow
 from app import db
 
 bp = Blueprint('health', __name__, url_prefix='/api')
@@ -18,7 +18,7 @@ def health_check():
     """
     return jsonify({
         'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat() + 'Z'
+        'timestamp': utcnow().isoformat() + 'Z'
     })
 
 
@@ -36,7 +36,7 @@ def readiness_check():
 
     response = {
         'status': 'ready' if all_healthy else 'not_ready',
-        'timestamp': datetime.utcnow().isoformat() + 'Z',
+        'timestamp': utcnow().isoformat() + 'Z',
         'checks': checks
     }
 
@@ -51,7 +51,7 @@ def liveness_check():
     """
     return jsonify({
         'status': 'alive',
-        'timestamp': datetime.utcnow().isoformat() + 'Z'
+        'timestamp': utcnow().isoformat() + 'Z'
     })
 
 

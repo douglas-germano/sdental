@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, time
 from typing import List, Optional
 from uuid import UUID
 
+from app.utils.datetime_utils import local_now
 from app import db
 from app.models import Appointment, Patient, AvailabilitySlot, AppointmentStatus, Professional
 from app.utils.validators import normalize_phone
@@ -138,7 +139,7 @@ class AppointmentService:
 
                 if is_available:
                     # Don't show past slots for today
-                    if date == datetime.now().date() and current_time <= datetime.now():
+                    if date == local_now().date() and current_time <= local_now():
                         pass
                     else:
                         slot_data = {
@@ -513,7 +514,7 @@ class AppointmentService:
 
         if not include_past:
             query = query.filter(
-                Appointment.scheduled_datetime >= datetime.now()
+                Appointment.scheduled_datetime >= local_now()
             )
 
         return query.order_by(Appointment.scheduled_datetime).all()

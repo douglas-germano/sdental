@@ -4,8 +4,9 @@ Appointment (both the AI/public booking path via AppointmentService and the
 manual staff-creation route), and FinancialService's summary/timeseries/
 breakdown calculations plus their HTTP routes.
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models import Appointment, AppointmentStatus, AppointmentReminder, Clinic, Professional
 from app.services.appointment_service import AppointmentService
@@ -42,7 +43,7 @@ class TestPriceSnapshot:
         with app.app_context():
             _set_services_with_price(sample_clinic, price=180)
             service = AppointmentService(sample_clinic)
-            future_dt = datetime.utcnow().replace(hour=10, minute=0, second=0, microsecond=0) + timedelta(days=14)
+            future_dt = utcnow().replace(hour=10, minute=0, second=0, microsecond=0) + timedelta(days=14)
             # Ensure a weekday so default business hours (Mon-Fri) apply
             while future_dt.weekday() > 4:
                 future_dt += timedelta(days=1)
@@ -64,7 +65,7 @@ class TestPriceSnapshot:
         with app.app_context():
             _set_services_with_price(sample_clinic, price=100)
             service = AppointmentService(sample_clinic)
-            future_dt = datetime.utcnow().replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=15)
+            future_dt = utcnow().replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=15)
             while future_dt.weekday() > 4:
                 future_dt += timedelta(days=1)
 
@@ -92,7 +93,7 @@ class TestPriceSnapshot:
         # Ensure a weekday within default business hours (Mon-Fri), same as
         # the other price-snapshot tests above - otherwise this test is flaky
         # depending on what time of day/week it happens to run.
-        future_dt = datetime.utcnow().replace(hour=10, minute=0, second=0, microsecond=0) + timedelta(days=20)
+        future_dt = utcnow().replace(hour=10, minute=0, second=0, microsecond=0) + timedelta(days=20)
         while future_dt.weekday() > 4:
             future_dt += timedelta(days=1)
         future_date = future_dt.isoformat()
@@ -110,7 +111,7 @@ class TestFinancialServiceSummary:
     def test_summary_splits_realized_forecast_lost(self, app, sample_clinic, sample_patient):
         with app.app_context():
             _set_services_with_price(sample_clinic, price=100)
-            now = datetime.utcnow()
+            now = utcnow()
 
             realized = Appointment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id,
@@ -145,7 +146,7 @@ class TestFinancialServiceSummary:
     def test_summary_falls_back_to_current_service_price_for_legacy_rows(self, app, sample_clinic, sample_patient):
         with app.app_context():
             _set_services_with_price(sample_clinic, price=75)
-            now = datetime.utcnow()
+            now = utcnow()
 
             legacy = Appointment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id,
@@ -172,7 +173,7 @@ class TestFinancialServiceSummary:
 class TestFinancialServiceTimeseries:
     def test_timeseries_buckets_by_week(self, app, sample_clinic, sample_patient):
         with app.app_context():
-            now = datetime.utcnow()
+            now = utcnow()
             completed = Appointment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id,
                 service_name='Consulta Geral', scheduled_datetime=now - timedelta(days=3),
@@ -208,7 +209,7 @@ class TestFinancialServiceTimeseries:
 class TestFinancialServiceBreakdown:
     def test_breakdown_by_service(self, app, sample_clinic, sample_patient):
         with app.app_context():
-            now = datetime.utcnow()
+            now = utcnow()
             a1 = Appointment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id,
                 service_name='Consulta Geral', scheduled_datetime=now - timedelta(days=1),
@@ -237,7 +238,7 @@ class TestFinancialServiceBreakdown:
             db.session.add(professional)
             db.session.commit()
 
-            now = datetime.utcnow()
+            now = utcnow()
             assigned = Appointment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id,
                 professional_id=professional.id,

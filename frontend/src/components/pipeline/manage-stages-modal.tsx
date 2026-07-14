@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -142,13 +142,7 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
     })
   )
 
-  useEffect(() => {
-    if (open) {
-      fetchStages()
-    }
-  }, [open])
-
-  const fetchStages = async () => {
+  const fetchStages = useCallback(async () => {
     setLoading(true)
     try {
       const response = await pipelineApi.getStages()
@@ -163,7 +157,13 @@ export function ManageStagesModal({ open, onOpenChange, onSave }: Props) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    if (open) {
+      fetchStages()
+    }
+  }, [open, fetchStages])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event

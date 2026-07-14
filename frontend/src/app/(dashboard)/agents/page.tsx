@@ -130,6 +130,10 @@ export default function AgentsPage() {
 
     useEffect(() => {
         fetchConfig()
+        // Intentionally mount-only: fetchConfig writes agentConfig, so putting
+        // it in the deps would refetch (and clobber unsaved edits) on every
+        // config change.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {

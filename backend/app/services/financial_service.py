@@ -17,6 +17,7 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 from typing import Callable
 
+from app.utils.datetime_utils import local_now, utcnow
 from app import db
 from app.models import (
     Appointment, AppointmentStatus, CommissionPayout, Expense, ExpenseStatus,
@@ -49,7 +50,7 @@ class FinancialService:
         lost revenue (cancellations/no-shows) for the past `days`.
         """
         days = max(1, min(days, 365))
-        now = datetime.utcnow()
+        now = local_now()
         past_start = now - timedelta(days=days)
         future_end = now + timedelta(days=days)
 
@@ -106,7 +107,7 @@ class FinancialService:
         past_days = max(0, min(past_days, 730))
         future_days = max(0, min(future_days, 365))
 
-        now = datetime.utcnow()
+        now = local_now()
         start = now - timedelta(days=past_days)
         end = now + timedelta(days=future_days)
 
@@ -133,7 +134,7 @@ class FinancialService:
 
     def _breakdown(self, days: int, key_fn: Callable[[Appointment], str]) -> list[dict]:
         days = max(1, min(days, 365))
-        now = datetime.utcnow()
+        now = local_now()
         start = now - timedelta(days=days)
         end = now + timedelta(days=days)
 
@@ -175,7 +176,7 @@ class FinancialService:
         paid_at/paid_at), for the trailing `days`.
         """
         days = max(1, min(days, 365))
-        start = datetime.utcnow() - timedelta(days=days)
+        start = utcnow() - timedelta(days=days)
 
         payments = Payment.query.filter(
             Payment.clinic_id == self.clinic.id,
@@ -208,7 +209,7 @@ class FinancialService:
     def get_goal_progress(self, period: str = None) -> dict:
         """Progress of the clinic's revenue goal for `period` (YYYY-MM,
         defaults to the current month) against realized revenue in that month."""
-        period = period or datetime.utcnow().strftime('%Y-%m')
+        period = period or local_now().strftime('%Y-%m')
         year, month = (int(p) for p in period.split('-'))
         month_start = datetime(year, month, 1)
         month_end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)

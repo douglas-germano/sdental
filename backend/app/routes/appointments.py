@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 
+from app.utils.datetime_utils import local_now, utcnow
 from app import db
 from app.models import Appointment, Patient, AppointmentStatus
 from app.utils.auth import clinic_required
@@ -67,7 +68,7 @@ def list_appointments(current_clinic):
 @clinic_required
 def upcoming_appointments(current_clinic):
     """Get upcoming appointments for today and tomorrow."""
-    now = datetime.utcnow()
+    now = local_now()
     tomorrow_end = now.replace(hour=23, minute=59, second=59) + timedelta(days=1)
 
     appointments = Appointment.query.filter(

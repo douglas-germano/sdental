@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface UseConfirmOptions {
@@ -14,7 +14,6 @@ interface UseConfirmOptions {
 interface ConfirmState {
   open: boolean
   options: UseConfirmOptions | null
-  resolve: ((value: boolean) => void) | null
 }
 
 /**
@@ -46,28 +45,27 @@ export function useConfirm() {
   const [state, setState] = useState<ConfirmState>({
     open: false,
     options: null,
-    resolve: null,
   })
+  // The pending promise resolver lives in a ref (not state): the handlers
+  // below always see the current resolver without re-creating themselves,
+  // and resolving is not a render concern.
+  const resolveRef = useRef<((value: boolean) => void) | null>(null)
 
   const confirm = useCallback((options: UseConfirmOptions): Promise<boolean> => {
     return new Promise((resolve) => {
-      setState({
-        open: true,
-        options,
-        resolve,
-      })
+      resolveRef.current = resolve
+      setState({ open: true, options })
     })
   }, [])
 
-  const handleConfirm = useCallback(() => {
-    state.resolve?.(true)
-    setState({ open: false, options: null, resolve: null })
-  }, [state.resolve])
+  const settle = useCallback((value: boolean) => {
+    resolveRef.current?.(value)
+    resolveRef.current = null
+    setState({ open: false, options: null })
+  }, [])
 
-  const handleCancel = useCallback(() => {
-    state.resolve?.(false)
-    setState({ open: false, options: null, resolve: null })
-  }, [state.resolve])
+  const handleConfirm = useCallback(() => settle(true), [settle])
+  const handleCancel = useCallback(() => settle(false), [settle])
 
   const ConfirmDialogComponent = state.options ? (
     <ConfirmDialog

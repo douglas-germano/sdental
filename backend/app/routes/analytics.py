@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 from sqlalchemy import func
 
+from app.utils.datetime_utils import local_now, utcnow
 from app import db
 from app.models import (
     Appointment, Patient, Conversation, AppointmentStatus, ConversationStatus,
@@ -19,7 +20,9 @@ bp = Blueprint('analytics', __name__, url_prefix='/api/analytics')
 @clinic_required
 def overview(current_clinic):
     """Get general metrics overview."""
-    now = datetime.utcnow()
+    # Business metrics use the clinic's calendar (America/Sao_Paulo):
+    # scheduled_datetime is stored as naive local time.
+    now = local_now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     week_start = now - timedelta(days=now.weekday())
     week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -109,7 +112,7 @@ def appointments_by_period(current_clinic):
     period = request.args.get('period', 'day')  # day, week, month
     days = request.args.get('days', 30, type=int)
 
-    now = datetime.utcnow()
+    now = local_now()
     start_date = now - timedelta(days=days)
 
     # Get appointments in the period
@@ -157,7 +160,7 @@ def conversion_rate(current_clinic):
     Measures how many conversations resulted in appointments.
     """
     days = request.args.get('days', 30, type=int)
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = utcnow() - timedelta(days=days)
 
     # Total conversations in period
     total_conversations = Conversation.query.filter(
@@ -195,7 +198,7 @@ def conversion_rate(current_clinic):
 def services_summary(current_clinic):
     """Get appointment count by service type."""
     days = request.args.get('days', 30, type=int)
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = local_now() - timedelta(days=days)
 
     results = db.session.query(
         Appointment.service_name,
@@ -264,7 +267,7 @@ def agent_actions(current_clinic):
     actions = query.order_by(AgentAction.created_at.desc()).limit(limit).all()
 
     # Small summary of sent actions in the last 30 days, for a headline stat.
-    since = datetime.utcnow() - timedelta(days=30)
+    since = utcnow() - timedelta(days=30)
     summary = dict(
         db.session.query(AgentAction.action_type, func.count(AgentAction.id))
         .filter(

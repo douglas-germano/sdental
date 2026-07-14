@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID
+from app.utils.datetime_utils import utcnow
+from app.models.types import UUID
 
 from app import db
 from .mixins import SoftDeleteMixin
@@ -22,7 +22,7 @@ class PipelineStageHistory(db.Model, SoftDeleteMixin):
     changed_by = db.Column(UUID(as_uuid=True), nullable=True)  # Could be user_id if you have users table
 
     # Timestamp
-    changed_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    changed_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
     # Relationships (using back_populates instead of backref to avoid circular dependencies)
     patient = db.relationship('Patient')

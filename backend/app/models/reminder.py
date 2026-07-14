@@ -2,8 +2,8 @@
 Appointment reminder model for tracking scheduled notifications.
 """
 import uuid
-from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID
+from app.utils.datetime_utils import utcnow
+from app.models.types import UUID
 from sqlalchemy.orm import validates
 
 from app import db
@@ -100,7 +100,7 @@ class AppointmentReminder(db.Model, TimestampMixin):
     def mark_sent(self) -> None:
         """Mark reminder as successfully sent."""
         self.status = ReminderStatus.SENT
-        self.sent_at = datetime.utcnow()
+        self.sent_at = utcnow()
         self.attempts += 1
 
     def mark_failed(self, error: str) -> None:

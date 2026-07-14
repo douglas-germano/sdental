@@ -40,8 +40,10 @@ def register():
     if not is_valid:
         return jsonify({'error': error_msg}), 400
 
-    # Check if email already exists
-    if Clinic.query.filter_by(email=data['email']).first():
+    # Check if email already exists (the model stores emails lowercased, so
+    # compare against the normalized form to return 409 instead of tripping
+    # the unique constraint on insert)
+    if Clinic.query.filter_by(email=data['email'].lower()).first():
         return jsonify({'error': 'Email already registered'}), 409
 
     # Normalize phone number to expected format
@@ -106,7 +108,9 @@ def login():
     if not data.get('email') or not data.get('password'):
         return jsonify({'error': 'Email and password are required'}), 400
 
-    clinic = Clinic.query.filter_by(email=data['email']).first()
+    # Emails are stored lowercased (see Clinic.validate_email), so normalize
+    # the lookup - otherwise logging in with a different casing fails.
+    clinic = Clinic.query.filter_by(email=data['email'].lower()).first()
 
     if not clinic or not clinic.check_password(data['password']):
         return jsonify({'error': 'Invalid email or password'}), 401

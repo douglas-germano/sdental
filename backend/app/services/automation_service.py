@@ -17,10 +17,10 @@ audit log always apply. All of this is gated by clinic.proactive_outreach_enable
 """
 import logging
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import func
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models import (
     Appointment,
@@ -37,7 +37,6 @@ from app.services.outreach_service import OutreachService
 
 logger = logging.getLogger(__name__)
 
-BR_TZ = ZoneInfo('America/Sao_Paulo')
 
 # Batch caps so a single scheduler tick can never fan out unbounded outreach.
 RECOVERY_BATCH = 20
@@ -52,7 +51,7 @@ FUNNEL_DEDUPE = timedelta(hours=20)
 
 
 def _now() -> datetime:
-    return datetime.utcnow()
+    return utcnow()
 
 
 def collect_metrics(clinic, days: int = 30) -> dict:
