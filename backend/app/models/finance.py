@@ -9,7 +9,7 @@ real cash position.
 """
 import uuid
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID
+from app.models.types import UUID
 from sqlalchemy.orm import validates
 
 from app import db

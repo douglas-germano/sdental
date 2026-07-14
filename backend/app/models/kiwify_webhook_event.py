@@ -1,7 +1,7 @@
 import uuid
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from app import db
+from app.models.types import JSONB, UUID
 from .mixins import TimestampMixin
 
 

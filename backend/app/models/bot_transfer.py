@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID
+from app.models.types import UUID
 
 from app import db
 from .mixins import SoftDeleteMixin, TimestampMixin

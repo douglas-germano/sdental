@@ -11,9 +11,11 @@ from app.models import Clinic, Patient, Appointment, AppointmentStatus
 @pytest.fixture(scope='session')
 def app():
     """Create application for testing."""
+    # The database URI comes from TestingConfig (in-memory SQLite): with
+    # Flask-SQLAlchemy 3.x the engine is created inside create_app(), so
+    # overriding SQLALCHEMY_DATABASE_URI here would have no effect.
     app = create_app('testing')
     app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     app.config['JWT_SECRET_KEY'] = 'test-secret-key'
 
     with app.app_context():

@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy.dialects.postgresql import UUID
+from app.models.types import UUID
 from sqlalchemy.orm import validates
 
 from app import db

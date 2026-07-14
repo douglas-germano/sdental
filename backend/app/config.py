@@ -106,10 +106,15 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration."""
     TESTING = True
+    # In-memory SQLite by default so the suite needs no running database.
+    # Flask-SQLAlchemy 3.x creates engines during init_app, so this must be
+    # set here (setting app.config after create_app() is too late).
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'TEST_DATABASE_URL',
-        'postgresql://localhost:5432/sdental_test'
+        'sqlite:///:memory:'
     )
+    # The base config's pool sizing args are invalid for SQLite's StaticPool.
+    SQLALCHEMY_ENGINE_OPTIONS = {}
     # Deterministic secret so webhook-signature tests don't depend on the
     # environment having WEBHOOK_SECRET set (webhook auth fails closed
     # without one - see utils/webhook_auth.py).

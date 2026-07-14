@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from app import db
+from app.models.types import JSONB, UUID
 from .mixins import SoftDeleteMixin, TimestampMixin
 
 
@@ -62,6 +62,11 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
         nullable side of an outer join - going through `Session.refresh()`
         would pull that join in and fail.
         """
+        # Core selects bypass the session's autoflush (it only runs for ORM
+        # statements), so push any pending local mutations first - otherwise
+        # the read-back below would overwrite messages added earlier in this
+        # same transaction with the stale committed value.
+        db.session.flush()
         row = db.session.execute(
             db.select(self.__table__.c.messages)
             .where(self.__table__.c.id == self.id)

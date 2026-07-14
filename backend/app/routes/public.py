@@ -10,6 +10,7 @@ from app.models.patient import Patient
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.professional import Professional
 from app.utils.business_hours import get_working_ranges
+from app.utils.rate_limiter import limiter
 
 bp = Blueprint('public', __name__, url_prefix='/api/public')
 
@@ -178,6 +179,7 @@ def get_availability(slug: str):
 
 
 @bp.route('/clinic/<slug>/book', methods=['POST'])
+@limiter.limit("10 per minute")
 def create_booking(slug: str):
     """Create a new appointment."""
     clinic = Clinic.query.filter_by(slug=slug, active=True, booking_enabled=True).first()

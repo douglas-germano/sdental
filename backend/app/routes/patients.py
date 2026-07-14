@@ -89,8 +89,9 @@ def create_patient(current_clinic):
 
     phone = normalize_phone(data['phone'])
 
-    # Check if patient already exists (including soft deleted)
-    existing = Patient.query.filter_by(
+    # Check if patient already exists (including soft deleted, so a
+    # re-registered patient is restored instead of colliding on phone)
+    existing = Patient.query.with_deleted().filter_by(
         clinic_id=current_clinic.id,
         phone=phone
     ).first()
@@ -322,7 +323,7 @@ def erase_patient_data(patient_id, current_clinic):
 @clinic_required
 def restore_patient(patient_id, current_clinic):
     """Restore a soft-deleted patient."""
-    patient = Patient.query.filter_by(
+    patient = Patient.query.with_deleted().filter_by(
         id=patient_id,
         clinic_id=current_clinic.id
     ).filter(Patient.deleted_at.isnot(None)).first()
