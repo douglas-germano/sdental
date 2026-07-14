@@ -1,10 +1,10 @@
 """
 Model mixins for common functionality.
 """
-from datetime import datetime
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
+from app.utils.datetime_utils import utcnow
 from app import db, SoftDeleteQuery  # noqa: F401  (re-exported for callers)
 
 
@@ -26,7 +26,7 @@ class SoftDeleteMixin:
 
     def soft_delete(self) -> None:
         """Soft delete the record."""
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = utcnow()
 
     def restore(self) -> None:
         """Restore a soft deleted record."""
@@ -67,10 +67,10 @@ class TimestampMixin:
     """
     Mixin that adds created_at and updated_at timestamps.
     """
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
         nullable=False
     )

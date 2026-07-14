@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models.types import JSONB, UUID
 from .mixins import SoftDeleteMixin, TimestampMixin
@@ -36,7 +37,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
     messages = db.Column(JSONB, default=list)  # [{role, content, timestamp}]
     context = db.Column(JSONB, default=dict)  # Context for Claude
     status = db.Column(db.String(30), default=ConversationStatus.ACTIVE)
-    last_message_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_message_at = db.Column(db.DateTime, default=utcnow)
     urgent = db.Column(db.Boolean, default=False, nullable=False)
 
     # Relationships
@@ -109,7 +110,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             'evolution_id': evolution_id,
             'role': role,
             'content': content,
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'timestamp': utcnow().isoformat() + 'Z',
             'status': status,
             'type': message_type
         }
@@ -123,7 +124,7 @@ class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):
             message['sent_via'] = sent_via
 
         self.messages = self.messages + [message]
-        self.last_message_at = datetime.utcnow()
+        self.last_message_at = utcnow()
         return message
 
     def find_message(self, message_id: str) -> dict:

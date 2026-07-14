@@ -2,8 +2,8 @@
 Appointment schemas.
 """
 from marshmallow import fields, validate, validates, ValidationError
-from datetime import datetime
 
+from app.utils.datetime_utils import local_now
 from .base import BaseSchema
 
 
@@ -38,7 +38,7 @@ class AppointmentCreateSchema(BaseSchema):
     @validates('scheduled_datetime')
     def validate_future_date(self, value):
         """Ensure appointment is in the future."""
-        if value < datetime.utcnow():
+        if value < local_now():
             raise ValidationError('Appointment must be scheduled in the future')
 
 

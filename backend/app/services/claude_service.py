@@ -2,11 +2,11 @@ import logging
 import json
 from datetime import datetime
 from typing import Optional
-from zoneinfo import ZoneInfo
 
 from flask import current_app
 import openai
 
+from app.utils.datetime_utils import local_now
 from app import db
 from app.models import Conversation, Patient, ConversationStatus, Professional, PipelineStage, AppointmentStatus, Appointment, AiUsageService
 from app.services.appointment_service import AppointmentService
@@ -514,8 +514,8 @@ class ClaudeService:
         dt = datetime.fromisoformat(tool_input['datetime'])
 
         # Validate date is in the future
-        now = datetime.now(ZoneInfo('America/Sao_Paulo'))
-        if dt.replace(tzinfo=None) <= now.replace(tzinfo=None):
+        now = local_now()
+        if dt.replace(tzinfo=None) <= now:
             return "Não é possível agendar para uma data/hora que já passou. Por favor, escolha um horário futuro."
 
         # Validate it's a business day
@@ -578,8 +578,8 @@ class ClaudeService:
     def _tool_reschedule_appointment(self, tool_input: dict, conversation: Conversation) -> str:
         new_dt = datetime.fromisoformat(tool_input['new_datetime'])
 
-        now = datetime.now(ZoneInfo('America/Sao_Paulo'))
-        if new_dt.replace(tzinfo=None) <= now.replace(tzinfo=None):
+        now = local_now()
+        if new_dt.replace(tzinfo=None) <= now:
             return "Não é possível remarcar para uma data/hora que já passou. Por favor, escolha um horário futuro."
 
         patient = self._resolve_patient(conversation)
@@ -738,7 +738,7 @@ class ClaudeService:
         return "Instruções enviadas com sucesso."
 
     def _tool_get_current_datetime(self, tool_input: dict, conversation: Conversation) -> str:
-        now = datetime.now(ZoneInfo('America/Sao_Paulo'))
+        now = local_now()
         month_names = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
         weekday = WEEKDAY_NAMES[now.weekday()]
         month = month_names[now.month - 1]
@@ -993,7 +993,7 @@ class ClaudeService:
             )
         
         # Get current datetime in Brazil timezone
-        now = datetime.now(ZoneInfo('America/Sao_Paulo'))
+        now = local_now()
         weekday_names = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo']
         weekday = weekday_names[now.weekday()]
         current_datetime_str = f"CONTEXTO TEMPORAL:\nHOJE É: {weekday}, {now.strftime('%d de %B de %Y')} às {now.strftime('%H:%M')} (Horário de Brasília)"

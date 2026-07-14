@@ -1,6 +1,5 @@
 import uuid
 import re
-from datetime import datetime
 from app.models.types import UUID
 from sqlalchemy import event
 from sqlalchemy.orm import validates

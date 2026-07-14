@@ -4,6 +4,7 @@ Pytest fixtures and configuration.
 import pytest
 from flask_jwt_extended import create_access_token
 
+from app.utils.datetime_utils import utcnow
 from app import create_app, db
 from app.models import Clinic, Patient, Appointment, AppointmentStatus
 
@@ -16,7 +17,9 @@ def app():
     # overriding SQLALCHEMY_DATABASE_URI here would have no effect.
     app = create_app('testing')
     app.config['TESTING'] = True
-    app.config['JWT_SECRET_KEY'] = 'test-secret-key'
+    # 32+ bytes so PyJWT doesn't emit InsecureKeyLengthWarning on every
+    # token encode/decode (HS256 wants >= 256-bit keys).
+    app.config['JWT_SECRET_KEY'] = 'test-secret-key-0123456789abcdef-xyz'
 
     with app.app_context():
         db.create_all()
@@ -131,7 +134,7 @@ def sample_appointment(app, db_session, sample_clinic, sample_patient):
             clinic_id=sample_clinic.id,
             patient_id=sample_patient.id,
             service_name='Consulta Geral',
-            scheduled_datetime=datetime.utcnow() + timedelta(days=1),
+            scheduled_datetime=utcnow() + timedelta(days=1),
             duration_minutes=30,
             status=AppointmentStatus.CONFIRMED
         )

@@ -3,7 +3,6 @@ Professional model for managing dentists/doctors in a clinic.
 """
 import uuid
 import re
-from datetime import datetime
 from sqlalchemy.orm import validates
 
 from app import db

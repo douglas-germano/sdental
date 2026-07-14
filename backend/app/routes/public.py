@@ -4,6 +4,7 @@ Public booking routes - No authentication required.
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request, current_app
 
+from app.utils.datetime_utils import local_now
 from app import db
 from app.models.clinic import Clinic
 from app.models.patient import Patient
@@ -119,7 +120,7 @@ def get_availability(slug: str):
         return jsonify({'error': 'Formato de data inválido. Use YYYY-MM-DD'}), 400
 
     # Don't allow booking in the past
-    if target_date < datetime.now().date():
+    if target_date < local_now().date():
         return jsonify({'error': 'Não é possível agendar em datas passadas'}), 400
 
     # Get day of week (0 = Monday, 6 = Sunday)
@@ -154,7 +155,7 @@ def get_availability(slug: str):
     # Generate available time slots across each open range (splits around a
     # lunch break when one is configured for the day)
     available_slots = []
-    now = datetime.now()
+    now = local_now()
 
     for range_start, range_end in ranges:
         current_time = datetime.combine(target_date, range_start)
@@ -209,7 +210,7 @@ def create_booking(slug: str):
         return jsonify({'error': 'Formato de data/hora inválido'}), 400
     
     # Don't allow booking in the past
-    if scheduled_datetime <= datetime.now():
+    if scheduled_datetime <= local_now():
         return jsonify({'error': 'Não é possível agendar em horários passados'}), 400
     
     # Normalize phone
@@ -319,7 +320,7 @@ def get_calendar(slug: str):
 
     # Generate calendar for next 30 days
     calendar = []
-    today = datetime.now().date()
+    today = local_now().date()
 
     for i in range(30):
         date = today + timedelta(days=i)

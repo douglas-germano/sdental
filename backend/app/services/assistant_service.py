@@ -16,11 +16,11 @@ prompt is built with the accumulated memories injected as context.
 import json
 import logging
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from flask import current_app
 import openai
 
+from app.utils.datetime_utils import local_now
 from app import db
 from app.models import (
     Patient, Appointment, AppointmentStatus, Professional, PipelineStage,
@@ -583,7 +583,7 @@ class AssistantService:
 
     def _tool_compare_periods(self, tool_input: dict) -> str:
         days = max(1, min(int(tool_input.get('days') or 30), 365))
-        now = datetime.utcnow()
+        now = local_now()
         current_start = now - timedelta(days=days)
         previous_start = current_start - timedelta(days=days)
 
@@ -602,7 +602,7 @@ class AssistantService:
 
     def _tool_get_professional_performance(self, tool_input: dict) -> str:
         days = max(1, min(int(tool_input.get('days') or 30), 365))
-        start = datetime.utcnow() - timedelta(days=days)
+        start = local_now() - timedelta(days=days)
 
         query = Professional.query.filter_by(clinic_id=self.clinic.id)
         name = (tool_input.get('professional_name') or '').strip()
@@ -639,7 +639,7 @@ class AssistantService:
 
     def _tool_get_patient_retention(self, tool_input: dict) -> str:
         days = max(1, min(int(tool_input.get('days') or 90), 365))
-        start = datetime.utcnow() - timedelta(days=days)
+        start = local_now() - timedelta(days=days)
 
         active_patient_ids = db.session.query(Appointment.patient_id).filter(
             Appointment.clinic_id == self.clinic.id,
@@ -692,7 +692,7 @@ class AssistantService:
         messages for this clinic) followed by an uncached dynamic suffix
         (today's date/time, which changes every message).
         """
-        now = datetime.now(ZoneInfo('America/Sao_Paulo'))
+        now = local_now()
         weekday = WEEKDAY_NAMES[now.weekday()]
         current_datetime_str = (
             f"CONTEXTO TEMPORAL:\nHOJE É: {weekday}, {now.strftime('%d de %B de %Y')} "

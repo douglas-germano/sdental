@@ -8,7 +8,7 @@ money that actually moved, so the two together give both a forecast and a
 real cash position.
 """
 import uuid
-from datetime import datetime
+from app.utils.datetime_utils import utcnow
 from app.models.types import UUID
 from sqlalchemy.orm import validates
 
@@ -246,7 +246,7 @@ class CommissionPayout(db.Model, TimestampMixin):
     period_start = db.Column(db.Date, nullable=False)
     period_end = db.Column(db.Date, nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
-    paid_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    paid_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     notes = db.Column(db.Text, nullable=True)
 
     professional = db.relationship('Professional')

@@ -9,10 +9,11 @@ appointment. `get_commission_summary` gives the running balance (all-time
 earned minus all-time paid) clinics need to know how much they still owe
 each professional.
 """
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Optional
 
+from app.utils.datetime_utils import local_now, utcnow
 from app.models import (
     Appointment, AppointmentStatus, CommissionPayout, CommissionRule, Professional,
 )
@@ -125,7 +126,7 @@ class CommissionService:
         professionals = Professional.query.filter_by(clinic_id=self.clinic.id).all()
 
         days = max(1, min(days, 365))
-        period_start = datetime.utcnow() - timedelta(days=days)
+        period_start = local_now() - timedelta(days=days)
 
         all_completed = Appointment.query.filter(
             Appointment.clinic_id == self.clinic.id,

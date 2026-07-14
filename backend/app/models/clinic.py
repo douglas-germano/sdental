@@ -2,10 +2,11 @@ import hashlib
 import secrets
 import uuid
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import validates
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models.types import JSONB, UUID
 from .mixins import TimestampMixin
@@ -161,14 +162,14 @@ class Clinic(db.Model, TimestampMixin):
         """Create a password reset token, store only its hash, and return the raw token to send by e-mail."""
         raw_token = secrets.token_urlsafe(32)
         self.password_reset_token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
-        self.password_reset_expires_at = datetime.utcnow() + PASSWORD_RESET_TOKEN_TTL
+        self.password_reset_expires_at = utcnow() + PASSWORD_RESET_TOKEN_TTL
         return raw_token
 
     def verify_password_reset_token(self, token: str) -> bool:
         """Check a raw token against the stored hash and expiry, using a constant-time comparison."""
         if not token or not self.password_reset_token_hash or not self.password_reset_expires_at:
             return False
-        if datetime.utcnow() > self.password_reset_expires_at:
+        if utcnow() > self.password_reset_expires_at:
             return False
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         return secrets.compare_digest(token_hash, self.password_reset_token_hash)

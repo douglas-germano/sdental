@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from app.utils.datetime_utils import utcnow
 from app.models.types import UUID
 
 from app import db
@@ -15,14 +15,14 @@ class BotTransfer(db.Model, SoftDeleteMixin, TimestampMixin):
     # AI-generated summary of the conversation so far, so the human agent
     # taking over doesn't have to read the whole thread.
     summary = db.Column(db.Text, nullable=True)
-    transferred_at = db.Column(db.DateTime, default=datetime.utcnow)
+    transferred_at = db.Column(db.DateTime, default=utcnow)
     resolved = db.Column(db.Boolean, default=False)
     resolved_at = db.Column(db.DateTime, nullable=True)
     urgent = db.Column(db.Boolean, default=False, nullable=False)
 
     def resolve(self) -> None:
         self.resolved = True
-        self.resolved_at = datetime.utcnow()
+        self.resolved_at = utcnow()
 
     def to_dict(self) -> dict:
         return {

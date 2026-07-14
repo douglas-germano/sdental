@@ -1,8 +1,8 @@
-from datetime import datetime
 
 from flask import Blueprint, request, jsonify
 from sqlalchemy import or_
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models import Patient, PipelineStage, Conversation
 from app.services.patient_service import PatientService
@@ -265,7 +265,7 @@ def export_patient_data(patient_id, current_clinic):
     ).all()
 
     return jsonify({
-        'exported_at': datetime.utcnow().isoformat() + 'Z',
+        'exported_at': utcnow().isoformat() + 'Z',
         'clinic': current_clinic.name,
         'patient': patient.to_dict(),
         'appointments': [a.to_dict() for a in patient.appointments.order_by(db.desc('scheduled_datetime')).all()],

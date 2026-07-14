@@ -2,7 +2,9 @@
 Tests for appointment endpoints.
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import timedelta
+
+from app.utils.datetime_utils import utcnow
 
 
 class TestListAppointments:
@@ -38,7 +40,7 @@ class TestCreateAppointment:
 
     def test_create_appointment_success(self, client, auth_headers, sample_patient):
         """Test creating an appointment."""
-        future_date = (datetime.utcnow() + timedelta(days=2)).isoformat()
+        future_date = (utcnow() + timedelta(days=2)).isoformat()
 
         response = client.post('/api/appointments', headers=auth_headers, json={
             'patient_id': str(sample_patient.id),
@@ -61,7 +63,7 @@ class TestCreateAppointment:
 
     def test_create_appointment_invalid_patient(self, client, auth_headers):
         """Test creating an appointment with invalid patient."""
-        future_date = (datetime.utcnow() + timedelta(days=2)).isoformat()
+        future_date = (utcnow() + timedelta(days=2)).isoformat()
 
         response = client.post('/api/appointments', headers=auth_headers, json={
             'patient_id': '00000000-0000-0000-0000-000000000000',
@@ -125,7 +127,7 @@ class TestAvailability:
 
     def test_get_availability_success(self, client, auth_headers):
         """Test getting available slots."""
-        future_date = (datetime.utcnow() + timedelta(days=1)).strftime('%Y-%m-%d')
+        future_date = (utcnow() + timedelta(days=1)).strftime('%Y-%m-%d')
 
         response = client.get(
             f'/api/appointments/availability?date={future_date}',

@@ -1,6 +1,6 @@
 import uuid
 import re
-from datetime import datetime
+from app.utils.datetime_utils import utcnow
 from app.models.types import UUID
 from sqlalchemy.orm import validates
 
@@ -82,13 +82,13 @@ class Patient(db.Model, SoftDeleteMixin, TimestampMixin):
 
     def set_data_consent(self, source: str) -> None:
         """Record LGPD consent for processing this patient's personal data."""
-        self.data_consent_at = datetime.utcnow()
+        self.data_consent_at = utcnow()
         self.data_consent_source = source
 
     def opt_out_whatsapp(self) -> None:
         """Record that the patient asked to stop receiving proactive messages."""
         self.whatsapp_opt_out = True
-        self.whatsapp_opt_out_at = datetime.utcnow()
+        self.whatsapp_opt_out_at = utcnow()
 
     def opt_in_whatsapp(self) -> None:
         """Re-enable proactive messaging (e.g. patient replies to opt back in)."""

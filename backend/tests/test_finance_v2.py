@@ -5,6 +5,7 @@ commissions, cash flow, and revenue goals.
 """
 from datetime import date, datetime, timedelta
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models import (
     Appointment, AppointmentStatus, AppointmentReminder, CommissionPayout,
@@ -168,7 +169,7 @@ class TestCommissionService:
             appt = Appointment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id,
                 professional_id=professional.id, service_name='Consulta Geral',
-                scheduled_datetime=datetime.utcnow() - timedelta(days=1),
+                scheduled_datetime=utcnow() - timedelta(days=1),
                 status=AppointmentStatus.COMPLETED, price=200,
             )
             db.session.add(appt)
@@ -199,7 +200,7 @@ class TestCommissionService:
             appt = Appointment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id,
                 professional_id=professional.id, service_name='Consulta Geral',
-                scheduled_datetime=datetime.utcnow() - timedelta(days=1),
+                scheduled_datetime=utcnow() - timedelta(days=1),
                 status=AppointmentStatus.COMPLETED, price=100,
             )
             db.session.add(appt)
@@ -230,7 +231,7 @@ class TestCommissionService:
             appt = Appointment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id,
                 professional_id=professional.id, service_name='Consulta Geral',
-                scheduled_datetime=datetime.utcnow() - timedelta(days=1),
+                scheduled_datetime=utcnow() - timedelta(days=1),
                 status=AppointmentStatus.COMPLETED, price=100,
             )
             db.session.add(appt)
@@ -251,16 +252,16 @@ class TestFinancialServiceCashFlowAndGoals:
 
             payment = Payment(
                 clinic_id=sample_clinic.id, patient_id=sample_patient.id, amount=100,
-                paid_amount=100, status=PaymentStatus.PAID, paid_at=datetime.utcnow(),
+                paid_amount=100, status=PaymentStatus.PAID, paid_at=utcnow(),
             )
             expense = Expense(
                 clinic_id=sample_clinic.id, description='Insumos', amount=30,
-                category=ExpenseCategory.SUPPLIES, status=ExpenseStatus.PAID, paid_at=datetime.utcnow(),
+                category=ExpenseCategory.SUPPLIES, status=ExpenseStatus.PAID, paid_at=utcnow(),
             )
             payout = CommissionPayout(
                 clinic_id=sample_clinic.id, professional_id=professional.id,
                 period_start=date.today() - timedelta(days=30), period_end=date.today(),
-                amount=20, paid_at=datetime.utcnow(),
+                amount=20, paid_at=utcnow(),
             )
             db.session.add_all([payment, expense, payout])
             db.session.commit()

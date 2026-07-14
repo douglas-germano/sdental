@@ -7,6 +7,7 @@ WhatsApp AI agent (ClaudeService) surfaces/enforces it.
 import json
 from datetime import datetime, timedelta, time
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models import Professional
 from app.services.appointment_service import AppointmentService
@@ -16,7 +17,7 @@ from app.utils.business_hours import get_working_ranges, is_within_working_range
 
 def _future_weekday_date(days_ahead: int = 10):
     """A date far enough in the future to avoid 'today' edge cases."""
-    return (datetime.utcnow() + timedelta(days=days_ahead)).date()
+    return (utcnow() + timedelta(days=days_ahead)).date()
 
 
 class TestGetWorkingRanges:

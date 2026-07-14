@@ -2,10 +2,11 @@
 Tests for the autonomous / proactive agent layer: opt-out detection,
 outreach guardrails, the agent-action audit log, and the metrics collector.
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models import (
     Clinic, Patient, Appointment, AppointmentStatus,
@@ -135,13 +136,13 @@ class TestMetricsCollector:
             db.session.add(Appointment(
                 clinic_id=clinic.id, patient_id=patient.id,
                 service_name='Consulta Geral',
-                scheduled_datetime=datetime.utcnow() - timedelta(days=1),
+                scheduled_datetime=utcnow() - timedelta(days=1),
                 duration_minutes=30, status=AppointmentStatus.COMPLETED,
             ))
             db.session.add(Appointment(
                 clinic_id=clinic.id, patient_id=patient.id,
                 service_name='Consulta Geral',
-                scheduled_datetime=datetime.utcnow() - timedelta(days=2),
+                scheduled_datetime=utcnow() - timedelta(days=2),
                 duration_minutes=30, status=AppointmentStatus.NO_SHOW,
             ))
             db.session.commit()

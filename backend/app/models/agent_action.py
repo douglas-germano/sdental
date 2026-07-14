@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+from app.utils.datetime_utils import utcnow
 from app import db
 from app.models.types import JSONB, UUID
 from .mixins import TimestampMixin
@@ -70,7 +71,7 @@ class AgentAction(db.Model, TimestampMixin):
     @classmethod
     def count_recent_for_patient(cls, patient_id, within: timedelta) -> int:
         """How many messages the agent has sent this patient within a window (for rate limiting)."""
-        since = datetime.utcnow() - within
+        since = utcnow() - within
         return cls.query.filter(
             cls.patient_id == patient_id,
             cls.status == AgentActionStatus.SENT,
@@ -80,7 +81,7 @@ class AgentAction(db.Model, TimestampMixin):
     @classmethod
     def has_recent_action(cls, patient_id, action_type: str, within: timedelta) -> bool:
         """Whether a given action type already ran for this patient recently (dedupe)."""
-        since = datetime.utcnow() - within
+        since = utcnow() - within
         return db.session.query(
             cls.query.filter(
                 cls.patient_id == patient_id,

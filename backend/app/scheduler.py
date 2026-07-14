@@ -6,6 +6,8 @@ import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
+from app.utils.datetime_utils import utcnow
+
 logger = logging.getLogger(__name__)
 
 scheduler = BackgroundScheduler()
@@ -109,7 +111,7 @@ def suspend_late_subscriptions_job():
     from app.models import Clinic, SubscriptionStatus
 
     grace_days = current_app.config.get('KIWIFY_GRACE_PERIOD_DAYS', 5)
-    cutoff = datetime.utcnow() - timedelta(days=grace_days)
+    cutoff = utcnow() - timedelta(days=grace_days)
 
     clinics = Clinic.query.filter(
         Clinic.subscription_status == SubscriptionStatus.LATE,

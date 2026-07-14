@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
+from app.utils.datetime_utils import local_today, utcnow
 from app import db
 from app.models import Expense, ExpenseStatus, Professional
 
@@ -96,7 +97,7 @@ class ExpenseService:
         if not expense:
             return None, 'Despesa não encontrada'
         expense.status = ExpenseStatus.PAID
-        expense.paid_at = paid_at or datetime.utcnow()
+        expense.paid_at = paid_at or utcnow()
         db.session.commit()
         return expense, None
 
@@ -119,7 +120,7 @@ class ExpenseService:
     def get_payables(self, days: int = 30) -> dict:
         """Pending expenses due within the next `days` (plus already overdue)."""
         days = max(1, min(days, 365))
-        today = date.today()
+        today = local_today()
         horizon = today + timedelta(days=days)
 
         pending = self._query().filter(
