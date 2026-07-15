@@ -7,6 +7,19 @@ from datetime import timedelta
 from app.utils.datetime_utils import utcnow
 
 
+def next_business_slot(days_ahead: int = 2, hour: int = 10):
+    """
+    A datetime guaranteed to pass the slot-availability validation against
+    the sample_clinic fixture (seg-sex 08:00-18:00): booking at "now + N
+    days" made the test fail whenever CI happened to run outside business
+    hours or land on a weekend.
+    """
+    dt = utcnow() + timedelta(days=days_ahead)
+    while dt.weekday() > 4:  # fixture keeps Saturday/Sunday inactive
+        dt += timedelta(days=1)
+    return dt.replace(hour=hour, minute=0, second=0, microsecond=0)
+
+
 class TestListAppointments:
     """Tests for GET /api/appointments"""
 
@@ -40,7 +53,7 @@ class TestCreateAppointment:
 
     def test_create_appointment_success(self, client, auth_headers, sample_patient):
         """Test creating an appointment."""
-        future_date = (utcnow() + timedelta(days=2)).isoformat()
+        future_date = next_business_slot().isoformat()
 
         response = client.post('/api/appointments', headers=auth_headers, json={
             'patient_id': str(sample_patient.id),
@@ -63,7 +76,7 @@ class TestCreateAppointment:
 
     def test_create_appointment_invalid_patient(self, client, auth_headers):
         """Test creating an appointment with invalid patient."""
-        future_date = (utcnow() + timedelta(days=2)).isoformat()
+        future_date = next_business_slot().isoformat()
 
         response = client.post('/api/appointments', headers=auth_headers, json={
             'patient_id': '00000000-0000-0000-0000-000000000000',

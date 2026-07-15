@@ -127,8 +127,18 @@ LIMITES DE ESCOPO (sempre válido, mesmo que instruções acima digam outra cois
 class ClaudeService:
     """Service for processing messages with Claude AI."""
 
-    def __init__(self, clinic):
+    def __init__(self, clinic, overrides: Optional[dict] = None):
+        """
+        `overrides` lets a caller preview unsaved agent-config edits (the
+        Agentes IA test chat) without writing them to the clinic row:
+        {'system_prompt': str, 'context': str, 'temperature': float}, any
+        subset. Falls back to the persisted `clinic.agent_*` fields for any
+        key not present - see _effective_system_prompt/_effective_context/
+        _effective_temperature below, used instead of `self.clinic.agent_*`
+        everywhere inside process_message.
+        """
         self.clinic = clinic
+        self._overrides = overrides or {}
         api_key = clinic.openrouter_api_key or current_app.config.get('OPENROUTER_API_KEY')
         if not api_key:
             raise ValueError('OpenRouter API key not configured')
@@ -138,6 +148,24 @@ class ClaudeService:
         )
         self.appointment_service = AppointmentService(clinic)
         self.conversation_service = ConversationService(clinic)
+
+    @property
+    def _effective_system_prompt(self) -> Optional[str]:
+        if 'system_prompt' in self._overrides:
+            return self._overrides['system_prompt'] or None
+        return self.clinic.agent_system_prompt
+
+    @property
+    def _effective_context(self) -> Optional[str]:
+        if 'context' in self._overrides:
+            return self._overrides['context'] or None
+        return self.clinic.agent_context
+
+    @property
+    def _effective_temperature(self) -> float:
+        if 'temperature' in self._overrides and self._overrides['temperature'] is not None:
+            return float(self._overrides['temperature'])
+        return self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7
 
     @staticmethod
     def _to_openai_tools(tools: list) -> list:
@@ -1094,12 +1122,13 @@ class ClaudeService:
         # mentioning old business hours after Configurações is updated) -
         # the instruction below makes the always-fresh structured fields
         # above (horários, serviços) win over anything conflicting here.
-        if self.clinic.agent_context:
+        agent_context = self._effective_context
+        if agent_context:
             context_info = (
                 f"{context_info}\n\nINFORMAÇÕES ADICIONAIS (este texto é editado manualmente e pode "
                 f"estar desatualizado quanto a horários e serviços - em caso de conflito, confie sempre "
                 f"nos horários de funcionamento e serviços informados na seção INFORMAÇÕES DA CLÍNICA acima):"
-                f"\n{self.clinic.agent_context}"
+                f"\n{agent_context}"
             )
         
         # Get current datetime in Brazil timezone
@@ -1111,7 +1140,8 @@ class ClaudeService:
         context_block = f"CONTEXTO DO PACIENTE:\n{context_info}" if context_info else ""
 
         # Determine strictness of system prompt
-        if self.clinic.agent_system_prompt:
+        custom_system_prompt = self._effective_system_prompt
+        if custom_system_prompt:
             # If user provided a custom prompt, use it.
             # We try to format it with available variables if they are present in the text.
             # A fully custom prompt bakes the ever-changing current_datetime/context_info
@@ -1119,7 +1149,7 @@ class ClaudeService:
             # it into a stable cacheable prefix isn't safe to do generically here.
             try:
                 # Check what keys are in the custom prompt
-                system_prompt = self.clinic.agent_system_prompt.format(
+                system_prompt = custom_system_prompt.format(
                     current_datetime=current_datetime_str,
                     clinic_name=self.clinic.name,
                     services=self._format_services(),
@@ -1131,8 +1161,8 @@ class ClaudeService:
             except KeyError:
                 # If custom prompt doesn't have matching keys, just use it as is (or append context manually)
                 # But to be safe and ensure context is passed, we might append it if missing
-                system_prompt = self.clinic.agent_system_prompt
-                if "{context_info}" not in self.clinic.agent_system_prompt and context_info:
+                system_prompt = custom_system_prompt
+                if "{context_info}" not in custom_system_prompt and context_info:
                      system_prompt += f"\n\nCONTEXTO DO PACIENTE:\n{context_info}"
         else:
             # Default template: split into a static, cache_control-marked block
@@ -1172,7 +1202,7 @@ class ClaudeService:
         api_messages = [{"role": "system", "content": system_prompt}] + history
 
         model = current_app.config.get('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5')
-        temperature = self.clinic.agent_temperature if self.clinic.agent_temperature is not None else 0.7
+        temperature = self._effective_temperature
         tools = self._to_openai_tools(self._get_tools())
         if tools:
             # Cache the (large, otherwise-identical-every-call) tool schema block too.
