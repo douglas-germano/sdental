@@ -307,8 +307,16 @@ export const agentsApi = {
     context?: string
   }) => api.put('/agents/config', data),
 
-  testMessage: (message: string) =>
-    api.post('/agents/test', { message })
+  // system_prompt/context/temperature preview unsaved draft edits without
+  // persisting them - omit a field (or pass '') to fall back to whatever's
+  // actually saved for the clinic, matching real WhatsApp behavior.
+  testMessage: (message: string, draft?: { systemPrompt?: string; context?: string; temperature?: number }) =>
+    api.post('/agents/test', {
+      message,
+      ...(draft?.systemPrompt !== undefined && { system_prompt: draft.systemPrompt }),
+      ...(draft?.context !== undefined && { context: draft.context }),
+      ...(draft?.temperature !== undefined && { temperature: draft.temperature }),
+    })
 }
 
 // Pipeline API

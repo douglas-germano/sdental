@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/toast'
 import { agentsApi } from '@/lib/api'
-import { Robot as Bot, FloppyDisk as Save, Sparkle as Sparkles, Chat as MessageSquare, PaperPlaneTilt as Send, CircleNotch as Loader2, User, Lightning as Zap, Brain, WarningCircle as AlertCircle, ArrowCounterClockwise as RotateCcw, Eye, Copy, Check, Info, Thermometer, CaretRight as ChevronRight } from '@phosphor-icons/react'
+import { Robot as Bot, FloppyDisk as Save, Sparkle as Sparkles, Chat as MessageSquare, PaperPlaneTilt as Send, CircleNotch as Loader2, User, Lightning as Zap, Brain, WarningCircle as AlertCircle, ArrowCounterClockwise as RotateCcw, Check, CheckCircle, Info, Thermometer, CaretDown as ChevronDown, SlidersHorizontal } from '@phosphor-icons/react'
 import { PageLoader } from '@/components/ui/page-loader'
 import { PageHeader } from '@/components/ui/page-header'
 import { cn } from '@/lib/utils'
@@ -20,6 +20,13 @@ import { cn } from '@/lib/utils'
 interface TestMessage {
     role: 'user' | 'assistant'
     content: string
+}
+
+interface AgentDraft {
+    name: string
+    temperature: number
+    systemPrompt: string
+    context: string
 }
 
 const PROMPT_TEMPLATES = [
@@ -91,20 +98,28 @@ const TEMPERATURE_LABELS: Record<string, { label: string; description: string; c
     '1': { label: 'Maximo', description: 'Maximo de criatividade, menos previsivel', color: 'text-red-500' },
 }
 
+const DEFAULT_TEMPERATURE = 0.7
+
 export default function AgentsPage() {
     const { clinic } = useAuth()
     const { toast } = useToast()
     const [saving, setSaving] = useState(false)
+    const [applyingTemplate, setApplyingTemplate] = useState<number | null>(null)
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState('general')
     const [hasChanges, setHasChanges] = useState(false)
     const [savedConfig, setSavedConfig] = useState<string>('')
+    // Whatever's actually live on WhatsApp right now has no custom prompt or
+    // knowledge saved - the agent is running entirely on smart defaults.
+    // Tracks the persisted state, not the draft, so it doesn't flicker while typing.
+    const [usingDefaults, setUsingDefaults] = useState(true)
     const [previewTemplate, setPreviewTemplate] = useState<number | null>(null)
     const [copiedVar, setCopiedVar] = useState<string | null>(null)
+    const [showAdvanced, setShowAdvanced] = useState(false)
 
-    const [agentConfig, setAgentConfig] = useState({
+    const [agentConfig, setAgentConfig] = useState<AgentDraft>({
         name: 'Assistente SDental',
-        temperature: 0.7,
+        temperature: DEFAULT_TEMPERATURE,
         systemPrompt: '',
         context: ''
     })
@@ -118,23 +133,9 @@ export default function AgentsPage() {
     // Track unsaved changes
     useEffect(() => {
         if (savedConfig) {
-            const current = JSON.stringify({
-                name: agentConfig.name,
-                temperature: agentConfig.temperature,
-                systemPrompt: agentConfig.systemPrompt,
-                context: agentConfig.context
-            })
-            setHasChanges(current !== savedConfig)
+            setHasChanges(JSON.stringify(agentConfig) !== savedConfig)
         }
     }, [agentConfig, savedConfig])
-
-    useEffect(() => {
-        fetchConfig()
-        // Intentionally mount-only: fetchConfig writes agentConfig, so putting
-        // it in the deps would refetch (and clobber unsaved edits) on every
-        // config change.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -151,14 +152,16 @@ export default function AgentsPage() {
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [hasChanges])
 
-    const getDefaultSystemPrompt = useCallback(() => {
+    // Example text only - never written into agentConfig automatically. An
+    // empty prompt is a real, valid state (the backend already has a good
+    // default), so we don't fabricate content the clinic never asked for.
+    const getExampleSystemPrompt = useCallback(() => {
         return `Você é uma assistente virtual da clínica odontológica ${clinic?.name || 'SDental'}.
 Seu objetivo é agendar consultas, tirar dúvidas sobre tratamentos e fornecer informações sobre a clínica.
-Seja sempre cordial, profissional e empática.
-Use emojis ocasionalmente para tornar a conversa mais leve.`
+Seja sempre cordial, profissional e empática.`
     }, [clinic?.name])
 
-    const getDefaultContext = useCallback(() => {
+    const getContextScaffold = useCallback(() => {
         // Horarios de funcionamento e servicos ja sao montados dinamicamente
         // a partir do banco de dados a cada mensagem (ver _format_business_hours
         // e _format_services no backend) - nao devem ser duplicados aqui como
@@ -171,59 +174,59 @@ Adicione aqui outras informacoes que o agente deve saber e que nao vem automatic
 Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente e atualizados em tempo real a partir de Configuracoes - nao e necessario repeti-los aqui.`
     }, [clinic])
 
-    const fetchConfig = async () => {
+    const fetchConfig = useCallback(async () => {
         try {
             const response = await agentsApi.getConfig()
             const config = response.data
-            const newConfig = {
+            const loaded: AgentDraft = {
                 name: config.name || 'Assistente SDental',
-                temperature: config.temperature || 0.7,
-                systemPrompt: config.system_prompt || getDefaultSystemPrompt(),
-                context: config.context || getDefaultContext()
+                temperature: config.temperature ?? DEFAULT_TEMPERATURE,
+                // Empty stays empty: it means "no customization saved yet",
+                // not "let's pre-fill the box with generated text".
+                systemPrompt: config.system_prompt || '',
+                context: config.context || ''
             }
-            setAgentConfig(newConfig)
-            setSavedConfig(JSON.stringify({
-                name: newConfig.name,
-                temperature: newConfig.temperature,
-                systemPrompt: newConfig.systemPrompt,
-                context: newConfig.context
-            }))
+            setAgentConfig(loaded)
+            setSavedConfig(JSON.stringify(loaded))
+            setUsingDefaults(!loaded.systemPrompt.trim() && !loaded.context.trim())
         } catch (error) {
             console.error('Error fetching agent config:', error)
-            const newConfig = {
-                ...agentConfig,
-                systemPrompt: getDefaultSystemPrompt(),
-                context: getDefaultContext()
-            }
-            setAgentConfig(newConfig)
-            setSavedConfig(JSON.stringify({
-                name: newConfig.name,
-                temperature: newConfig.temperature,
-                systemPrompt: newConfig.systemPrompt,
-                context: newConfig.context
-            }))
+            toast({
+                title: 'Erro ao carregar configuração',
+                description: 'Não foi possível carregar as configurações do agente.',
+                variant: 'error',
+            })
         } finally {
             setLoading(false)
         }
-    }
+    }, [toast])
+
+    useEffect(() => {
+        fetchConfig()
+    }, [fetchConfig])
+
+    // Shared by the manual "Salvar" button and by one-click template
+    // application - both just persist a draft, they only differ in which
+    // fields change and which UI shows a spinner while it happens.
+    const persistConfig = useCallback(async (patch: Partial<AgentDraft> = {}) => {
+        const next: AgentDraft = { ...agentConfig, ...patch }
+        await agentsApi.updateConfig({
+            name: next.name,
+            system_prompt: next.systemPrompt,
+            temperature: next.temperature,
+            context: next.context
+        })
+        setAgentConfig(next)
+        setSavedConfig(JSON.stringify(next))
+        setHasChanges(false)
+        setUsingDefaults(!next.systemPrompt.trim() && !next.context.trim())
+        return next
+    }, [agentConfig])
 
     const handleSave = async () => {
         setSaving(true)
         try {
-            await agentsApi.updateConfig({
-                name: agentConfig.name,
-                system_prompt: agentConfig.systemPrompt,
-                temperature: agentConfig.temperature,
-                context: agentConfig.context
-            })
-            const newSaved = JSON.stringify({
-                name: agentConfig.name,
-                temperature: agentConfig.temperature,
-                systemPrompt: agentConfig.systemPrompt,
-                context: agentConfig.context
-            })
-            setSavedConfig(newSaved)
-            setHasChanges(false)
+            await persistConfig()
             toast({
                 title: 'Configuracoes salvas',
                 description: 'O agente foi atualizado com sucesso.',
@@ -251,7 +254,13 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
         setSendingTest(true)
 
         try {
-            const response = await agentsApi.testMessage(userMessage)
+            // Always the live draft, saved or not - what you see in the
+            // fields above is exactly what gets tested.
+            const response = await agentsApi.testMessage(userMessage, {
+                systemPrompt: agentConfig.systemPrompt,
+                context: agentConfig.context,
+                temperature: agentConfig.temperature,
+            })
             setTestMessages(prev => [...prev, { role: 'assistant', content: response.data.response }])
         } catch (error) {
             console.error('Error testing message:', error)
@@ -272,14 +281,27 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
         setTestMessages([])
     }
 
-    const handleApplyTemplate = (index: number) => {
+    const handleApplyTemplate = async (index: number) => {
         const template = PROMPT_TEMPLATES[index]
-        setAgentConfig(prev => ({ ...prev, systemPrompt: template.content }))
-        setPreviewTemplate(null)
-        toast({
-            title: `Modelo "${template.name}" aplicado`,
-            description: 'Voce pode editar o prompt a vontade.',
-        })
+        setApplyingTemplate(index)
+        try {
+            await persistConfig({ systemPrompt: template.content })
+            setPreviewTemplate(null)
+            toast({
+                title: `Modelo "${template.name}" aplicado`,
+                description: 'Já está ativo e no ar - você pode ajustar o texto abaixo quando quiser.',
+                variant: 'success',
+            })
+        } catch (error) {
+            console.error('Error applying template:', error)
+            toast({
+                title: 'Erro ao aplicar modelo',
+                description: 'Nao foi possivel salvar o modelo escolhido.',
+                variant: 'error',
+            })
+        } finally {
+            setApplyingTemplate(null)
+        }
     }
 
     const handleInsertVariable = (variable: string) => {
@@ -306,11 +328,11 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
     }
 
     const handleRefreshContext = () => {
-        const newContext = getDefaultContext()
+        const newContext = getContextScaffold()
         setAgentConfig(prev => ({ ...prev, context: newContext }))
         toast({
-            title: 'Contexto atualizado',
-            description: 'Dados recarregados das configuracoes da clinica.',
+            title: 'Modelo de texto inserido',
+            description: 'Edite e salve quando estiver pronto.',
         })
     }
 
@@ -352,6 +374,22 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                 </div>
             </div>
 
+            {/* Already-working reassurance: shown whenever nothing persisted
+                differs from the built-in defaults, so the owner never feels
+                pressured to fill this page out before the bot is "ready". */}
+            {usingDefaults && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-success/[0.06] border border-success/20">
+                    <CheckCircle className="h-5 w-5 text-success shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                        <p className="font-medium text-foreground">Seu assistente já está no ar</p>
+                        <p className="text-muted-foreground mt-0.5">
+                            Ele está respondendo pacientes com uma configuração padrão testada. Tudo abaixo é opcional -
+                            personalize só se quiser um tom diferente ou adicionar informações extras.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Unsaved changes banner */}
             {hasChanges && (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning/[0.08] border border-warning/20 text-warning text-sm font-medium">
@@ -391,7 +429,7 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-5">
+                        <CardContent>
                             <div className="space-y-2">
                                 <Label htmlFor="name">Nome do Agente</Label>
                                 <div className="relative">
@@ -408,45 +446,6 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                     Este nome aparece no inicio das conversas com pacientes.
                                 </p>
                             </div>
-
-                            {/* Temperature - Custom Slider */}
-                            <div className="space-y-3 p-5 rounded-xl bg-muted/30 border border-border/50">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Thermometer className="h-4 w-4 text-muted-foreground" />
-                                        <Label className="mb-0">Criatividade</Label>
-                                    </div>
-                                    <Badge variant={agentConfig.temperature === 0.7 ? 'default' : 'outline'} className="text-xs">
-                                        {tempInfo.label}
-                                    </Badge>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="relative pt-1">
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="1"
-                                            step="0.1"
-                                            value={agentConfig.temperature}
-                                            onChange={(e) => setAgentConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
-                                            className="w-full h-2 rounded-full appearance-none cursor-pointer bg-border"
-                                            style={{
-                                                background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${agentConfig.temperature * 100}%, hsl(var(--border)) ${agentConfig.temperature * 100}%, hsl(var(--border)) 100%)`
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="flex justify-between text-[11px] text-muted-foreground px-0.5">
-                                        <span>Preciso</span>
-                                        <span>Recomendado</span>
-                                        <span>Criativo</span>
-                                    </div>
-                                </div>
-
-                                <p className={cn("text-xs", tempInfo.color)}>
-                                    {tempInfo.description}
-                                </p>
-                            </div>
                         </CardContent>
                     </Card>
 
@@ -459,7 +458,7 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                 </div>
                                 <div>
                                     <CardTitle className="text-base">Modelo de Personalidade</CardTitle>
-                                    <CardDescription>Escolha um ponto de partida ou escreva do zero</CardDescription>
+                                    <CardDescription>Um clique aplica e já salva - ajuste o texto depois, se quiser</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
@@ -468,68 +467,81 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                             <div className="grid gap-3 sm:grid-cols-2">
                                 {PROMPT_TEMPLATES.map((template, i) => {
                                     const Icon = template.icon
-                                    const isActive = previewTemplate === i
+                                    const isPreviewing = previewTemplate === i
+                                    const isApplying = applyingTemplate === i
+                                    const isActiveTemplate = agentConfig.systemPrompt === template.content
                                     return (
-                                        <button
+                                        <div
                                             key={template.name}
-                                            onClick={() => setPreviewTemplate(isActive ? null : i)}
                                             className={cn(
-                                                "text-left p-4 rounded-xl border transition-all duration-200 group",
-                                                isActive
-                                                    ? "border-primary/30 bg-primary/[0.04] shadow-soft"
+                                                "text-left p-4 rounded-xl border transition-all duration-200",
+                                                isActiveTemplate
+                                                    ? "border-success/30 bg-success/[0.04]"
                                                     : "border-border/50 hover:border-border hover:bg-muted/30"
                                             )}
                                         >
                                             <div className="flex items-start gap-3">
                                                 <div className={cn(
                                                     "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                                                    isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                                                    isActiveTemplate ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
                                                 )}>
                                                     <Icon className="h-4 w-4" />
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <p className="font-medium text-sm text-foreground">{template.name}</p>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="font-medium text-sm text-foreground">{template.name}</p>
+                                                        {isActiveTemplate && <Check className="h-3.5 w-3.5 text-success shrink-0" />}
+                                                    </div>
                                                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{template.description}</p>
                                                 </div>
-                                                <ChevronRight className={cn(
-                                                    "h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform mt-0.5",
-                                                    isActive && "rotate-90 text-primary"
-                                                )} />
                                             </div>
-                                        </button>
+
+                                            <div className="flex items-center gap-2 mt-3">
+                                                <Button
+                                                    size="sm"
+                                                    variant={isActiveTemplate ? 'outline' : 'default'}
+                                                    onClick={() => handleApplyTemplate(i)}
+                                                    disabled={isApplying || isActiveTemplate}
+                                                    className="gap-1.5 h-7 text-xs flex-1"
+                                                >
+                                                    {isApplying ? (
+                                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                                    ) : isActiveTemplate ? (
+                                                        <Check className="h-3 w-3" />
+                                                    ) : null}
+                                                    {isApplying ? 'Aplicando...' : isActiveTemplate ? 'Em uso' : 'Usar este modelo'}
+                                                </Button>
+                                                <button
+                                                    onClick={() => setPreviewTemplate(isPreviewing ? null : i)}
+                                                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 shrink-0"
+                                                >
+                                                    {isPreviewing ? 'Ocultar' : 'Ver texto'}
+                                                </button>
+                                            </div>
+
+                                            {isPreviewing && (
+                                                <pre className="mt-3 text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 whitespace-pre-wrap font-mono leading-relaxed max-h-40 overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                                                    {template.content}
+                                                </pre>
+                                            )}
+                                        </div>
                                     )
                                 })}
                             </div>
 
-                            {/* Template Preview */}
-                            {previewTemplate !== null && (
-                                <div className="rounded-xl border border-primary/20 bg-primary/[0.02] p-4 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Eye className="h-4 w-4 text-primary" />
-                                            <span className="text-sm font-medium text-primary">Preview: {PROMPT_TEMPLATES[previewTemplate].name}</span>
-                                        </div>
-                                        <Button
-                                            size="sm"
-                                            onClick={() => handleApplyTemplate(previewTemplate)}
-                                            className="gap-1.5"
-                                        >
-                                            <Check className="h-3 w-3" />
-                                            Usar este modelo
-                                        </Button>
-                                    </div>
-                                    <pre className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 whitespace-pre-wrap font-mono leading-relaxed max-h-40 overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                                        {PROMPT_TEMPLATES[previewTemplate].content}
-                                    </pre>
-                                </div>
-                            )}
-
                             {/* Prompt Editor */}
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="prompt">Prompt do Sistema</Label>
+                                    <div>
+                                        <Label htmlFor="prompt">Prompt do Sistema</Label>
+                                        {!agentConfig.systemPrompt && (
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                Vazio = usando o modelo padrão automaticamente. Escreva algo ou escolha um modelo acima para personalizar.
+                                            </p>
+                                        )}
+                                    </div>
                                     <span className={cn(
-                                        "text-xs tabular-nums",
+                                        "text-xs tabular-nums shrink-0",
                                         promptLength > 2000 ? "text-warning" : "text-muted-foreground"
                                     )}>
                                         {promptLength.toLocaleString('pt-BR')} caracteres
@@ -542,7 +554,7 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                     value={agentConfig.systemPrompt}
                                     onChange={(e) => setAgentConfig(prev => ({ ...prev, systemPrompt: e.target.value }))}
                                     className="font-mono text-sm leading-relaxed"
-                                    placeholder="Descreva como o agente deve se comportar..."
+                                    placeholder={getExampleSystemPrompt()}
                                 />
 
                                 {/* Variables - Outside textarea */}
@@ -590,6 +602,73 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Advanced settings - collapsed by default. Temperature is
+                        an LLM tuning parameter with no obvious business
+                        meaning; the recommended default is right for
+                        virtually every clinic, so it's hidden instead of
+                        competing for attention with the decisions that
+                        actually matter. */}
+                    <div className="rounded-xl border border-border/50 overflow-hidden">
+                        <button
+                            onClick={() => setShowAdvanced(v => !v)}
+                            className="w-full flex items-center justify-between gap-3 p-4 hover:bg-muted/30 transition-colors"
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm font-medium text-foreground">Configuracoes avancadas</span>
+                                {agentConfig.temperature !== DEFAULT_TEMPERATURE && (
+                                    <Badge variant="outline" className="text-[10px]">Personalizado</Badge>
+                                )}
+                            </div>
+                            <ChevronDown className={cn(
+                                "h-4 w-4 text-muted-foreground transition-transform",
+                                showAdvanced && "rotate-180"
+                            )} />
+                        </button>
+
+                        {showAdvanced && (
+                            <div className="p-4 pt-0 space-y-3">
+                                <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Thermometer className="h-4 w-4 text-muted-foreground" />
+                                            <Label className="mb-0">Criatividade</Label>
+                                        </div>
+                                        <Badge variant={agentConfig.temperature === DEFAULT_TEMPERATURE ? 'default' : 'outline'} className="text-xs">
+                                            {tempInfo.label}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="relative pt-1">
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.1"
+                                                value={agentConfig.temperature}
+                                                onChange={(e) => setAgentConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
+                                                className="w-full h-2 rounded-full appearance-none cursor-pointer bg-border"
+                                                style={{
+                                                    background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${agentConfig.temperature * 100}%, hsl(var(--border)) ${agentConfig.temperature * 100}%, hsl(var(--border)) 100%)`
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between text-[11px] text-muted-foreground px-0.5">
+                                            <span>Preciso</span>
+                                            <span>Recomendado</span>
+                                            <span>Criativo</span>
+                                        </div>
+                                    </div>
+
+                                    <p className={cn("text-xs", tempInfo.color)}>
+                                        {tempInfo.description}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </TabsContent>
 
                 {/* ======================== TAB: CONHECIMENTO ======================== */}
@@ -603,7 +682,7 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                     </div>
                                     <div>
                                         <CardTitle className="text-base">Base de Conhecimento</CardTitle>
-                                        <CardDescription>Informacoes que o agente usa para responder</CardDescription>
+                                        <CardDescription>Informacoes extras que o agente usa para responder</CardDescription>
                                     </div>
                                 </div>
                                 <Button
@@ -613,7 +692,7 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                     className="gap-2"
                                 >
                                     <RotateCcw className="h-3.5 w-3.5" />
-                                    Sincronizar
+                                    Inserir modelo
                                 </Button>
                             </div>
                         </CardHeader>
@@ -629,9 +708,16 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="context">Contexto da Clinica</Label>
+                                    <div>
+                                        <Label htmlFor="context">Contexto da Clinica</Label>
+                                        {!agentConfig.context && (
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                Vazio por enquanto - nenhuma informação extra é obrigatória para o agente funcionar.
+                                            </p>
+                                        )}
+                                    </div>
                                     <span className={cn(
-                                        "text-xs tabular-nums",
+                                        "text-xs tabular-nums shrink-0",
                                         contextLength > 3000 ? "text-warning" : "text-muted-foreground"
                                     )}>
                                         {contextLength.toLocaleString('pt-BR')} caracteres
@@ -643,7 +729,7 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                     value={agentConfig.context}
                                     onChange={(e) => setAgentConfig(prev => ({ ...prev, context: e.target.value }))}
                                     className="font-mono text-sm leading-relaxed"
-                                    placeholder="Adicione informacoes sobre horarios, localizacao, procedimentos..."
+                                    placeholder={getContextScaffold()}
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     Inclua tudo que o agente precisa saber: endereco, estacionamento, formas de pagamento, politica de cancelamento, etc.
@@ -664,7 +750,7 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                     </div>
                                     <div>
                                         <CardTitle className="text-base">Testar Agente</CardTitle>
-                                        <CardDescription>Simule uma conversa para validar as respostas</CardDescription>
+                                        <CardDescription>Simule uma conversa - sempre reflete o que está na tela, mesmo sem salvar</CardDescription>
                                     </div>
                                 </div>
                                 {testMessages.length > 0 && (
@@ -790,14 +876,6 @@ Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente 
                                     </Button>
                                 </form>
                             </div>
-
-                            {/* Tips */}
-                            {hasChanges && (
-                                <div className="flex items-center gap-2 mt-3 text-xs text-warning">
-                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                                    Salve as alteracoes antes de testar para usar a configuracao mais recente.
-                                </div>
-                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

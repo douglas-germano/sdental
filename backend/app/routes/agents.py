@@ -49,11 +49,31 @@ def get_agent_config(current_clinic):
 @bp.route('/test', methods=['POST'])
 @clinic_required
 def test_agent(current_clinic):
+    """
+    Simulate a patient message against the agent.
+
+    Optionally accepts `system_prompt`, `context` and `temperature` -
+    unsaved edits from the Agentes IA screen - and previews them without
+    writing to the clinic row, so "Testar" always reflects whatever is on
+    screen, saved or not. Omitted fields (or empty strings) fall back to
+    the clinic's persisted configuration, matching real WhatsApp behavior.
+    """
     data = request.get_json()
     message = data.get('message')
 
     if not message:
         return jsonify({'error': 'Message is required'}), 400
+
+    overrides = {}
+    if 'system_prompt' in data:
+        overrides['system_prompt'] = data.get('system_prompt')
+    if 'context' in data:
+        overrides['context'] = data.get('context')
+    if data.get('temperature') is not None:
+        try:
+            overrides['temperature'] = float(data['temperature'])
+        except (TypeError, ValueError):
+            return jsonify({'error': 'temperature must be a number'}), 400
 
     try:
         from app.services.conversation_service import ConversationService, TEST_PHONE_PREFIX
@@ -64,7 +84,7 @@ def test_agent(current_clinic):
         conversation_service = ConversationService(current_clinic)
         conversation = conversation_service.get_or_create_conversation(test_phone)
 
-        claude_service = ClaudeService(current_clinic)
+        claude_service = ClaudeService(current_clinic, overrides=overrides)
         response_text = claude_service.process_message(conversation, message)
 
         return jsonify({
