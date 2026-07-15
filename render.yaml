@@ -1,36 +1,89 @@
+# Render blueprint: backend + managed Postgres + managed Redis.
+#
+# The web service MUST start through start.sh: it runs the database
+# migrations and launches Gunicorn with the gthread worker class (required
+# for the long-lived SSE connections of the conversations chat). Redis is
+# required in production - it coordinates realtime events, message-burst
+# aggregation and the scheduler's single-runner job locks across workers.
+#
+# After the first deploy, fill in the `sync: false` secrets on the Render
+# dashboard (OpenRouter, Evolution, Brevo, Kiwify, URLs).
+#
+# NOTE: free plans spin down on idle, which kills the scheduler (reminders,
+# proactive outreach) and SSE. Use a paid plan for production traffic.
+
 services:
   - type: web
     name: sdental-backend
     runtime: python
     region: oregon
-    plan: free
+    plan: starter
     branch: main
     rootDir: backend
-    buildCommand: pip install -r requirements.txt && flask db upgrade
-    startCommand: gunicorn --workers 4 --bind 0.0.0.0:$PORT run:app
-
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash start.sh
+    healthCheckPath: /api/health
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: WEB_CONCURRENCY
+        value: "2"
+      - key: WEB_THREADS
+        value: "4"
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: WEBHOOK_SECRET
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
           name: sdental-db
           property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: sdental-redis
+          property: connectionString
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_MODEL
         value: anthropic/claude-sonnet-4.5
+      - key: AUDIO_TRANSCRIPTION_MODEL
+        value: google/gemini-2.5-flash
       - key: EVOLUTION_API_URL
         sync: false
       - key: EVOLUTION_API_KEY
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: KIWIFY_WEBHOOK_TOKEN
+        sync: false
+      - key: KIWIFY_CHECKOUT_URL
+        sync: false
+      - key: BASE_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: ADMIN_ALERT_EMAIL
+        sync: false
+
+  - type: redis
+    name: sdental-redis
+    region: oregon
+    plan: starter
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
 
 databases:
   - name: sdental-db
-    plan: free
+    region: oregon
+    plan: basic-256mb
     databaseName: sdental
     user: sdental

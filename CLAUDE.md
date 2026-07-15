@@ -157,12 +157,14 @@ with a single Gunicorn worker.** The SSE stream authenticates via a
 `JWT_QUERY_STRING_NAME = 'token'`).
 
 **Background jobs (`scheduler.py`).** APScheduler runs reminder jobs
-(send pending / retry failed) **and the autonomous-agent jobs** (recovery +
+(send pending / retry failed), **the autonomous-agent jobs** (recovery +
 waitlist every 30 min, recall every 12h, funnel qualification every 2h, weekly
-report daily). Gated by `ENABLE_SCHEDULER` (default on) and disabled under
-`TESTING`. Note: with multiple Gunicorn workers this scheduler runs per-worker
-— keep that in mind for idempotency (the autonomous jobs dedupe via
-`agent_actions`).
+report daily) and operational guardrails (late-subscription suspension, AI
+spend alert). Gated by `ENABLE_SCHEDULER` (default on) and disabled under
+`TESTING`. Each Gunicorn worker starts its own scheduler, so **every job is
+wrapped in a cross-process single-runner lock** (`utils/job_lock.py`: Redis
+`SET NX EX` when available, non-blocking flock fallback within a container) —
+duplicate ticks are skipped, not deduped downstream.
 
 **Autonomous / proactive layer.** Beyond the reactive WhatsApp agent, the system
 can act on its own initiative:

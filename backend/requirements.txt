@@ -27,6 +27,9 @@ Werkzeug==3.0.1
 # Production server
 gunicorn==21.2.0
 
+# Error monitoring (activated when SENTRY_DSN is set)
+sentry-sdk[flask]==2.19.2
+
 # Testing
 pytest==7.4.3
 pytest-cov==4.1.0

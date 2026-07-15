@@ -52,6 +52,14 @@ def register_error_handlers(app):
         # (after_request hooks, teardown) sees a clean session.
         db.session.rollback()
         logger.exception('unexpected_error: %s', str(error))
+        # A broad Exception errorhandler makes Flask treat the exception as
+        # "handled", which keeps Sentry's Flask integration from seeing it -
+        # report explicitly so 500s still reach the operator.
+        try:
+            import sentry_sdk
+            sentry_sdk.capture_exception(error)
+        except ImportError:
+            pass
         response = jsonify({'error': 'Internal server error'})
         response.status_code = 500
         return response

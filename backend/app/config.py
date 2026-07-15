@@ -102,6 +102,13 @@ class Config:
     # Sentry (optional)
     SENTRY_DSN = os.getenv('SENTRY_DSN')
 
+    # Solo-operator guardrails: e-mail alerts about the platform itself go
+    # here (AI spend spikes today; anything else operational tomorrow).
+    ADMIN_ALERT_EMAIL = os.getenv('ADMIN_ALERT_EMAIL')
+    # Daily per-clinic OpenRouter spend (USD) that triggers an alert.
+    # 0 disables the check.
+    AI_DAILY_COST_ALERT_USD = float(os.getenv('AI_DAILY_COST_ALERT_USD', '10'))
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""
