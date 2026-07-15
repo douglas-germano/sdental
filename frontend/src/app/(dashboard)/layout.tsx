@@ -9,19 +9,45 @@ import { Button } from '@/components/ui/button'
 import { SquaresFour as LayoutDashboard, CalendarBlank as Calendar, CalendarDots, Users, Chat as MessageSquare, Gear as Settings, SignOut as LogOut, List as Menu, X, Robot as Bot, CaretLineLeft as PanelLeftClose, CaretLineRight as PanelLeft, Stethoscope, Columns, Sparkle, CurrencyDollar } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
+// Grouped by job: day-to-day patient work first, management second, the AI
+// layer third. Configurações lives in the footer, next to Sair.
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Pipeline', href: '/pipeline', icon: Columns },
-  { name: 'Agendamentos', href: '/appointments', icon: Calendar },
-  { name: 'Calendario', href: '/calendar', icon: CalendarDots },
-  { name: 'Pacientes', href: '/patients', icon: Users },
-  { name: 'Profissionais', href: '/professionals', icon: Stethoscope },
-  { name: 'Financeiro', href: '/financial', icon: CurrencyDollar },
-  { name: 'Conversas', href: '/conversations', icon: MessageSquare },
-  { name: 'Agentes', href: '/agents', icon: Bot },
-  { name: 'Assistente IA', href: '/assistant', icon: Sparkle },
-  { name: 'Configuracoes', href: '/settings', icon: Settings },
+  {
+    label: null,
+    items: [
+      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Atendimento',
+    items: [
+      { name: 'Conversas', href: '/conversations', icon: MessageSquare },
+      { name: 'Agendamentos', href: '/appointments', icon: Calendar },
+      { name: 'Calendário', href: '/calendar', icon: CalendarDots },
+    ],
+  },
+  {
+    label: 'Gestão',
+    items: [
+      { name: 'Pacientes', href: '/patients', icon: Users },
+      { name: 'Pipeline (CRM)', href: '/pipeline', icon: Columns },
+      { name: 'Profissionais', href: '/professionals', icon: Stethoscope },
+      { name: 'Financeiro', href: '/financial', icon: CurrencyDollar },
+    ],
+  },
+  {
+    label: 'Inteligência',
+    items: [
+      { name: 'Agente WhatsApp', href: '/agents', icon: Bot },
+      { name: 'Assistente IA', href: '/assistant', icon: Sparkle },
+    ],
+  },
 ]
+
+function isNavItemActive(pathname: string, href: string): boolean {
+  // Sub-routes keep their section highlighted (/conversations/[id] → Conversas)
+  return href === '/' ? pathname === '/' : pathname.startsWith(href)
+}
 
 export default function DashboardLayout({
   children,
@@ -153,45 +179,89 @@ export default function DashboardLayout({
 
           {/* Navigation */}
           <nav className={cn(
-            'flex-1 py-3 space-y-0.5 overflow-y-auto',
+            'flex-1 py-3 overflow-y-auto',
             sidebarCollapsed ? 'lg:px-3' : 'px-3'
           )}>
-            {navigation.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'relative flex items-center gap-3 text-sm font-medium rounded-button transition-colors duration-150',
-                    sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-2.5' : 'px-3 py-2.5',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  )}
-                  onClick={() => setSidebarOpen(false)}
-                  title={sidebarCollapsed ? item.name : undefined}
-                >
-                  <item.icon className={cn(
-                    'h-5 w-5 shrink-0 transition-colors',
-                    isActive ? 'text-primary-foreground' : 'text-muted-foreground'
-                  )} />
-                  <span className={cn(
-                    'transition-all duration-300',
-                    sidebarCollapsed ? 'lg:hidden' : 'lg:block'
-                  )}>
-                    {item.name}
-                  </span>
-                </Link>
-              )
-            })}
+            {navigation.map((group, groupIndex) => (
+              <div key={group.label ?? 'root'}>
+                {group.label ? (
+                  <>
+                    {/* Collapsed: a hairline keeps the visual grouping */}
+                    <div className={cn(
+                      'hidden my-2 border-t border-border/50',
+                      sidebarCollapsed && 'lg:block'
+                    )} />
+                    <p className={cn(
+                      'px-3 pt-4 pb-1.5 text-[10.5px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground/70',
+                      sidebarCollapsed && 'lg:hidden'
+                    )}>
+                      {group.label}
+                    </p>
+                  </>
+                ) : groupIndex > 0 ? (
+                  <div className="my-2 border-t border-border/50" />
+                ) : null}
+
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const isActive = isNavItemActive(pathname, item.href)
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={cn(
+                          'relative flex items-center gap-3 text-sm font-medium rounded-button transition-colors duration-150',
+                          sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-2' : 'px-3 py-2',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                        )}
+                        onClick={() => setSidebarOpen(false)}
+                        title={sidebarCollapsed ? item.name : undefined}
+                      >
+                        <item.icon className={cn(
+                          'h-5 w-5 shrink-0 transition-colors',
+                          isActive ? 'text-primary-foreground' : 'text-muted-foreground'
+                        )} />
+                        <span className={cn(
+                          'transition-all duration-300 truncate',
+                          sidebarCollapsed ? 'lg:hidden' : 'lg:block'
+                        )}>
+                          {item.name}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
 
-          {/* User section */}
+          {/* Footer: settings + logout */}
           <div className={cn(
-            'p-3 border-t border-border/40',
+            'p-3 border-t border-border/40 space-y-0.5',
             sidebarCollapsed ? 'lg:px-3' : ''
           )}>
+            <Link
+              href="/settings"
+              className={cn(
+                'flex items-center gap-3 text-sm font-medium rounded-button transition-colors duration-150',
+                sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-2' : 'px-3 py-2',
+                isNavItemActive(pathname, '/settings')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              )}
+              onClick={() => setSidebarOpen(false)}
+              title={sidebarCollapsed ? 'Configurações' : undefined}
+            >
+              <Settings className={cn(
+                'h-5 w-5 shrink-0',
+                isNavItemActive(pathname, '/settings') ? 'text-primary-foreground' : 'text-muted-foreground'
+              )} />
+              <span className={cn(sidebarCollapsed ? 'lg:hidden' : 'lg:block')}>
+                Configurações
+              </span>
+            </Link>
             <Button
               variant="ghost"
               size="sm"

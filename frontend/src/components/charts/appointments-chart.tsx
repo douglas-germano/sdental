@@ -26,7 +26,7 @@ function formatChartDate(dateStr: string): string {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
-export function AppointmentsChart() {
+export function AppointmentsChart({ height = 95 }: { height?: number }) {
   const [data, setData] = useState<ChartData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -52,7 +52,7 @@ export function AppointmentsChart() {
 
   if (loading) {
     return (
-      <div className="h-[95px] flex items-center justify-center">
+      <div style={{ height }} className="flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
       </div>
     )
@@ -60,7 +60,7 @@ export function AppointmentsChart() {
 
   if (error || data.length === 0) {
     return (
-      <div className="h-[95px] flex flex-col items-center justify-center text-muted-foreground">
+      <div style={{ height }} className="flex flex-col items-center justify-center text-muted-foreground">
         <Calendar className="h-8 w-8 mb-1.5 opacity-40" />
         <p className="text-sm">Nenhum dado disponivel</p>
         <p className="text-xs mt-1">Os dados aparecerao conforme os agendamentos forem criados</p>
@@ -69,7 +69,7 @@ export function AppointmentsChart() {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={95}>
+    <ResponsiveContainer width="100%" height={height}>
       <AreaChart
         data={data}
         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}

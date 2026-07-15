@@ -5,6 +5,7 @@ import { AnalyticsOverview } from '@/types'
 
 interface StatusPieChartProps {
   overview: AnalyticsOverview | null
+  height?: number
 }
 
 const COLORS = {
@@ -14,10 +15,10 @@ const COLORS = {
   upcoming: 'hsl(var(--primary))',
 }
 
-export function StatusPieChart({ overview }: StatusPieChartProps) {
+export function StatusPieChart({ overview, height = 95 }: StatusPieChartProps) {
   if (!overview) {
     return (
-      <div className="h-[95px] flex items-center justify-center">
+      <div style={{ height }} className="flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
       </div>
     )
@@ -32,21 +33,23 @@ export function StatusPieChart({ overview }: StatusPieChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="h-[95px] flex items-center justify-center text-muted-foreground text-sm">
+      <div style={{ height }} className="flex items-center justify-center text-muted-foreground text-sm">
         Nenhum dado disponivel
       </div>
     )
   }
 
+  const radius = Math.max(Math.min(Math.floor(height / 2) - 22, 64), 32)
+
   return (
-    <ResponsiveContainer width="100%" height={95}>
+    <ResponsiveContainer width="100%" height={height}>
       <PieChart>
         <Pie
           data={data}
           cx="50%"
           cy="50%"
-          innerRadius={32}
-          outerRadius={48}
+          innerRadius={Math.floor(radius * 0.66)}
+          outerRadius={radius}
           paddingAngle={3}
           dataKey="value"
         >

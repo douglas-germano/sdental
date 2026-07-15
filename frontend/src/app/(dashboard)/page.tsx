@@ -5,10 +5,15 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { analyticsApi, appointmentsApi, conversationsApi } from '@/lib/api'
-import { AnalyticsOverview, Appointment, Conversation } from '@/types'
-import { formatDateTime, formatRelativeTime, getStatusColor, getStatusLabel } from '@/lib/utils'
-import { CalendarBlank as Calendar, Users, Chat as MessageSquare, TrendUp as TrendingUp, Clock, WarningCircle as AlertCircle, ArrowUpRight, CheckCircle as CheckCircle2, XCircle, UserMinus as UserX, UserPlus, ArrowsClockwise as RefreshCw, CalendarCheck, Plus } from '@phosphor-icons/react'
+import { analyticsApi, appointmentsApi, conversationsApi, financialApi } from '@/lib/api'
+import { AnalyticsOverview, Appointment, Conversation, FinancialSummary } from '@/types'
+import { cn, formatDateTime, formatRelativeTime, getStatusColor, getStatusLabel } from '@/lib/utils'
+import {
+  CalendarBlank as Calendar, Users, Chat as MessageSquare, TrendUp as TrendingUp,
+  WarningCircle as AlertCircle, ArrowUpRight, UserPlus, ArrowsClockwise as RefreshCw,
+  CalendarCheck, Plus, Robot as Bot, CheckCircle as CheckCircle2, WifiHigh, WifiSlash,
+  CurrencyDollar,
+} from '@phosphor-icons/react'
 import { AppointmentsChart } from '@/components/charts/appointments-chart'
 import { StatusPieChart } from '@/components/charts/status-pie-chart'
 import { StatsCard } from '@/components/dashboard/stats-card'
@@ -26,15 +31,12 @@ function getGreeting(): string {
 }
 
 function getFormattedDate(): string {
-  const now = new Date()
-  const weekdays = ['Domingo', 'Segunda-feira', 'Terca-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sabado']
-  const months = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
-  return `${weekdays[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`
+  return new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function getCurrentMonthName(): string {
-  const months = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-  return months[new Date().getMonth()]
+  const month = new Date().toLocaleDateString('pt-BR', { month: 'long' })
+  return month.charAt(0).toUpperCase() + month.slice(1)
 }
 
 function isToday(dateString: string): boolean {
@@ -47,31 +49,48 @@ function isToday(dateString: string): boolean {
   )
 }
 
+const formatBRL = (value: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value)
+
+/** Section label: "HOJE · quarta-feira, 15 de julho" */
+function SectionKicker({ label, detail }: { label: string; detail?: string }) {
+  return (
+    <p className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground">
+      {label}
+      {detail && <span className="font-medium normal-case tracking-normal text-muted-foreground/80"> · {detail}</span>}
+    </p>
+  )
+}
+
 export default function DashboardPage() {
   const { clinic } = useAuth()
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null)
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
-  const [recentConversations, setRecentConversations] = useState<Conversation[]>([])
+  const [attentionConversations, setAttentionConversations] = useState<Conversation[]>([])
+  const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null)
+  const [whatsappState, setWhatsappState] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const fetchData = useCallback(async () => {
-    try {
-      const [overviewRes, appointmentsRes, conversationsRes] = await Promise.all([
-        analyticsApi.overview(),
-        appointmentsApi.upcoming(),
-        conversationsApi.list({ per_page: 5, needs_attention: true })
-      ])
+    // allSettled: one failing widget must not blank the whole home page
+    const [overviewRes, appointmentsRes, conversationsRes, financialRes] = await Promise.allSettled([
+      analyticsApi.overview(),
+      appointmentsApi.upcoming(),
+      conversationsApi.list({ per_page: 5, needs_attention: true }),
+      financialApi.getSummary(30),
+    ])
 
-      setOverview(overviewRes.data)
-      setUpcomingAppointments(appointmentsRes.data.appointments || [])
-      setRecentConversations(conversationsRes.data.conversations || [])
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
+    if (overviewRes.status === 'fulfilled') setOverview(overviewRes.value.data)
+    if (appointmentsRes.status === 'fulfilled') setUpcomingAppointments(appointmentsRes.value.data.appointments || [])
+    if (conversationsRes.status === 'fulfilled') {
+      setAttentionConversations(conversationsRes.value.data.conversations || [])
+      setWhatsappState(conversationsRes.value.data.whatsapp_connection_state ?? null)
     }
+    if (financialRes.status === 'fulfilled') setFinancialSummary(financialRes.value.data)
+
+    setLoading(false)
+    setRefreshing(false)
   }, [])
 
   useEffect(() => {
@@ -83,9 +102,20 @@ export default function DashboardPage() {
     fetchData()
   }
 
-  const todayAppointmentsCount = useMemo(() => {
-    return upcomingAppointments.filter(apt => isToday(apt.scheduled_datetime)).length
-  }, [upcomingAppointments])
+  const todayAppointments = useMemo(
+    () =>
+      upcomingAppointments
+        .filter((apt) => isToday(apt.scheduled_datetime))
+        .sort((a, b) => a.scheduled_datetime.localeCompare(b.scheduled_datetime)),
+    [upcomingAppointments]
+  )
+
+  const nextToday = useMemo(() => {
+    const now = new Date()
+    return todayAppointments.find((apt) => new Date(apt.scheduled_datetime) >= now) || null
+  }, [todayAppointments])
+
+  const needsAttentionCount = overview?.conversations.needs_attention || 0
 
   const chartsHaveData = useMemo(() => {
     if (!overview) return false
@@ -93,18 +123,14 @@ export default function DashboardPage() {
     return (appointments.completed + appointments.cancelled + appointments.no_shows + appointments.upcoming) > 0
   }, [overview])
 
-  const greeting = getGreeting()
-  const clinicName = clinic?.name || ''
-  const formattedDate = getFormattedDate()
-  const currentMonth = getCurrentMonthName()
+  const whatsappDown = whatsappState === 'close'
 
   return (
-    <div className="h-[calc(100dvh-2rem)] lg:h-[calc(100dvh-4rem)] flex flex-col gap-4">
-      {/* Personalized Header with Quick Actions */}
+    <div className="space-y-7">
+      {/* Header */}
       <PageHeader
-        title={`${greeting}${clinicName ? `, ${clinicName}` : ''}`}
-        description={formattedDate}
-        className="shrink-0"
+        title={`${getGreeting()}${clinic?.name ? `, ${clinic.name}` : ''}`}
+        description={getFormattedDate()}
       >
         <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -124,177 +150,228 @@ export default function DashboardPage() {
         </Link>
       </PageHeader>
 
-      {/* Scrollable content - keeps header/sidebar fixed even if the content
-          below needs more vertical space than the viewport offers */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-0.5">
+      {/* ─── HOJE: o que precisa da sua atenção agora ─────────────────── */}
+      <section className="space-y-3">
+        <SectionKicker label="Hoje" detail="o que precisa da sua atenção agora" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Consultas de hoje */}
+          <Card hover className="relative">
+            <Link href="/calendar" className="absolute inset-0" aria-label="Abrir calendário" />
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Consultas hoje</p>
+                  {loading ? (
+                    <Skeleton className="h-9 w-14 mt-1.5" />
+                  ) : (
+                    <p className="text-3xl font-extrabold tabular-nums mt-1">{todayAppointments.length}</p>
+                  )}
+                </div>
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <CalendarCheck className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2 truncate">
+                {loading ? ' ' : nextToday
+                  ? `Próxima: ${new Date(nextToday.scheduled_datetime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} — ${nextToday.patient?.name || 'paciente'}`
+                  : todayAppointments.length > 0
+                    ? 'Todas as consultas de hoje já ocorreram'
+                    : 'Agenda livre por enquanto'}
+              </p>
+            </CardContent>
+          </Card>
 
-      {/* Period Indicator + Metrics Cards */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" size="sm" className="text-xs font-medium">
-            {currentMonth}
-          </Badge>
-          <span className="text-sm text-muted-foreground">Este mes</span>
+          {/* Fila de atenção humana */}
+          <Card
+            hover
+            className={cn('relative', needsAttentionCount > 0 && 'border-warning/40 bg-warning/[0.03]')}
+          >
+            <Link href="/conversations" className="absolute inset-0" aria-label="Abrir conversas" />
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Aguardando você</p>
+                  {loading ? (
+                    <Skeleton className="h-9 w-14 mt-1.5" />
+                  ) : (
+                    <p className={cn(
+                      'text-3xl font-extrabold tabular-nums mt-1',
+                      needsAttentionCount > 0 && 'text-warning'
+                    )}>
+                      {needsAttentionCount}
+                    </p>
+                  )}
+                </div>
+                <div className={cn(
+                  'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+                  needsAttentionCount > 0 ? 'bg-warning/12' : 'bg-success/10'
+                )}>
+                  {needsAttentionCount > 0
+                    ? <AlertCircle className="h-5 w-5 text-warning" />
+                    : <CheckCircle2 className="h-5 w-5 text-success" />}
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                {loading ? ' ' : needsAttentionCount > 0
+                  ? 'Conversas transferidas para atendimento humano'
+                  : 'Nenhuma conversa esperando resposta sua'}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Saúde do assistente WhatsApp */}
+          <Card
+            hover
+            className={cn('relative', whatsappDown && 'border-destructive/40 bg-destructive/[0.03]')}
+          >
+            <Link href={whatsappDown ? '/settings' : '/agents'} className="absolute inset-0" aria-label="Status do assistente" />
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Assistente WhatsApp</p>
+                  {loading ? (
+                    <Skeleton className="h-9 w-32 mt-1.5" />
+                  ) : (
+                    <p className={cn(
+                      'text-xl font-extrabold mt-1.5 flex items-center gap-2',
+                      whatsappDown ? 'text-destructive' : whatsappState === 'open' ? 'text-success' : 'text-foreground'
+                    )}>
+                      <span className={cn(
+                        'h-2.5 w-2.5 rounded-full',
+                        whatsappDown ? 'bg-destructive' : whatsappState === 'open' ? 'bg-success' : 'bg-muted-foreground/50'
+                      )} />
+                      {whatsappDown ? 'Desconectado' : whatsappState === 'open' ? 'Conectado' : 'Status desconhecido'}
+                    </p>
+                  )}
+                </div>
+                <div className={cn(
+                  'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+                  whatsappDown ? 'bg-destructive/10' : 'bg-primary/10'
+                )}>
+                  {whatsappDown
+                    ? <WifiSlash className="h-5 w-5 text-destructive" />
+                    : <WifiHigh className="h-5 w-5 text-primary" />}
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1.5">
+                {loading ? ' ' : whatsappDown ? (
+                  <span className="text-destructive font-medium">Reconectar em Configurações →</span>
+                ) : (
+                  <>
+                    <Bot className="h-3.5 w-3.5" />
+                    IA {clinic?.agent_enabled === false ? 'pausada' : 'ativa'} respondendo pacientes
+                  </>
+                )}
+              </p>
+            </CardContent>
+          </Card>
         </div>
+      </section>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {/* ─── ESTE MÊS: desempenho ─────────────────────────────────────── */}
+      <section className="space-y-3">
+        <SectionKicker label="Este mês" detail={getCurrentMonthName()} />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard
-            title="Agendamentos do Mes"
+            title="Agendamentos"
             value={overview?.appointments.this_month || 0}
             icon={Calendar}
             variant="primary"
             loading={loading}
-            delay={0}
             description={
               <span className="flex items-center text-success">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
-                {overview?.appointments.completed || 0} concluidos
+                {overview?.appointments.completed || 0} concluídos
               </span>
             }
           />
-
           <StatsCard
-            title="Agendamentos Hoje"
-            value={todayAppointmentsCount}
-            icon={CalendarCheck}
-            variant="accent"
-            loading={loading}
-            delay={50}
-            description="Para hoje"
-          />
-
-          <StatsCard
-            title="Total de Pacientes"
-            value={overview?.patients.total || 0}
-            icon={Users}
+            title="Novos pacientes"
+            value={overview?.patients.new_this_month || 0}
+            icon={UserPlus}
             variant="success"
             loading={loading}
-            delay={100}
-            description={
-              <span className="flex items-center text-success">
-                <ArrowUpRight className="h-3 w-3 mr-1" />
-                +{overview?.patients.new_this_month || 0} novos este mes
-              </span>
-            }
+            description={`${overview?.patients.total || 0} pacientes no total`}
           />
-
           <StatsCard
-            title="Conversas Ativas"
+            title="Receita realizada"
+            value={financialSummary ? formatBRL(financialSummary.realized_revenue) : '—'}
+            icon={CurrencyDollar}
+            variant="accent"
+            loading={loading}
+            description="Últimos 30 dias · ver Financeiro"
+          />
+          <StatsCard
+            title="Conversas ativas"
             value={overview?.conversations.active || 0}
             icon={MessageSquare}
-            variant="warning"
-            loading={loading}
-            delay={150}
-            description={
-              (overview?.conversations.needs_attention || 0) > 0 ? (
-                <span className="flex items-center text-warning">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  {overview?.conversations.needs_attention} precisam de atencao
-                </span>
-              ) : (
-                <span>Todas em dia</span>
-              )
-            }
-          />
-
-          <StatsCard
-            title="Proximos 7 dias"
-            value={overview?.appointments.upcoming || 0}
-            icon={Clock}
             variant="default"
             loading={loading}
-            delay={200}
-            description="Agendamentos futuros"
+            description={`${overview?.appointments.upcoming || 0} consultas nos próximos 7 dias`}
           />
         </div>
-      </div>
+      </section>
 
-      {/* Charts Section with Monthly Summary Row */}
-      <div className="space-y-3">
-        <div className="grid gap-4 lg:grid-cols-7">
-          <Card className="lg:col-span-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                </div>
-                Visao Geral de Agendamentos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {loading ? (
-                <Skeleton className="h-[95px] w-full rounded-xl" />
-              ) : chartsHaveData ? (
-                <AppointmentsChart />
-              ) : (
-                <EmptyState
-                  compact
-                  icon={TrendingUp}
-                  title="Sem dados ainda"
-                  description="Os graficos serao exibidos quando houver agendamentos"
-                />
-              )}
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-3">
-            <CardHeader className="pb-2">
-              <CardTitle>Status dos Agendamentos</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {loading ? (
-                <Skeleton className="h-[95px] w-full rounded-xl" />
-              ) : chartsHaveData ? (
-                <StatusPieChart overview={overview} />
-              ) : (
-                <EmptyState
-                  compact
-                  icon={Calendar}
-                  title="Sem dados ainda"
-                  description="O grafico de status sera exibido quando houver agendamentos"
-                />
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Monthly Summary Row */}
-        {!loading && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { icon: CheckCircle2, value: overview?.appointments.completed || 0, label: 'Concluidos', color: 'text-success', bg: 'bg-success/8' },
-              { icon: XCircle, value: overview?.appointments.cancelled || 0, label: 'Cancelados', color: 'text-destructive', bg: 'bg-destructive/8' },
-              { icon: UserX, value: overview?.appointments.no_shows || 0, label: 'Faltas', color: 'text-muted-foreground', bg: 'bg-muted' },
-              { icon: UserPlus, value: overview?.patients.new_this_month || 0, label: 'Novos Pacientes', color: 'text-primary', bg: 'bg-primary/8' },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center gap-3 p-3 rounded-card border border-border bg-card"
-              >
-                <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
-                  <item.icon className={`h-5 w-5 ${item.color}`} />
-                </div>
-                <div className="min-w-0">
-                  <p className={`text-xl font-bold tabular-nums ${item.color}`}>{item.value}</p>
-                  <p className="text-sm text-muted-foreground truncate">{item.label}</p>
-                </div>
+      {/* ─── Gráficos ─────────────────────────────────────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-5">
+        <Card className="lg:col-span-3">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
+                <TrendingUp className="h-4 w-4 text-primary" />
               </div>
-            ))}
-          </div>
-        )}
+              Agendamentos — últimos 30 dias
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            {loading ? (
+              <Skeleton className="h-[200px] w-full rounded-xl" />
+            ) : chartsHaveData ? (
+              <AppointmentsChart height={200} />
+            ) : (
+              <EmptyState
+                compact
+                icon={TrendingUp}
+                title="Sem dados ainda"
+                description="Os gráficos aparecem com os primeiros agendamentos"
+              />
+            )}
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle>Status do mês</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            {loading ? (
+              <Skeleton className="h-[200px] w-full rounded-xl" />
+            ) : chartsHaveData ? (
+              <StatusPieChart overview={overview} height={200} />
+            ) : (
+              <EmptyState
+                compact
+                icon={Calendar}
+                title="Sem dados ainda"
+                description="O gráfico de status aparece com os primeiros agendamentos"
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
 
+      {/* ─── Listas: próximos + fila de atenção ───────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Upcoming Appointments */}
+        {/* Próximos agendamentos */}
         <Card className="flex flex-col">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
                 <Calendar className="h-4 w-4 text-primary" />
               </div>
-              Proximos Agendamentos
+              Próximos agendamentos
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-0 flex-1 flex flex-col">
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
@@ -314,38 +391,34 @@ export default function DashboardPage() {
               <EmptyState
                 compact
                 icon={Calendar}
-                title="Nenhum agendamento proximo"
-                description="Nao ha agendamentos nos proximos 7 dias"
+                title="Nenhum agendamento próximo"
+                description="Não há agendamentos para hoje e amanhã"
               />
             ) : (
-              <div className="space-y-1">
-                {upcomingAppointments.slice(0, 3).map((apt) => (
+              <div className="space-y-1 flex-1">
+                {upcomingAppointments.slice(0, 5).map((apt) => (
                   <Link
                     key={apt.id}
                     href="/appointments"
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors duration-150"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm shrink-0">
                         {apt.patient?.name?.charAt(0).toUpperCase() || '?'}
                       </div>
-                      <div>
-                        <p className="font-medium text-sm text-foreground">{apt.patient?.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {apt.service_name}
-                        </p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm text-foreground truncate">{apt.patient?.name}</p>
+                        <p className="text-sm text-muted-foreground truncate">{apt.service_name}</p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <p className="text-xs text-muted-foreground mb-1.5 cursor-help">
                             {formatRelativeTime(apt.scheduled_datetime)}
                           </p>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          {formatDateTime(apt.scheduled_datetime)}
-                        </TooltipContent>
+                        <TooltipContent>{formatDateTime(apt.scheduled_datetime)}</TooltipContent>
                       </Tooltip>
                       <Badge className={getStatusColor(apt.status)} variant="secondary" size="sm">
                         {getStatusLabel(apt.status)}
@@ -365,17 +438,17 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Conversations Needing Attention */}
+        {/* Conversas aguardando atenção */}
         <Card className="flex flex-col">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-warning/8 flex items-center justify-center shrink-0">
                 <MessageSquare className="h-4 w-4 text-warning" />
               </div>
-              Conversas Aguardando Atencao
+              Aguardando atenção humana
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-0 flex-1 flex flex-col">
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
@@ -390,39 +463,50 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-            ) : recentConversations.length === 0 ? (
+            ) : attentionConversations.length === 0 ? (
               <EmptyState
                 compact
-                icon={MessageSquare}
-                title="Nenhuma conversa aguardando atencao"
-                description="Todas as conversas estao em dia"
+                icon={CheckCircle2}
+                title="Tudo em dia"
+                description="Nenhuma conversa esperando resposta humana"
               />
             ) : (
-              <div className="space-y-1">
-                {recentConversations.slice(0, 3).map((conv) => (
+              <div className="space-y-1 flex-1">
+                {attentionConversations.slice(0, 5).map((conv) => (
                   <Link
                     key={conv.id}
                     href={`/conversations/${conv.id}`}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors duration-150 block"
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors duration-150"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm shrink-0">
-                        {conv.patient?.name?.charAt(0).toUpperCase() || conv.phone_number?.charAt(0) || '?'}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn(
+                        'w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm shrink-0',
+                        conv.urgent ? 'bg-destructive' : 'bg-warning'
+                      )}>
+                        {conv.patient?.name?.charAt(0).toUpperCase() || conv.phone_number?.slice(-2) || '?'}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-sm text-foreground">
+                        <p className="font-medium text-sm text-foreground truncate flex items-center gap-1.5">
                           {conv.patient?.name || conv.phone_number}
+                          {conv.urgent && <Badge variant="destructive" size="sm" dot>Urgente</Badge>}
                         </p>
-                        <p className="text-sm text-muted-foreground truncate max-w-[180px]">
+                        <p className="text-sm text-muted-foreground truncate max-w-[220px]">
                           {conv.messages && conv.messages.length > 0
                             ? conv.messages[conv.messages.length - 1].content
                             : 'Sem mensagens'}
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {formatRelativeTime(conv.last_message_at)}
-                    </span>
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        {formatRelativeTime(conv.last_message_at)}
+                      </span>
+                      {(conv.unread_count || 0) > 0 && (
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10.5px] font-bold flex items-center justify-center">
+                          {conv.unread_count}
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -436,7 +520,6 @@ export default function DashboardPage() {
             </Link>
           </CardContent>
         </Card>
-      </div>
       </div>
     </div>
   )
