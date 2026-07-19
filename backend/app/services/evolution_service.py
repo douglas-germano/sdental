@@ -341,18 +341,27 @@ class EvolutionService:
 
         url = f'{self.api_url}/webhook/set/{self.instance_name}'
 
-        payload = {
-            'webhook': {
-                'enabled': True,
-                'url': webhook_url,
-                'webhookByEvents': True,
-                'events': [
-                    'MESSAGES_UPSERT',
-                    'MESSAGES_UPDATE',
-                    'PRESENCE_UPDATE'
-                ]
-            }
+        webhook_config = {
+            'enabled': True,
+            'url': webhook_url,
+            'webhookByEvents': True,
+            'events': [
+                'MESSAGES_UPSERT',
+                'MESSAGES_UPDATE',
+                'PRESENCE_UPDATE'
+            ]
         }
+
+        # Evolution must echo this back on every callback so webhook_auth_required
+        # can authenticate it (see utils/webhook_auth.py). Without it, WEBHOOK_SECRET
+        # being set on our side is not enough - Evolution was never told to send the
+        # header, so every real callback still gets rejected with 401 and the AI
+        # never sees a message to reply to.
+        webhook_secret = current_app.config.get('WEBHOOK_SECRET')
+        if webhook_secret:
+            webhook_config['headers'] = {'X-Webhook-Secret': webhook_secret}
+
+        payload = {'webhook': webhook_config}
 
         try:
             response = requests.post(
