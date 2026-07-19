@@ -39,8 +39,10 @@ def webhook_auth_required(fn):
     """
     Decorator to require webhook authentication.
 
-    Checks for X-Webhook-Secret header or signature validation.
-    Can be bypassed in development mode with WEBHOOK_AUTH_DISABLED=true.
+    Accepts an X-Webhook-Secret header, an X-Webhook-Signature HMAC header, or
+    (Evolution API's actual mechanism) an "apikey" field in the JSON body
+    matching EVOLUTION_API_KEY. Can be bypassed in development mode with
+    WEBHOOK_AUTH_DISABLED=true.
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -72,13 +74,25 @@ def webhook_auth_required(fn):
             if verify_webhook_signature(request.get_data(), signature, webhook_secret):
                 return fn(*args, **kwargs)
 
+        body = request.get_json(silent=True)
+
+        # Evolution API (confirmed via production diagnostics) doesn't send a
+        # custom header at all - it embeds its own "apikey" field in the JSON
+        # body of every event payload instead. In Evolution's default global-key
+        # auth mode that value is the same EVOLUTION_API_KEY we use to call
+        # Evolution ourselves (see EvolutionService._get_headers), so accept a
+        # body apikey that matches it as proof the call is really from Evolution.
+        evolution_key = current_app.config.get('EVOLUTION_API_KEY')
+        body_apikey = body.get('apikey') if isinstance(body, dict) else None
+        if evolution_key and isinstance(body_apikey, str) and hmac.compare_digest(body_apikey, evolution_key):
+            return fn(*args, **kwargs)
+
         # Diagnostic breadcrumb: header names and body *key names* only (never
         # values - secret, apikey or otherwise) - lets us tell "caller sent no
         # auth signal at all" apart from "sent one we don't recognize", and
         # whether the caller (Evolution API / Kiwify) authenticates via a
         # header or via a field inside the JSON body instead, without needing
         # a live debugger on the caller's side.
-        body = request.get_json(silent=True)
         body_keys = sorted(body.keys()) if isinstance(body, dict) else None
         logger.warning(
             'Webhook auth rejected for %s: no valid X-Webhook-Secret/X-Webhook-Signature. '
