@@ -210,7 +210,25 @@ def _process_conversation_reply(app, clinic_id: str, cid: str, phone: str) -> No
             return
 
         conversation_service = ConversationService(clinic)
-        reply_text = ClaudeService(clinic).process_message(conversation, store_user_message=False)
+        try:
+            reply_text = ClaudeService(clinic).process_message(conversation, store_user_message=False)
+        except Exception:
+            # Anything process_message doesn't already handle internally
+            # (its own try/except covers OpenRouter call failures) - most
+            # commonly ClaudeService's constructor raising ValueError for a
+            # missing/invalid OPENROUTER_API_KEY. Without this, the patient
+            # gets silence: the exception would otherwise only surface as a
+            # log line in _worker_loop's catch-all, with no message sent and
+            # no visible failure anywhere in the dashboard.
+            logger.exception(
+                'Failed to generate AI reply for conversation %s (clinic %s) - '
+                'check OPENROUTER_API_KEY / clinic.openrouter_api_key',
+                cid, clinic_id
+            )
+            reply_text = (
+                "Desculpe, estou com dificuldades técnicas no momento. "
+                "Por favor, tente novamente em alguns instantes."
+            )
         if not reply_text:
             return
 
