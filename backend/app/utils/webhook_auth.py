@@ -72,14 +72,19 @@ def webhook_auth_required(fn):
             if verify_webhook_signature(request.get_data(), signature, webhook_secret):
                 return fn(*args, **kwargs)
 
-        # Diagnostic breadcrumb: header *names* only (never values, secret or
-        # not) - lets us tell "caller sent no auth header at all" apart from
-        # "sent one with the wrong value" without a live debugger on the
-        # caller's side (Evolution API / Kiwify).
+        # Diagnostic breadcrumb: header names and body *key names* only (never
+        # values - secret, apikey or otherwise) - lets us tell "caller sent no
+        # auth signal at all" apart from "sent one we don't recognize", and
+        # whether the caller (Evolution API / Kiwify) authenticates via a
+        # header or via a field inside the JSON body instead, without needing
+        # a live debugger on the caller's side.
+        body = request.get_json(silent=True)
+        body_keys = sorted(body.keys()) if isinstance(body, dict) else None
         logger.warning(
             'Webhook auth rejected for %s: no valid X-Webhook-Secret/X-Webhook-Signature. '
-            'Headers received: %s',
-            request.path, sorted(request.headers.keys())
+            'Headers received: %s | Body top-level keys: %s | instance=%r',
+            request.path, sorted(request.headers.keys()), body_keys,
+            (body or {}).get('instance') if isinstance(body, dict) else None
         )
         return jsonify({'error': 'Invalid webhook authentication'}), 401
 
