@@ -3,9 +3,12 @@ Webhook authentication utilities.
 """
 import hmac
 import hashlib
+import logging
 import os
 from functools import wraps
 from flask import current_app, request, jsonify
+
+logger = logging.getLogger(__name__)
 
 
 def verify_webhook_signature(payload: bytes, signature: str, secret: str) -> bool:
@@ -69,6 +72,15 @@ def webhook_auth_required(fn):
             if verify_webhook_signature(request.get_data(), signature, webhook_secret):
                 return fn(*args, **kwargs)
 
+        # Diagnostic breadcrumb: header *names* only (never values, secret or
+        # not) - lets us tell "caller sent no auth header at all" apart from
+        # "sent one with the wrong value" without a live debugger on the
+        # caller's side (Evolution API / Kiwify).
+        logger.warning(
+            'Webhook auth rejected for %s: no valid X-Webhook-Secret/X-Webhook-Signature. '
+            'Headers received: %s',
+            request.path, sorted(request.headers.keys())
+        )
         return jsonify({'error': 'Invalid webhook authentication'}), 401
 
     return wrapper

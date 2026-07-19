@@ -163,6 +163,34 @@ class TestStoreAlwaysSemantics:
         assert conversation.messages[-1]['role'] == 'assistant'
         assert 'dificuldades' in conversation.messages[-1]['content']
 
+    def test_claude_service_init_failure_still_replies_instead_of_silence(self, app, db_session, wa_clinic):
+        """
+        A missing/invalid OPENROUTER_API_KEY makes ClaudeService's constructor
+        raise - before process_message's own internal try/except ever runs.
+        The patient must still get a reply (and it must be stored, so the
+        dashboard shows it), not silence with only a backend log line.
+        """
+        with patch('app.services.message_processor.ClaudeService') as MockClaude, \
+             patch('app.services.message_processor.EvolutionService') as MockEvo:
+            MockClaude.side_effect = ValueError('OpenRouter API key not configured')
+            MockEvo.return_value.send_message.return_value = {'key': {'id': 'R_INIT_FAIL'}}
+
+            post_webhook(app, text_upsert('pipe-instance', '5511900010011', 'oi', 'INIT_FAIL_1'))
+
+        # _process_conversation_reply runs its own nested app_context (mirrors
+        # the real threaded worker), which gets its own scoped session -
+        # expire_all() forces this test's query to re-read rather than return
+        # a pre-request identity-mapped copy of the conversation.
+        db.session.expire_all()
+        conversation = Conversation.query.filter_by(
+            clinic_id=wa_clinic.id, phone_number='5511900010011'
+        ).first()
+        assert conversation.messages[-1]['role'] == 'assistant'
+        assert 'dificuldades' in conversation.messages[-1]['content']
+        MockEvo.return_value.send_message.assert_called_once()
+        assert 'dificuldades' in conversation.messages[-1]['content']
+        MockEvo.return_value.send_message.assert_called_once()
+
 
 class TestAudioTranscription:
     def _audio_payload(self, msg_id):
