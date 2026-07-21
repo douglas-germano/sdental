@@ -34,6 +34,7 @@ import { useConfirm } from '@/hooks/useConfirm'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useDebounce } from '@/hooks/useDebounce'
 import { cn } from '@/lib/utils'
+import { Popover, PopoverTrigger, PopoverContent, PopoverClose } from '@/components/ui/popover'
 import { exportToCSV } from '@/lib/export'
 import { getErrorMessage } from '@/lib/error-messages'
 import { PageLoader } from '@/components/ui/page-loader'
@@ -381,9 +382,60 @@ export default function AppointmentsPage() {
                       <span className="text-sm">{formatDateTime(apt.scheduled_datetime)}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(apt.status)}>
-                        {getStatusLabel(apt.status)}
-                      </Badge>
+                      {['pending', 'confirmed'].includes(apt.status) ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Alterar status do agendamento"
+                              className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <Badge className={cn(getStatusColor(apt.status), 'cursor-pointer')}>
+                                {getStatusLabel(apt.status)}
+                              </Badge>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-48 p-1.5">
+                            <p className="px-2.5 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Alterar status</p>
+                            {apt.status === 'pending' && (
+                              <PopoverClose asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(apt.id, 'confirmed')}
+                                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-muted transition-colors"
+                                >
+                                  <Check className="h-4 w-4 text-success" />
+                                  Confirmar
+                                </button>
+                              </PopoverClose>
+                            )}
+                            <PopoverClose asChild>
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(apt.id, 'completed')}
+                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-muted transition-colors"
+                              >
+                                <FileText className="h-4 w-4" />
+                                Concluir
+                              </button>
+                            </PopoverClose>
+                            <PopoverClose asChild>
+                              <button
+                                type="button"
+                                onClick={() => handleCancel(apt.id)}
+                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                              >
+                                <Ban className="h-4 w-4" />
+                                Cancelar
+                              </button>
+                            </PopoverClose>
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <Badge className={getStatusColor(apt.status)}>
+                          {getStatusLabel(apt.status)}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>

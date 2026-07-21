@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -143,23 +143,23 @@ export function NewPatientModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogClose onClick={() => handleOpenChange(false)} />
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetContent>
+        <SheetClose onClick={() => handleOpenChange(false)} />
 
-        <DialogHeader>
+        <SheetHeader>
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-card bg-primary flex items-center justify-center">
               <UserPlus className="h-6 w-6 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-lg">Novo Paciente</DialogTitle>
-              <DialogDescription>
+              <SheetTitle className="text-lg">Novo Paciente</SheetTitle>
+              <SheetDescription>
                 Preencha os dados para cadastrar um novo paciente
-              </DialogDescription>
+              </SheetDescription>
             </div>
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
@@ -305,7 +305,7 @@ export function NewPatientModal({
             </div>
           </div>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button
               type="button"
               variant="outline"
@@ -318,9 +318,9 @@ export function NewPatientModal({
               <UserPlus className="h-4 w-4" />
               Cadastrar Paciente
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

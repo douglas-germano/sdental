@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/providers'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -178,23 +178,23 @@ export function NewAppointmentModal({
   const today = new Date().toISOString().split('T')[0]
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogClose onClick={() => onOpenChange(false)} />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetClose onClick={() => onOpenChange(false)} />
 
-        <DialogHeader>
+        <SheetHeader>
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-card bg-primary flex items-center justify-center">
               <CalendarPlus className="h-6 w-6 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-lg">Novo Agendamento</DialogTitle>
-              <DialogDescription>
+              <SheetTitle className="text-lg">Novo Agendamento</SheetTitle>
+              <SheetDescription>
                 Agende uma consulta para um paciente
-              </DialogDescription>
+              </SheetDescription>
             </div>
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Paciente */}
@@ -364,7 +364,7 @@ export function NewAppointmentModal({
             />
           </div>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button
               type="button"
               variant="outline"
@@ -377,10 +377,10 @@ export function NewAppointmentModal({
               <CalendarPlus className="h-4 w-4" />
               Criar Agendamento
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }
 

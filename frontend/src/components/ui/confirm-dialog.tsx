@@ -70,12 +70,15 @@ export function ConfirmDialog({
             </div>
           </div>
         </DialogHeader>
-        <DialogFooter className="gap-3 sm:gap-3">
+        <DialogFooter className="gap-3 sm:gap-3 border-t-0 pt-2 mt-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={loading}
             className="flex-1 sm:flex-1"
+            // HIG alerts: initial focus always lands on the non-destructive
+            // path, so Enter never destroys anything by accident.
+            autoFocus={variant === 'destructive'}
           >
             {cancelText}
           </Button>

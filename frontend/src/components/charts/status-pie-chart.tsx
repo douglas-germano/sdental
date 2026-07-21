@@ -60,11 +60,11 @@ export function StatusPieChart({ overview, height = 95 }: StatusPieChartProps) {
         <Tooltip
           formatter={(value: number) => [value, 'Agendamentos']}
           contentStyle={{
-            backgroundColor: 'hsl(var(--background))',
+            backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
-            borderRadius: '6px',
+            borderRadius: '10px',
             fontSize: '12px',
-            boxShadow: 'none',
+            boxShadow: '0 2px 8px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04)',
           }}
         />
         <Legend

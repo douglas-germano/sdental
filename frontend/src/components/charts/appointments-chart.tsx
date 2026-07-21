@@ -84,7 +84,7 @@ export function AppointmentsChart({ height = 95 }: { height?: number }) {
             <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+        <CartesianGrid stroke="hsl(var(--border))" opacity={0.4} vertical={false} />
         <XAxis
           dataKey="date"
           tickFormatter={formatChartDate}
@@ -101,11 +101,11 @@ export function AppointmentsChart({ height = 95 }: { height?: number }) {
         <Tooltip
           labelFormatter={formatChartDate}
           contentStyle={{
-            backgroundColor: 'hsl(var(--background))',
+            backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
-            borderRadius: '6px',
+            borderRadius: '10px',
             fontSize: '12px',
-            boxShadow: 'none',
+            boxShadow: '0 2px 8px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04)',
           }}
         />
         <Area

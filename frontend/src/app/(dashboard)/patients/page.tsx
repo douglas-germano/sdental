@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { SearchField } from '@/components/ui/search-field'
+import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '@/components/ui/context-menu'
 import {
   Table,
   TableBody,
@@ -15,7 +16,7 @@ import {
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 import { formatPhone, formatDate } from '@/lib/utils'
-import { Users, MagnifyingGlass as Search, Eye, Trash as Trash2, Plus, CaretLeft as ChevronLeft, CaretRight as ChevronRight, DownloadSimple as Download } from '@phosphor-icons/react'
+import { Users, Eye, Trash as Trash2, Plus, CaretLeft as ChevronLeft, CaretRight as ChevronRight, DownloadSimple as Download } from '@phosphor-icons/react'
 import { NewPatientModal } from '@/components/patients/new-patient-modal'
 import { PatientDetailModal } from '@/components/patients/patient-detail-modal'
 import { useToast } from '@/components/ui/toast'
@@ -145,15 +146,12 @@ export default function PatientsPage() {
 
       {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-3 max-w-lg">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, telefone ou email..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-11"
-          />
-        </div>
+        <SearchField
+          placeholder="Buscar por nome, telefone ou email..."
+          value={searchInput}
+          onChange={setSearchInput}
+          className="flex-1"
+        />
         <Button type="submit" variant="secondary">
           Buscar
         </Button>
@@ -188,43 +186,60 @@ export default function PatientsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {patients.map((patient, index) => (
-                    <TableRow
-                      key={patient.id}
-                      className="hover:bg-muted/30 transition-colors"
-                    >
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
-                            {patient.name.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-medium">{patient.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{formatPhone(patient.phone)}</TableCell>
-                      <TableCell className="text-muted-foreground">{patient.email || '-'}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(patient.created_at)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            onClick={() => setSelectedPatient(patient)}
-                            className="hover:bg-primary/10 hover:text-primary"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(patient.id)}
-                            className="hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                  {patients.map((patient) => (
+                    <ContextMenu key={patient.id}>
+                      <ContextMenuTrigger asChild>
+                        <TableRow className="hover:bg-muted/30 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
+                                {patient.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="font-medium">{patient.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{formatPhone(patient.phone)}</TableCell>
+                          <TableCell className="text-muted-foreground">{patient.email || '-'}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(patient.created_at)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                aria-label="Ver detalhes do paciente"
+                                onClick={() => setSelectedPatient(patient)}
+                                className="hover:bg-primary/10 hover:text-primary"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                aria-label="Excluir paciente"
+                                onClick={() => handleDelete(patient.id)}
+                                className="hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem onSelect={() => setSelectedPatient(patient)}>
+                          <Eye className="h-4 w-4" />
+                          Ver detalhes
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
+                          onSelect={() => handleDelete(patient.id)}
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Excluir
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))}
                 </TableBody>
               </Table>
