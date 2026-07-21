@@ -93,7 +93,7 @@ export default function CalendarPage() {
   const selectedDayAppointments = selectedDay ? appointmentsByDay.get(dayKey(selectedDay)) || [] : []
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader title="Calendario" description="Visualize os agendamentos por mes">
         <Button variant="outline" size="sm" onClick={() => setCurrentMonth(new Date())}>
           Hoje

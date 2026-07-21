@@ -4,36 +4,39 @@
 
 @layer base {
   :root {
-    /* Background & Foreground - Vodafone editorial canvas */
-    --background: 0 0% 100%;
-    --foreground: 210 7% 16%;
+    /*
+     * HIG-inspired surface hierarchy: a faint grouped-background canvas with
+     * white cards floating above it (hairline border + soft elevation).
+     */
+    --background: 240 10% 98%;
+    --foreground: 240 6% 10%;
 
-    /* Card - Canvas white, definition comes from a hairline border, never a shadow */
+    /* Card - elevated white surface (label ~ Apple's near-black) */
     --card: 0 0% 100%;
-    --card-foreground: 210 7% 16%;
+    --card-foreground: 240 6% 10%;
 
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 210 7% 16%;
+    --popover-foreground: 240 6% 10%;
 
     /* Primary - Azul-petróleo (#0E7490): the single dominant brand accent (clinical, calm, fresh) */
     --primary: 193 82% 31%;
     --primary-foreground: 0 0% 100%;
     --primary-shade: 195 80% 24%; /* Deep teal shade #0A5A6E - quiet tag chips */
 
-    /* Secondary - Light Neutral (#f2f2f2) */
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 210 7% 16%;
+    /* Secondary - systemGray6-like fill for quiet controls */
+    --secondary: 240 6% 94%;
+    --secondary-foreground: 240 6% 10%;
 
-    /* Muted */
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 49%; /* Secondary Body Grey #7e7e7e */
+    /* Muted fill + secondaryLabel gray */
+    --muted: 240 6% 94%;
+    --muted-foreground: 240 3% 44%;
 
     /* Accent - Signal Blue (#3860be): reserved for inline links, never a rival brand hue */
     --accent: 222 55% 48%;
     --accent-foreground: 0 0% 100%;
 
-    /* Destructive - a true red for cancel/delete; freed up now that the brand accent is teal, not red */
+    /* Destructive - systemRed territory for cancel/delete */
     --destructive: 0 72% 46%;
     --destructive-foreground: 0 0% 100%;
 
@@ -45,42 +48,43 @@
     --warning: 42 93% 47%;
     --warning-foreground: 42 93% 14%;
 
-    /* Border & Input - hairline neutral */
-    --border: 0 0% 90%;
-    --input: 0 0% 85%;
+    /* Border & Input - hairline neutral separators */
+    --border: 240 6% 90%;
+    --input: 240 5% 84%;
     --ring: 193 82% 31%;
 
-    /* Radius base - 6px "card" radius is the system default */
-    --radius: 6px;
+    /* Radius base - 10px continuous-curve card radius (HIG) */
+    --radius: 10px;
 
     /* Sidebar */
     --sidebar-bg: 0 0% 100%;
-    --sidebar-border: 0 0% 91%;
+    --sidebar-border: 240 6% 91%;
 
-    /* Charcoal Institutional Panel (#25282b) - footer, share-ticker, data panels */
-    --charcoal: 210 7% 16%;
+    /* Charcoal institutional panel - footer, data panels */
+    --charcoal: 240 6% 15%;
     --charcoal-foreground: 0 0% 100%;
   }
 
   .dark {
-    --background: 210 7% 10%;
-    --foreground: 0 0% 96%;
+    /* HIG dark: neutral elevated grays (base < card < popover) */
+    --background: 240 4% 9%;
+    --foreground: 240 5% 96%;
 
-    --card: 210 7% 13%;
-    --card-foreground: 0 0% 96%;
+    --card: 240 4% 13%;
+    --card-foreground: 240 5% 96%;
 
-    --popover: 210 7% 13%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 240 4% 15%;
+    --popover-foreground: 240 5% 96%;
 
     --primary: 193 78% 42%;
     --primary-foreground: 0 0% 100%;
     --primary-shade: 195 70% 34%;
 
-    --secondary: 210 6% 18%;
-    --secondary-foreground: 0 0% 88%;
+    --secondary: 240 4% 18%;
+    --secondary-foreground: 240 5% 88%;
 
-    --muted: 210 6% 18%;
-    --muted-foreground: 0 0% 62%;
+    --muted: 240 4% 18%;
+    --muted-foreground: 240 3% 64%;
 
     --accent: 222 60% 62%;
     --accent-foreground: 0 0% 100%;
@@ -94,15 +98,15 @@
     --warning: 42 93% 55%;
     --warning-foreground: 42 93% 12%;
 
-    --border: 210 6% 22%;
-    --input: 210 6% 24%;
+    --border: 240 4% 22%;
+    --input: 240 4% 26%;
     --ring: 193 78% 42%;
 
-    --sidebar-bg: 210 8% 8%;
-    --sidebar-border: 210 6% 16%;
+    --sidebar-bg: 240 5% 7%;
+    --sidebar-border: 240 4% 16%;
 
-    --charcoal: 210 8% 8%;
-    --charcoal-foreground: 0 0% 96%;
+    --charcoal: 240 5% 7%;
+    --charcoal-foreground: 240 5% 96%;
   }
 }
 
@@ -112,7 +116,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased text-base;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -122,18 +126,17 @@
     scroll-behavior: smooth;
   }
 
-  /* Vodafone system is deliberately flat - no decorative background texture */
-
   /* Better focus for accessibility */
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
-    border-radius: 2px;
+    border-radius: 4px;
   }
 
+  /* HIG titles are semibold, never heavier - hierarchy comes from size, not weight */
   h1, h2, h3, h4, h5, h6 {
-    letter-spacing: -0.015em;
-    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-weight: 600;
   }
 
   a {
@@ -142,7 +145,7 @@
 }
 
 @layer utilities {
-  /* No-gradient system: these utilities resolve to flat brand-red fills. Kept as
+  /* No-gradient system: these utilities resolve to flat brand fills. Kept as
      aliases so existing call sites don't need a rename, but nothing here ramps tone. */
   .bg-gradient-primary,
   .bg-gradient-primary-reverse {
@@ -157,12 +160,12 @@
     color: hsl(var(--primary));
   }
 
-  /* Uppercase eyebrow label - Vodafone "Label Uppercase" / "Caption Uppercase" role */
+  /* Uppercase eyebrow label - HIG section-header caption role */
   .text-kicker {
-    @apply text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground;
+    @apply text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground;
   }
 
-  /* Full-width brand-color divider band - the brand's "new chapter" signal */
+  /* Full-width brand-color divider band (legacy alias) */
   .red-band {
     @apply w-full bg-primary;
     height: 64px;
@@ -182,9 +185,9 @@
     background: hsl(var(--charcoal) / 0.92);
   }
 
-  /* Flat system: hover communicates via color, not elevation */
+  /* HIG hover: gentle elevation rise */
   .hover-lift {
-    @apply transition-colors duration-150 ease-out;
+    @apply transition-all duration-150 ease-out hover:shadow-soft-md;
   }
 }
 
@@ -330,19 +333,11 @@
   color: hsl(var(--primary));
 }
 
-/* Vodafone system is flat: no drop shadows anywhere. These classes are kept as
-   no-op aliases for existing call sites; elevation comes from color/surface only. */
-.shadow-soft,
-.shadow-soft-md,
-.shadow-soft-lg,
-.shadow-soft-xl {
-  box-shadow: none;
-}
-
-/* "Glow" resolves to the flat inset focus ring, the system's only depth cue */
+/* Elevation now comes from the tailwind shadow-soft* scale (see tailwind.config).
+   "Glow" resolves to a quiet brand focus halo. */
 .shadow-glow,
 .shadow-glow-lg {
-  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.4);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
 }
 
 /* Scrollbar utilities */
@@ -356,9 +351,9 @@
 }
 .scrollbar-track-transparent::-webkit-scrollbar-track { background: transparent; }
 
-/* Interactive card styles - flat: hover shifts the border color, never elevation */
+/* Interactive card: hover raises elevation one step and sharpens the border */
 .card-interactive {
-  @apply transition-colors duration-150 border-foreground/15;
+  @apply transition-all duration-150 hover:shadow-soft-md hover:border-foreground/20;
 }
 
 /* Form field focus animation */

@@ -138,7 +138,7 @@ export default function DashboardLayout({
                 />
               </div>
               <span className={cn(
-                'text-base font-extrabold uppercase tracking-tight text-foreground transition-all duration-300',
+                'text-base font-bold uppercase tracking-tight text-foreground transition-all duration-300',
                 sidebarCollapsed ? 'lg:hidden' : 'lg:block'
               )}>
                 SDental
@@ -192,7 +192,7 @@ export default function DashboardLayout({
                       sidebarCollapsed && 'lg:block'
                     )} />
                     <p className={cn(
-                      'px-3 pt-4 pb-1.5 text-[10.5px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground/70',
+                      'px-3 pt-4 pb-1.5 text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/70',
                       sidebarCollapsed && 'lg:hidden'
                     )}>
                       {group.label}

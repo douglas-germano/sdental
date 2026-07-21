@@ -66,29 +66,29 @@ const config: Config = {
         },
       },
       borderRadius: {
-        /* Vodafone-inspired non-linear scale: sharp utility rectangles vs. full pills */
+        /* HIG continuous-curve scale: 8px controls, 10px cards, 14px+ overlays */
         none: '0px',
         hairline: '1px',
-        button: '2px',
-        sm: '2px',
-        DEFAULT: '6px',
-        md: '4px',
-        card: '6px',
+        button: '8px',
+        sm: '6px',
+        DEFAULT: '8px',
+        md: '8px',
+        card: '10px',
         lg: 'var(--radius)',
-        xl: '12px',
-        '2xl': '16px',
+        xl: '14px',
+        '2xl': '18px',
         'glass-pill': '24px',
         'badge-pill': '32px',
         pill: '60px',
         full: '9999px',
       },
       boxShadow: {
-        /* The system is deliberately flat — only an inset focus ring is used for elevation. */
+        /* HIG elevation: barely-there on resting surfaces, growing with float distance */
         none: 'none',
-        soft: 'none',
-        'soft-md': 'none',
-        'soft-lg': 'none',
-        'soft-xl': 'none',
+        soft: '0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.03)',
+        'soft-md': '0 2px 8px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04)',
+        'soft-lg': '0 8px 24px rgb(0 0 0 / 0.10), 0 2px 6px rgb(0 0 0 / 0.05)',
+        'soft-xl': '0 16px 48px rgb(0 0 0 / 0.14), 0 4px 12px rgb(0 0 0 / 0.06)',
         focus: 'inset 0 0 0 1px hsl(var(--ring))',
         'border': '0 0 0 1px hsl(var(--border))',
       },
@@ -151,10 +151,24 @@ const config: Config = {
         display: '-0.01em',
       },
       fontSize: {
-        '2xs': ['0.65rem', { lineHeight: '1rem' }],
-        'display-sm': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.01em', fontWeight: '800' }],
-        'display-md': ['3.5rem', { lineHeight: '0.95', letterSpacing: '-0.02em', fontWeight: '800' }],
-        'display-lg': ['5rem', { lineHeight: '0.9', letterSpacing: '-0.02em', fontWeight: '800' }],
+        /*
+         * HIG-calibrated ramp (caption2 → large title). Redefining the default
+         * Tailwind steps snaps every existing text-* call site in the app to
+         * this scale - the ramp IS the system, no per-page migration needed.
+         *   2xs 11 · xs 12 · sm 13 · base 15 · lg 17 · xl 20 · 2xl 22 · 3xl 28 · 4xl 34
+         */
+        '2xs': ['0.6875rem', { lineHeight: '0.875rem' }],
+        xs: ['0.75rem', { lineHeight: '1rem' }],
+        sm: ['0.8125rem', { lineHeight: '1.125rem' }],
+        base: ['0.9375rem', { lineHeight: '1.375rem' }],
+        lg: ['1.0625rem', { lineHeight: '1.5rem', letterSpacing: '-0.01em' }],
+        xl: ['1.25rem', { lineHeight: '1.625rem', letterSpacing: '-0.012em' }],
+        '2xl': ['1.375rem', { lineHeight: '1.75rem', letterSpacing: '-0.015em' }],
+        '3xl': ['1.75rem', { lineHeight: '2.125rem', letterSpacing: '-0.018em' }],
+        '4xl': ['2.125rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em' }],
+        'display-sm': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'display-md': ['3.5rem', { lineHeight: '1', letterSpacing: '-0.022em', fontWeight: '700' }],
+        'display-lg': ['5rem', { lineHeight: '0.95', letterSpacing: '-0.025em', fontWeight: '700' }],
       },
     },
   },

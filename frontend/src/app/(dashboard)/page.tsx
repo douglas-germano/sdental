@@ -55,7 +55,7 @@ const formatBRL = (value: number) =>
 /** Section label: "HOJE · quarta-feira, 15 de julho" */
 function SectionKicker({ label, detail }: { label: string; detail?: string }) {
   return (
-    <p className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground">
+    <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
       {label}
       {detail && <span className="font-medium normal-case tracking-normal text-muted-foreground/80"> · {detail}</span>}
     </p>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
   const whatsappDown = whatsappState === 'close'
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Header */}
       <PageHeader
         title={`${getGreeting()}${clinic?.name ? `, ${clinic.name}` : ''}`}
@@ -164,7 +164,7 @@ export default function DashboardPage() {
                   {loading ? (
                     <Skeleton className="h-9 w-14 mt-1.5" />
                   ) : (
-                    <p className="text-3xl font-extrabold tabular-nums mt-1">{todayAppointments.length}</p>
+                    <p className="text-3xl font-semibold tabular-nums mt-1">{todayAppointments.length}</p>
                   )}
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                     <Skeleton className="h-9 w-14 mt-1.5" />
                   ) : (
                     <p className={cn(
-                      'text-3xl font-extrabold tabular-nums mt-1',
+                      'text-3xl font-semibold tabular-nums mt-1',
                       needsAttentionCount > 0 && 'text-warning'
                     )}>
                       {needsAttentionCount}
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                     <Skeleton className="h-9 w-32 mt-1.5" />
                   ) : (
                     <p className={cn(
-                      'text-xl font-extrabold mt-1.5 flex items-center gap-2',
+                      'text-xl font-semibold mt-1.5 flex items-center gap-2',
                       whatsappDown ? 'text-destructive' : whatsappState === 'open' ? 'text-success' : 'text-foreground'
                     )}>
                       <span className={cn(
@@ -502,7 +502,7 @@ export default function DashboardPage() {
                         {formatRelativeTime(conv.last_message_at)}
                       </span>
                       {(conv.unread_count || 0) > 0 && (
-                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10.5px] font-bold flex items-center justify-center">
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-2xs font-semibold flex items-center justify-center">
                           {conv.unread_count}
                         </span>
                       )}

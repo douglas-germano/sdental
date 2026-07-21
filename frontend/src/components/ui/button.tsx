@@ -8,24 +8,23 @@ import { CircleNotch as Loader2 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 /*
- * Two-tier button system: sharp 2px rectangles for form/utility actions,
- * fully-rounded pills for editorial/content CTAs. Both are "primary" -
- * the choice is contextual (see the `pill` prop), never hierarchical.
- * The system is flat: no shadows, no gradients, opacity-only active state.
+ * HIG push-button system: 8px continuous-curve rectangles, medium weight
+ * (never bold - emphasis comes from fill, not stroke), press dims via opacity.
+ * The `pill` prop remains for editorial/content CTAs.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-button text-sm font-bold tracking-[0.01em] ring-offset-background transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:opacity-90',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-button text-sm font-medium ring-offset-background transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:opacity-85',
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground border border-primary hover:bg-primary/90',
+          'bg-primary text-primary-foreground hover:bg-primary/90',
         gradient:
-          'bg-primary text-primary-foreground border border-primary hover:bg-primary/90',
+          'bg-primary text-primary-foreground hover:bg-primary/90',
         destructive:
-          'bg-destructive text-destructive-foreground border border-destructive hover:bg-destructive/90',
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         outline:
-          'border border-foreground/70 bg-background hover:bg-muted/60 text-foreground',
+          'border border-input bg-card hover:bg-muted/60 text-foreground shadow-soft',
         secondary:
           'bg-secondary text-secondary-foreground hover:bg-secondary/70',
         ghost:
@@ -37,16 +36,16 @@ const buttonVariants = cva(
         glass:
           'bg-white/10 text-white hover:bg-white/20 rounded-glass-pill',
         success:
-          'bg-success text-success-foreground border border-success hover:bg-success/90',
+          'bg-success text-success-foreground hover:bg-success/90',
         warning:
-          'bg-warning text-warning-foreground border border-warning hover:bg-warning/90',
+          'bg-warning text-warning-foreground hover:bg-warning/90',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 px-3 text-xs',
-        lg: 'h-11 px-6 text-base',
-        xl: 'h-14 px-8 text-lg',
-        icon: 'h-10 w-10 rounded-full',
+        default: 'h-9 px-3.5 py-2',
+        sm: 'h-8 px-3 text-sm',
+        lg: 'h-11 px-5 text-base',
+        xl: 'h-12 px-7 text-base',
+        icon: 'h-9 w-9 rounded-full',
         'icon-sm': 'h-8 w-8 rounded-full',
         'icon-lg': 'h-11 w-11 rounded-full',
       },

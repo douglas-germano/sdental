@@ -98,7 +98,7 @@ export default function FinancialPage() {
   const seriesHasData = series.some((p) => p.realized > 0 || p.forecast > 0)
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader title="Financeiro" description="Faturamento, pagamentos, despesas, comissões e fluxo de caixa da clínica">
         {activeSection === 'overview' && (
           <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg">

@@ -11,7 +11,7 @@ export default function TermsOfServicePage() {
       <div className="max-w-3xl mx-auto px-6 py-12">
         <LegalBrandHeader />
 
-        <h1 className="text-2xl font-bold text-foreground mb-2">Termos de Uso</h1>
+        <h1 className="text-2xl font-semibold text-foreground mb-2">Termos de Uso</h1>
         <p className="text-sm text-muted-foreground mb-10">Última atualização: julho de 2026</p>
 
         <div className="prose prose-sm max-w-none space-y-8 text-foreground">

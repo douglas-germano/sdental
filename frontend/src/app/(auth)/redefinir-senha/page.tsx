@@ -58,7 +58,7 @@ function ResetPasswordForm() {
           <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
             <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
           </div>
-          <span className="text-xl font-extrabold uppercase">SDental</span>
+          <span className="text-xl font-bold uppercase">SDental</span>
         </div>
 
         <Card>

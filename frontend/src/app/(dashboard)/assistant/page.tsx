@@ -217,7 +217,7 @@ export default function AssistantPage() {
           sit on top of the input pill below the lg breakpoint. */}
       <div className="shrink-0 pl-16 pr-4 sm:pr-6 lg:pl-6 pb-4 pt-2">
         <div className="max-w-3xl mx-auto w-full">
-          <div className="flex items-end gap-2 rounded-3xl border border-input bg-card px-3 py-2 shadow-sm focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-ring/15 transition-colors">
+          <div className="flex items-end gap-2 rounded-3xl border border-input bg-card px-3 py-2 shadow-soft focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-ring/15 transition-colors">
             <textarea
               ref={textareaRef}
               value={text}

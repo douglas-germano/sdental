@@ -69,7 +69,7 @@ export function StatsCard({
                         <Icon className="h-4 w-4" />
                     </div>
                 </div>
-                <div className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
+                <div className="text-2xl font-semibold text-foreground tabular-nums">
                     {isNumeric ? value.toLocaleString('pt-BR') : value}
                 </div>
                 {description && (

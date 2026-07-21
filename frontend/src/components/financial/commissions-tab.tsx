@@ -105,7 +105,7 @@ export function CommissionsTab() {
                   <div className="flex items-center justify-between pt-2 border-t border-border/60">
                     <div>
                       <p className="text-2xs uppercase tracking-wide text-muted-foreground">Saldo devido</p>
-                      <p className={`text-base font-bold ${entry.balance > 0 ? 'text-warning' : 'text-success'}`}>
+                      <p className={`text-base font-semibold ${entry.balance > 0 ? 'text-warning' : 'text-success'}`}>
                         {formatCurrency(entry.balance)}
                       </p>
                     </div>
