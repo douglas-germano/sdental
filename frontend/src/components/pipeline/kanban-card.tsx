@@ -60,7 +60,7 @@ export function KanbanCard({ patient }: Props) {
                         </div>
 
                         {patient.updated_at && (
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+                            <div className="flex items-center gap-1.5 text-2xs text-muted-foreground/70">
                                 <Clock className="h-3 w-3" />
                                 <span>{formatRelativeTime(patient.updated_at)}</span>
                             </div>

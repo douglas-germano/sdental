@@ -73,7 +73,7 @@ export function CashFlowTab() {
             </div>
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Entrou (30d)</p>
-              <p className="text-lg font-bold truncate">{formatCurrency(cashFlow?.cash_in || 0)}</p>
+              <p className="text-lg font-semibold truncate">{formatCurrency(cashFlow?.cash_in || 0)}</p>
             </div>
           </CardContent>
         </Card>
@@ -84,7 +84,7 @@ export function CashFlowTab() {
             </div>
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Saiu (30d)</p>
-              <p className="text-lg font-bold truncate">{formatCurrency(cashFlow?.cash_out || 0)}</p>
+              <p className="text-lg font-semibold truncate">{formatCurrency(cashFlow?.cash_out || 0)}</p>
             </div>
           </CardContent>
         </Card>
@@ -95,7 +95,7 @@ export function CashFlowTab() {
             </div>
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Saldo líquido (30d)</p>
-              <p className={cn('text-lg font-bold truncate', (cashFlow?.net_cash_flow || 0) < 0 && 'text-destructive')}>
+              <p className={cn('text-lg font-semibold truncate', (cashFlow?.net_cash_flow || 0) < 0 && 'text-destructive')}>
                 {formatCurrency(cashFlow?.net_cash_flow || 0)}
               </p>
             </div>

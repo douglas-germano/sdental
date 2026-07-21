@@ -3,27 +3,27 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
+/* HIG tinted chips: rounded-full, medium weight, sentence case - the tint
+   carries the meaning, the type never shouts. */
 const badgeVariants = cva(
-  'inline-flex items-center gap-1.5 border px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
   {
     variants: {
       variant: {
-        /* Outlined Red Pill - inline article/list metadata */
         default:
-          'rounded-sm border-primary bg-background/80 text-foreground/80',
-        /* Filled Neutral Pill - quieter tags */
+          'border-transparent bg-primary/10 text-primary',
         secondary:
-          'rounded-badge-pill border-transparent bg-secondary text-secondary-foreground normal-case',
+          'border-transparent bg-secondary text-secondary-foreground',
         destructive:
-          'rounded-sm border-destructive bg-destructive/10 text-destructive',
+          'border-transparent bg-destructive/10 text-destructive',
         outline:
-          'rounded-sm text-foreground border-border normal-case',
+          'border-border bg-transparent text-foreground',
         success:
-          'rounded-sm border-success bg-success/10 text-success',
+          'border-transparent bg-success/10 text-success',
         warning:
-          'rounded-sm border-warning bg-warning/10 text-warning',
+          'border-transparent bg-warning/10 text-warning',
         info:
-          'rounded-sm border-accent bg-accent/10 text-accent',
+          'border-transparent bg-accent/10 text-accent',
       },
       size: {
         default: 'px-2.5 py-0.5 text-xs',

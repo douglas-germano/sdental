@@ -126,7 +126,7 @@ export default function PatientsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader title="Pacientes" description="Gerencie os pacientes da clinica">
         <Button
           variant="outline"

@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/providers'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
 import { clinicsApi, billingApi, conversationsApi } from '@/lib/api'
 import { getDayName, formatPhone } from '@/lib/utils'
-import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, CaretRight as ChevronRight, X, CircleNotch as Loader2, User, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning, CreditCard, ArrowSquareOut } from '@phosphor-icons/react'
+import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, X, CircleNotch as Loader2, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning, CreditCard, ArrowSquareOut } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'
@@ -25,6 +23,97 @@ const SUBSCRIPTION_STATUS_LABELS: Record<SubscriptionStatus, { label: string; va
   canceled: { label: 'Cancelada', variant: 'destructive' },
   refunded: { label: 'Reembolsada', variant: 'destructive' },
   chargeback: { label: 'Contestada (chargeback)', variant: 'destructive' },
+}
+
+/* ------------------------------------------------------------------ */
+/* HIG settings building blocks: one section header, one grouped list, */
+/* one row shape - every section renders through these.                */
+/* ------------------------------------------------------------------ */
+
+function SectionHeader({ title, description, actions }: {
+  title: string
+  description?: string
+  actions?: React.ReactNode
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+        )}
+      </div>
+      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+    </div>
+  )
+}
+
+function SettingsGroup({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div className={cn(
+      'rounded-card border border-border bg-card shadow-soft divide-y divide-border overflow-hidden',
+      className
+    )}>
+      {children}
+    </div>
+  )
+}
+
+function SettingsRow({ icon: Icon, label, description, children, stacked = false, className }: {
+  icon?: React.ComponentType<{ className?: string }>
+  label: React.ReactNode
+  description?: React.ReactNode
+  children?: React.ReactNode
+  /** Stack the control under the label on small screens (for wide inputs) */
+  stacked?: boolean
+  className?: string
+}) {
+  return (
+    <div className={cn(
+      'px-4 py-3 min-h-[44px] gap-1.5 sm:gap-4',
+      stacked
+        ? 'flex flex-col sm:flex-row sm:items-center sm:justify-between'
+        : 'flex items-center justify-between',
+      className
+    )}>
+      <div className="flex items-center gap-3 min-w-0">
+        {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
+        <div className="min-w-0">
+          <span className="text-sm font-medium text-foreground block">{label}</span>
+          {description && (
+            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+          )}
+        </div>
+      </div>
+      {children && <div className="flex items-center gap-2 min-w-0 shrink-0 sm:justify-end">{children}</div>}
+    </div>
+  )
+}
+
+function EditActions({ editing, saving, onEdit, onCancel, onSave }: {
+  editing: boolean
+  saving: boolean
+  onEdit: () => void
+  onCancel: () => void
+  onSave: () => void
+}) {
+  if (!editing) {
+    return (
+      <Button variant="outline" size="sm" onClick={onEdit}>Editar</Button>
+    )
+  }
+  return (
+    <>
+      <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1.5">
+        <X className="h-4 w-4" />
+        Cancelar
+      </Button>
+      <Button size="sm" onClick={onSave} disabled={saving} className="gap-1.5">
+        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+        Salvar
+      </Button>
+    </>
+  )
 }
 
 export default function SettingsPage() {
@@ -138,7 +227,7 @@ export default function SettingsPage() {
       await clinicsApi.updateProfile({ agent_enabled: enabled })
       showMessage('success', enabled ? 'IA ativada com sucesso!' : 'IA desativada com sucesso!')
       await refreshClinic()
-    } catch (err) {
+    } catch {
       setAgentEnabled(!enabled) // revert
       showMessage('error', 'Erro ao atualizar configuração.')
     }
@@ -256,363 +345,290 @@ export default function SettingsPage() {
     }
   }
 
+  const bookingUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/agendar/${clinic?.slug || clinic?.id?.slice(0, 8)}`
+    : `/agendar/${clinic?.slug || clinic?.id?.slice(0, 8)}`
+
   return (
-    <div className="space-y-8">
-      <PageHeader title="Configuracoes" description="Gerencie as configuracoes da sua clinica e integracoes" />
+    <div className="space-y-6">
+      <PageHeader title="Configurações" description="Gerencie as configurações da sua clínica e integrações" />
 
       {/* Messages */}
       {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-xl border border-destructive/20 flex items-center gap-3 mb-6">
-          <XCircle className="h-5 w-5" />
+        <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-card border border-destructive/20 flex items-center gap-3 text-sm">
+          <XCircle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-success/10 text-success p-4 rounded-xl border border-success/20 flex items-center gap-3 mb-6">
-          <CheckCircle className="h-5 w-5" />
+        <div className="bg-success/10 text-success px-4 py-3 rounded-card border border-success/20 flex items-center gap-3 text-sm">
+          <CheckCircle className="h-4 w-4 shrink-0" />
           {success}
         </div>
       )}
 
-      {/* Main Layout: Sidebar + Content */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar Navigation */}
-        <div className="w-full lg:w-64 flex-shrink-0">
-          <nav className="space-y-1">
-            {sections.map((section) => {
-              const Icon = section.icon
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors",
-                    activeSection === section.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{section.label}</span>
-                </button>
-              )
-            })}
-          </nav>
-        </div>
+      {/* Rail + detail pane */}
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
+        {/* Rail: vertical on desktop, horizontal scroll on mobile */}
+        <nav className="lg:w-56 shrink-0 flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0 -mx-1 px-1">
+          {sections.map((section) => {
+            const Icon = section.icon
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={cn(
+                  'flex items-center gap-2.5 h-9 px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0 lg:shrink lg:w-full text-left',
+                  activeSection === section.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{section.label}</span>
+              </button>
+            )
+          })}
+        </nav>
 
-        {/* Content Area */}
-        <Card className="flex-1 min-w-0 border-border/60">
-          <CardContent className="p-6">
-            {/* Profile Section */}
-            {activeSection === 'profile' && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold">Perfil da Clínica</h2>
-                  {editingField !== 'profile' ? (
-                    <Button variant="outline" size="sm" onClick={() => setEditingField('profile')}>
-                      Editar
-                    </Button>
-                  ) : (
-                    <div className="flex gap-3">
-                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)} className="gap-2">
-                        <X className="h-4 w-4" />
-                        Cancelar
-                      </Button>
-                      <Button size="sm" onClick={handleSaveProfile} disabled={saving === 'profile'} className="gap-2">
-                        {saving === 'profile' ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        Salvar
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  {/* Clinic Name */}
-                  <div className={cn(
-                    "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60",
-                    editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
-                  )}>
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Nome da Clínica</span>
-                    </div>
-                    {editingField === 'profile' ? (
-                      <Input
-                        value={profileForm.name}
-                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                        className="w-full sm:w-64"
-                        placeholder="Nome da clínica"
-                      />
-                    ) : (
-                      <span className="text-muted-foreground">{clinic?.name || '-'}</span>
-                    )}
-                  </div>
-
-                  {/* Email (read-only) */}
-                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60">
-                    <div className="flex items-center gap-3">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Email</span>
-                    </div>
-                    <span className="text-muted-foreground">{clinic?.email || '-'}</span>
-                  </div>
-
-                  {/* Phone */}
-                  <div className={cn(
-                    "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60",
-                    editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
-                  )}>
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Telefone</span>
-                    </div>
-                    {editingField === 'profile' ? (
-                      <Input
-                        value={profileForm.phone}
-                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                        className="w-full sm:w-64"
-                        placeholder="Telefone"
-                      />
-                    ) : (
-                      <span className="text-muted-foreground">{clinic?.phone ? formatPhone(clinic.phone) : '-'}</span>
-                    )}
-                  </div>
-
-                  {/* Booking URL / Slug */}
-                  <div className={cn(
-                    "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60",
-                    editingField === 'profile' && "bg-muted/30 px-3 rounded-lg my-1"
-                  )}>
-                    <div className="flex items-center gap-3">
-                      <Link className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Link de Agendamento</span>
-                    </div>
-                    {editingField === 'profile' ? (
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <span className="text-muted-foreground text-sm shrink-0">/agendar/</span>
-                        <Input
-                          value={profileForm.slug}
-                          onChange={(e) => setProfileForm({ ...profileForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                          className="flex-1 sm:flex-none sm:w-48"
-                          placeholder="minha-clinica"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-2 min-w-0">
-                        <span className="text-primary text-sm break-all">
-                          {typeof window !== 'undefined' ? window.location.origin : ''}/agendar/{clinic?.slug || clinic?.id?.slice(0, 8)}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const url = `${window.location.origin}/agendar/${clinic?.slug || clinic?.id?.slice(0, 8)}`
-                            navigator.clipboard.writeText(url)
-                            showMessage('success', 'Link copiado!')
-                          }}
-                          className="gap-1"
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copiar
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* WhatsApp Section */}
-            {activeSection === 'whatsapp' && (
-              <div className="space-y-4">
-                <h2 className="text-base font-bold mb-2">WhatsApp / Evolution API</h2>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Agente de IA (Claude)</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Quando ativado, a IA responderá automaticamente aos pacientes.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={agentEnabled}
-                    onCheckedChange={handleToggleAgent}
+        {/* Detail pane */}
+        <div className="flex-1 min-w-0 space-y-5">
+          {/* Profile */}
+          {activeSection === 'profile' && (
+            <>
+              <SectionHeader
+                title="Perfil da Clínica"
+                description="Identificação usada no painel, nas mensagens e na página pública de agendamento."
+                actions={
+                  <EditActions
+                    editing={editingField === 'profile'}
+                    saving={saving === 'profile'}
+                    onEdit={() => setEditingField('profile')}
+                    onCancel={() => setEditingField(null)}
+                    onSave={handleSaveProfile}
                   />
-                </div>
+                }
+              />
+              <SettingsGroup>
+                <SettingsRow icon={Building2} label="Nome da Clínica" stacked>
+                  {editingField === 'profile' ? (
+                    <Input
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      className="w-full sm:w-64"
+                      placeholder="Nome da clínica"
+                    />
+                  ) : (
+                    <span className="text-sm text-muted-foreground truncate">{clinic?.name || '—'}</span>
+                  )}
+                </SettingsRow>
 
-                <WhatsappConnectionWizard />
+                <SettingsRow icon={Mail} label="Email">
+                  <span className="text-sm text-muted-foreground truncate">{clinic?.email || '—'}</span>
+                </SettingsRow>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Sincronizar histórico de mensagens</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Importa o máximo de mensagens antigas possível de todas as conversas
-                      a partir do WhatsApp, incluindo as enviadas diretamente pelo aparelho
-                      (fora da plataforma), para que a IA tenha mais contexto.
-                    </p>
-                  </div>
-                  <Button variant="outline" onClick={handleSyncAllHistory} loading={syncingHistory} disabled={syncingHistory}>
+                <SettingsRow icon={Phone} label="Telefone" stacked>
+                  {editingField === 'profile' ? (
+                    <Input
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                      className="w-full sm:w-64"
+                      placeholder="Telefone"
+                    />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">{clinic?.phone ? formatPhone(clinic.phone) : '—'}</span>
+                  )}
+                </SettingsRow>
+
+                <SettingsRow icon={Link} label="Link de Agendamento" stacked>
+                  {editingField === 'profile' ? (
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <span className="text-sm text-muted-foreground shrink-0">/agendar/</span>
+                      <Input
+                        value={profileForm.slug}
+                        onChange={(e) => setProfileForm({ ...profileForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                        className="flex-1 sm:flex-none sm:w-48"
+                        placeholder="minha-clinica"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <span className="text-sm text-primary break-all">{bookingUrl}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(bookingUrl)
+                          showMessage('success', 'Link copiado!')
+                        }}
+                        className="gap-1.5"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copiar
+                      </Button>
+                    </div>
+                  )}
+                </SettingsRow>
+              </SettingsGroup>
+            </>
+          )}
+
+          {/* WhatsApp */}
+          {activeSection === 'whatsapp' && (
+            <>
+              <SectionHeader
+                title="WhatsApp / Evolution API"
+                description="Conexão do número da clínica e comportamento do assistente."
+              />
+              <SettingsGroup>
+                <SettingsRow
+                  label="Agente de IA"
+                  description="Quando ativado, a IA responde automaticamente aos pacientes."
+                >
+                  <Switch checked={agentEnabled} onCheckedChange={handleToggleAgent} />
+                </SettingsRow>
+              </SettingsGroup>
+
+              <WhatsappConnectionWizard />
+
+              <SettingsGroup>
+                <SettingsRow
+                  label="Sincronizar histórico de mensagens"
+                  description="Importa mensagens antigas de todas as conversas, incluindo as enviadas direto pelo aparelho, para dar mais contexto à IA."
+                  stacked
+                >
+                  <Button variant="outline" size="sm" onClick={handleSyncAllHistory} loading={syncingHistory} disabled={syncingHistory}>
                     Sincronizar tudo
                   </Button>
-                </div>
-              </div>
-            )}
+                </SettingsRow>
+              </SettingsGroup>
+            </>
+          )}
 
-            {/* Business Hours Section */}
-            {activeSection === 'hours' && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold">Horários de Funcionamento</h2>
-                  {editingField !== 'hours' ? (
-                    <Button variant="outline" size="sm" onClick={() => setEditingField('hours')}>
-                      Editar
-                    </Button>
-                  ) : (
-                    <div className="flex gap-3">
-                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)} className="gap-2">
-                        <X className="h-4 w-4" />
-                        Cancelar
-                      </Button>
-                      <Button size="sm" onClick={handleSaveBusinessHours} disabled={saving === 'hours'} className="gap-2">
-                        {saving === 'hours' ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        Salvar
-                      </Button>
-                    </div>
-                  )}
-                </div>
+          {/* Business hours */}
+          {activeSection === 'hours' && (
+            <>
+              <SectionHeader
+                title="Horários de Funcionamento"
+                description="A IA só oferece horários dentro do expediente de cada dia."
+                actions={
+                  <EditActions
+                    editing={editingField === 'hours'}
+                    saving={saving === 'hours'}
+                    onEdit={() => setEditingField('hours')}
+                    onCancel={() => setEditingField(null)}
+                    onSave={handleSaveBusinessHours}
+                  />
+                }
+              />
+              <SettingsGroup>
+                {[0, 1, 2, 3, 4, 5, 6].map((day) => {
+                  const dayHours = businessHours[day]
+                  const hasBreak = Boolean(dayHours?.break_start && dayHours?.break_end)
 
-                <div className="space-y-1">
-                  {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-                    const dayHours = businessHours[day]
-                    const hasBreak = Boolean(dayHours?.break_start && dayHours?.break_end)
-
-                    return (
-                      <div
-                        key={day}
-                        className={cn(
-                          "flex flex-col gap-2 py-3 border-b border-border/60 last:border-0",
-                          editingField === 'hours' && "bg-muted/30 px-3 rounded-lg my-1"
-                        )}
-                      >
-                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                          <div className="flex items-center gap-3 w-36">
-                            {editingField === 'hours' && (
-                              <input
-                                type="checkbox"
-                                checked={dayHours?.active || false}
-                                onChange={(e) => updateBusinessHour(String(day), 'active', e.target.checked)}
-                                className="rounded-md h-4 w-4 border-border text-primary focus:ring-primary"
-                              />
-                            )}
-                            <span className={cn(
-                              "font-medium",
-                              dayHours?.active ? 'text-foreground' : 'text-muted-foreground'
-                            )}>
-                              {getDayName(day)}
-                            </span>
-                          </div>
-
-                          {editingField === 'hours' ? (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="time"
-                                value={dayHours?.start || '08:00'}
-                                onChange={(e) => updateBusinessHour(String(day), 'start', e.target.value)}
-                                disabled={!dayHours?.active}
-                                className="w-28"
-                              />
-                              <span className="text-muted-foreground">até</span>
-                              <Input
-                                type="time"
-                                value={dayHours?.end || '18:00'}
-                                onChange={(e) => updateBusinessHour(String(day), 'end', e.target.value)}
-                                disabled={!dayHours?.active}
-                                className="w-28"
-                              />
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              {dayHours?.active
-                                ? `${dayHours?.start || '08:00'} - ${dayHours?.end || '18:00'}`
-                                  + (hasBreak ? ` (almoço ${dayHours?.break_start}-${dayHours?.break_end})` : '')
-                                : 'Fechado'}
-                            </span>
-                          )}
-                        </div>
-
-                        {editingField === 'hours' && dayHours?.active && (
-                          <div className="flex items-center gap-2 pl-0 sm:pl-[9.75rem]">
+                  return (
+                    <div key={day} className="px-4 py-3 space-y-2">
+                      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                        <div className="flex items-center gap-3 sm:w-40 shrink-0">
+                          {editingField === 'hours' && (
                             <input
                               type="checkbox"
-                              checked={hasBreak}
-                              onChange={(e) => toggleBusinessHourBreak(String(day), e.target.checked)}
-                              className="rounded-md h-4 w-4 border-border text-primary focus:ring-primary"
+                              checked={dayHours?.active || false}
+                              onChange={(e) => updateBusinessHour(String(day), 'active', e.target.checked)}
+                              className="rounded h-4 w-4 border-border text-primary focus:ring-primary"
                             />
-                            <span className="text-xs text-muted-foreground shrink-0">Pausa para almoço</span>
-                            {hasBreak && (
-                              <>
-                                <Input
-                                  type="time"
-                                  value={dayHours?.break_start || '12:00'}
-                                  onChange={(e) => updateBusinessHour(String(day), 'break_start', e.target.value)}
-                                  className="w-28"
-                                />
-                                <span className="text-muted-foreground">até</span>
-                                <Input
-                                  type="time"
-                                  value={dayHours?.break_end || '13:00'}
-                                  onChange={(e) => updateBusinessHour(String(day), 'break_end', e.target.value)}
-                                  className="w-28"
-                                />
-                              </>
-                            )}
+                          )}
+                          <span className={cn(
+                            'text-sm font-medium',
+                            dayHours?.active ? 'text-foreground' : 'text-muted-foreground'
+                          )}>
+                            {getDayName(day)}
+                          </span>
+                        </div>
+
+                        {editingField === 'hours' ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={dayHours?.start || '08:00'}
+                              onChange={(e) => updateBusinessHour(String(day), 'start', e.target.value)}
+                              disabled={!dayHours?.active}
+                              className="w-28"
+                            />
+                            <span className="text-sm text-muted-foreground">até</span>
+                            <Input
+                              type="time"
+                              value={dayHours?.end || '18:00'}
+                              onChange={(e) => updateBusinessHour(String(day), 'end', e.target.value)}
+                              disabled={!dayHours?.active}
+                              className="w-28"
+                            />
                           </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            {dayHours?.active
+                              ? `${dayHours?.start || '08:00'} – ${dayHours?.end || '18:00'}`
+                                + (hasBreak ? ` (almoço ${dayHours?.break_start}–${dayHours?.break_end})` : '')
+                              : 'Fechado'}
+                          </span>
                         )}
                       </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
 
-            {/* Services Section */}
-            {activeSection === 'services' && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold">Serviços / Procedimentos</h2>
-                  {editingField !== 'services' ? (
-                    <Button variant="outline" size="sm" onClick={() => setEditingField('services')}>
-                      Editar
-                    </Button>
-                  ) : (
-                    <div className="flex gap-3">
-                      <Button variant="outline" size="sm" onClick={() => setEditingField(null)} className="gap-2">
-                        <X className="h-4 w-4" />
-                        Cancelar
-                      </Button>
-                      <Button size="sm" onClick={handleSaveServices} disabled={saving === 'services'} className="gap-2">
-                        {saving === 'services' ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        Salvar
-                      </Button>
+                      {editingField === 'hours' && dayHours?.active && (
+                        <div className="flex items-center gap-2 flex-wrap sm:pl-[10.75rem]">
+                          <input
+                            type="checkbox"
+                            checked={hasBreak}
+                            onChange={(e) => toggleBusinessHourBreak(String(day), e.target.checked)}
+                            className="rounded h-4 w-4 border-border text-primary focus:ring-primary"
+                          />
+                          <span className="text-xs text-muted-foreground shrink-0">Pausa para almoço</span>
+                          {hasBreak && (
+                            <>
+                              <Input
+                                type="time"
+                                value={dayHours?.break_start || '12:00'}
+                                onChange={(e) => updateBusinessHour(String(day), 'break_start', e.target.value)}
+                                className="w-28"
+                              />
+                              <span className="text-sm text-muted-foreground">até</span>
+                              <Input
+                                type="time"
+                                value={dayHours?.break_end || '13:00'}
+                                onChange={(e) => updateBusinessHour(String(day), 'break_end', e.target.value)}
+                                className="w-28"
+                              />
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  )
+                })}
+              </SettingsGroup>
+            </>
+          )}
 
-                {/* Add new service (only in edit mode) */}
-                {editingField === 'services' && (
-                  <div className="flex flex-col gap-2 p-4 bg-muted/30 rounded-xl border border-border/60 mb-4">
+          {/* Services */}
+          {activeSection === 'services' && (
+            <>
+              <SectionHeader
+                title="Serviços / Procedimentos"
+                description="O que a IA pode oferecer e agendar, com duração e preço."
+                actions={
+                  <EditActions
+                    editing={editingField === 'services'}
+                    saving={saving === 'services'}
+                    onEdit={() => setEditingField('services')}
+                    onCancel={() => setEditingField(null)}
+                    onSave={handleSaveServices}
+                  />
+                }
+              />
+
+              {editingField === 'services' && (
+                <SettingsGroup className="bg-muted/40">
+                  <div className="p-4 space-y-2">
                     <div className="flex flex-col sm:flex-row gap-2">
                       <div className="relative flex-1">
                         <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -620,7 +636,7 @@ export default function SettingsPage() {
                           placeholder="Nome do serviço"
                           value={newService.name}
                           onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                          className="pl-10"
+                          className="pl-9"
                         />
                       </div>
                       <div className="relative w-full sm:w-28">
@@ -630,7 +646,7 @@ export default function SettingsPage() {
                           placeholder="Min"
                           value={newService.duration}
                           onChange={(e) => setNewService({ ...newService, duration: parseInt(e.target.value) || 30 })}
-                          className="pl-10"
+                          className="pl-9"
                         />
                       </div>
                       <div className="relative w-full sm:w-32">
@@ -641,325 +657,271 @@ export default function SettingsPage() {
                           placeholder="Preço"
                           value={newService.price}
                           onChange={(e) => setNewService({ ...newService, price: e.target.value })}
-                          className="pl-10"
+                          className="pl-9"
                         />
                       </div>
                     </div>
                     <div className="relative">
-                      <NotePencil className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <NotePencil className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       <textarea
                         placeholder="Instruções de preparo/pós-procedimento (opcional, enviadas pela IA quando solicitado)"
                         value={newService.instructions}
                         onChange={(e) => setNewService({ ...newService, instructions: e.target.value })}
                         rows={2}
-                        className="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full pl-9 pr-3 py-2 text-sm rounded-button border border-input bg-card resize-none focus:outline-none focus:ring-2 focus:ring-ring/25 focus:border-primary placeholder:text-muted-foreground/50"
                       />
                     </div>
-                    <Button variant="outline" onClick={addService} className="gap-1 self-end">
-                      <Plus className="h-4 w-4" />
-                      Adicionar
-                    </Button>
+                    <div className="flex justify-end">
+                      <Button variant="outline" size="sm" onClick={addService} className="gap-1.5">
+                        <Plus className="h-4 w-4" />
+                        Adicionar
+                      </Button>
+                    </div>
                   </div>
-                )}
+                </SettingsGroup>
+              )}
 
-                {/* Services list */}
-                {services.length === 0 ? (
+              {services.length === 0 ? (
+                <SettingsGroup>
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                    <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+                    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-3">
                       <Stethoscope className="h-6 w-6 opacity-50" />
                     </div>
-                    <p className="font-medium">Nenhum serviço cadastrado</p>
+                    <p className="text-sm font-medium">Nenhum serviço cadastrado</p>
                     <p className="text-sm">Clique em Editar para adicionar serviços</p>
                   </div>
-                ) : (
-                  <div className="space-y-1">
-                    {services.map((service, index) => (
-                      <div
-                        key={index}
-                        className={cn(
-                          "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 py-3 border-b border-border/60 last:border-0 gap-3",
-                          editingField === 'services' && "bg-muted/30 px-3 rounded-lg my-1"
-                        )}
-                      >
-                        {editingField === 'services' ? (
-                          <div className="flex flex-col gap-2 w-full">
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <div className="relative flex-1">
-                                <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                  value={service.name}
-                                  onChange={(e) => updateService(index, 'name', e.target.value)}
-                                  className="pl-10"
-                                />
-                              </div>
-                              <div className="relative w-full sm:w-28">
-                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                  type="number"
-                                  placeholder="Min"
-                                  value={service.duration}
-                                  onChange={(e) => updateService(index, 'duration', parseInt(e.target.value) || 30)}
-                                  className="pl-10"
-                                />
-                              </div>
-                              <div className="relative w-full sm:w-32">
-                                <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  placeholder="Preço"
-                                  value={service.price ?? ''}
-                                  onChange={(e) => updateService(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                  className="pl-10"
-                                />
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeService(index)}
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <div className="relative">
-                              <NotePencil className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <textarea
-                                placeholder="Instruções de preparo/pós-procedimento (opcional, enviadas pela IA quando solicitado)"
-                                value={service.instructions || ''}
-                                onChange={(e) => updateService(index, 'instructions', e.target.value || undefined)}
-                                rows={2}
-                                className="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                              />
-                            </div>
+                </SettingsGroup>
+              ) : (
+                <SettingsGroup>
+                  {services.map((service, index) => (
+                    editingField === 'services' ? (
+                      <div key={index} className="p-4 space-y-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="relative flex-1">
+                            <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              value={service.name}
+                              onChange={(e) => updateService(index, 'name', e.target.value)}
+                              className="pl-9"
+                            />
                           </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                <Stethoscope className="h-4 w-4 text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <span className="font-medium truncate block">{service.name}</span>
-                                {service.instructions && (
-                                  <p className="text-xs text-muted-foreground truncate">{service.instructions}</p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {typeof service.price === 'number' && (
-                                <Badge variant="success" className="gap-1">
-                                  <CurrencyDollar className="h-3 w-3" />
-                                  R$ {service.price.toFixed(2)}
-                                </Badge>
-                              )}
-                              <Badge variant="outline">{service.duration} min</Badge>
-                            </div>
-                          </>
-                        )}
+                          <div className="relative w-full sm:w-28">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              type="number"
+                              placeholder="Min"
+                              value={service.duration}
+                              onChange={(e) => updateService(index, 'duration', parseInt(e.target.value) || 30)}
+                              className="pl-9"
+                            />
+                          </div>
+                          <div className="relative w-full sm:w-32">
+                            <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Preço"
+                              value={service.price ?? ''}
+                              onChange={(e) => updateService(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                              className="pl-9"
+                            />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => removeService(index)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 self-center"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="relative">
+                          <NotePencil className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <textarea
+                            placeholder="Instruções de preparo/pós-procedimento (opcional, enviadas pela IA quando solicitado)"
+                            value={service.instructions || ''}
+                            onChange={(e) => updateService(index, 'instructions', e.target.value || undefined)}
+                            rows={2}
+                            className="w-full pl-9 pr-3 py-2 text-sm rounded-button border border-input bg-card resize-none focus:outline-none focus:ring-2 focus:ring-ring/25 focus:border-primary placeholder:text-muted-foreground/50"
+                          />
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    ) : (
+                      <SettingsRow
+                        key={index}
+                        label={service.name}
+                        description={service.instructions}
+                      >
+                        {typeof service.price === 'number' && (
+                          <Badge variant="success">R$ {service.price.toFixed(2)}</Badge>
+                        )}
+                        <Badge variant="secondary">{service.duration} min</Badge>
+                      </SettingsRow>
+                    )
+                  ))}
+                </SettingsGroup>
+              )}
+            </>
+          )}
+
+          {/* Automation */}
+          {activeSection === 'automacao' && (
+            <>
+              <SectionHeader
+                title="Automação (IA proativa)"
+                description="Deixe a IA agir sozinha para recuperar faltas, reativar pacientes e qualificar leads — sempre com trilha de auditoria e opção de opt-out."
+              />
+
+              <div className="flex items-start gap-3 px-4 py-3 rounded-card bg-warning/10 border border-warning/20">
+                <Warning className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <p className="text-sm text-muted-foreground">
+                  O envio proativo dispara mensagens de WhatsApp por iniciativa da clínica.
+                  Use com responsabilidade: mensagens em excesso podem levar ao bloqueio do
+                  número. A IA respeita horário comercial, limite diário por paciente e o
+                  pedido de <strong>SAIR</strong> de cada paciente.
+                </p>
               </div>
-            )}
 
-            {/* Automation Section */}
-            {activeSection === 'automacao' && (
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <Sparkle className="h-5 w-5 text-primary" />
-                    Automação com IA proativa
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Deixe a IA agir sozinha para recuperar faltas, reativar pacientes e
-                    qualificar leads — sempre com trilha de auditoria e opção de opt-out.
-                  </p>
-                </div>
-
-                {/* Warning about proactive messaging */}
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-warning/10 border border-warning/20">
-                  <Warning className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-                  <p className="text-sm text-muted-foreground">
-                    O envio proativo dispara mensagens de WhatsApp por iniciativa da clínica.
-                    Use com responsabilidade: mensagens em excesso podem levar ao bloqueio do
-                    número. A IA respeita horário comercial, limite diário por paciente e o
-                    pedido de <strong>SAIR</strong> de cada paciente.
-                  </p>
-                </div>
-
-                {/* Master switch */}
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                  <div className="space-y-0.5 pr-4">
-                    <Label className="text-base">Envio proativo (interruptor geral)</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Quando ativado, a IA pode iniciar conversas com pacientes por conta própria.
-                      Os recursos abaixo só funcionam com esta chave ligada.
-                    </p>
-                  </div>
+              <SettingsGroup>
+                <SettingsRow
+                  label="Envio proativo (interruptor geral)"
+                  description="Quando ativado, a IA pode iniciar conversas com pacientes por conta própria. Os recursos abaixo só funcionam com esta chave ligada."
+                >
                   <Switch
                     checked={clinic?.proactive_outreach_enabled ?? false}
                     onCheckedChange={(v) => handleToggleAutomation('proactive_outreach_enabled', v)}
                     disabled={saving === 'proactive_outreach_enabled'}
                   />
-                </div>
+                </SettingsRow>
+              </SettingsGroup>
 
-                {/* Outreach sub-features */}
-                <div className={cn(
-                  'space-y-1 rounded-xl border border-border/60 divide-y divide-border/60 transition-opacity',
-                  !clinic?.proactive_outreach_enabled && 'opacity-50 pointer-events-none'
-                )}>
-                  {[
-                    {
-                      field: 'noshow_recovery_enabled' as const,
-                      title: 'Recuperação de faltas e cancelamentos',
-                      desc: 'Reabre a conversa com quem faltou ou cancelou e oferece remarcar.',
-                    },
-                    {
-                      field: 'waitlist_enabled' as const,
-                      title: 'Lista de espera inteligente',
-                      desc: 'Quando um horário abre, oferece a vaga a um paciente com consulta mais distante.',
-                    },
-                    {
-                      field: 'recall_enabled' as const,
-                      title: 'Reativação de pacientes inativos (recall)',
-                      desc: 'Convida pacientes sem consulta há muito tempo para um retorno.',
-                    },
-                  ].map((item) => (
-                    <div key={item.field} className="flex items-center justify-between p-4">
-                      <div className="space-y-0.5 pr-4">
-                        <Label className="text-sm font-medium">{item.title}</Label>
-                        <p className="text-xs text-muted-foreground">{item.desc}</p>
-                      </div>
-                      <Switch
-                        checked={(clinic?.[item.field] as boolean) ?? false}
-                        onCheckedChange={(v) => handleToggleAutomation(item.field, v)}
-                        disabled={saving === item.field || !clinic?.proactive_outreach_enabled}
-                      />
-                    </div>
-                  ))}
-
-                  {/* Recall inactivity period */}
-                  <div className="flex items-center justify-between p-4 gap-3 flex-wrap">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-medium">Considerar inativo após</Label>
-                      <p className="text-xs text-muted-foreground">Dias sem consulta para acionar o recall.</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={30}
-                        max={730}
-                        defaultValue={clinic?.recall_inactive_days ?? 180}
-                        className="w-24"
-                        onBlur={(e) => {
-                          const v = parseInt(e.target.value)
-                          if (!isNaN(v) && v !== (clinic?.recall_inactive_days ?? 180)) {
-                            handleSaveRecallDays(v)
-                          }
-                        }}
-                        disabled={!clinic?.proactive_outreach_enabled}
-                      />
-                      <span className="text-sm text-muted-foreground">dias</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Independent features (do not send patient messages / or message the owner) */}
-                <div className="space-y-1 rounded-xl border border-border/60 divide-y divide-border/60">
-                  <div className="flex items-center justify-between p-4">
-                    <div className="space-y-0.5 pr-4">
-                      <Label className="text-sm font-medium">Qualificação automática do funil (CRM)</Label>
-                      <p className="text-xs text-muted-foreground">
-                        A IA classifica e move leads no funil com base nas conversas. Não envia mensagens.
-                      </p>
-                    </div>
+              <SettingsGroup className={cn(
+                'transition-opacity',
+                !clinic?.proactive_outreach_enabled && 'opacity-50 pointer-events-none'
+              )}>
+                {[
+                  {
+                    field: 'noshow_recovery_enabled' as const,
+                    title: 'Recuperação de faltas e cancelamentos',
+                    desc: 'Reabre a conversa com quem faltou ou cancelou e oferece remarcar.',
+                  },
+                  {
+                    field: 'waitlist_enabled' as const,
+                    title: 'Lista de espera inteligente',
+                    desc: 'Quando um horário abre, oferece a vaga a um paciente com consulta mais distante.',
+                  },
+                  {
+                    field: 'recall_enabled' as const,
+                    title: 'Reativação de pacientes inativos (recall)',
+                    desc: 'Convida pacientes sem consulta há muito tempo para um retorno.',
+                  },
+                ].map((item) => (
+                  <SettingsRow key={item.field} label={item.title} description={item.desc}>
                     <Switch
-                      checked={clinic?.funnel_automation_enabled ?? false}
-                      onCheckedChange={(v) => handleToggleAutomation('funnel_automation_enabled', v)}
-                      disabled={saving === 'funnel_automation_enabled'}
+                      checked={(clinic?.[item.field] as boolean) ?? false}
+                      onCheckedChange={(v) => handleToggleAutomation(item.field, v)}
+                      disabled={saving === item.field || !clinic?.proactive_outreach_enabled}
                     />
-                  </div>
-                  <div className="flex items-center justify-between p-4">
-                    <div className="space-y-0.5 pr-4">
-                      <Label className="text-sm font-medium">Resumo semanal de desempenho</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Envia um resumo dos indicadores da clínica no seu WhatsApp, uma vez por semana.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={clinic?.weekly_report_enabled ?? false}
-                      onCheckedChange={(v) => handleToggleAutomation('weekly_report_enabled', v)}
-                      disabled={saving === 'weekly_report_enabled'}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+                  </SettingsRow>
+                ))}
 
-            {/* Billing / Subscription Section */}
-            {activeSection === 'assinatura' && (
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-primary" />
-                    Assinatura
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    A assinatura do SDental é processada pela Kiwify.
-                  </p>
-                </div>
+                <SettingsRow
+                  label="Considerar inativo após"
+                  description="Dias sem consulta para acionar o recall."
+                >
+                  <Input
+                    type="number"
+                    min={30}
+                    max={730}
+                    defaultValue={clinic?.recall_inactive_days ?? 180}
+                    className="w-20"
+                    onBlur={(e) => {
+                      const v = parseInt(e.target.value)
+                      if (!isNaN(v) && v !== (clinic?.recall_inactive_days ?? 180)) {
+                        handleSaveRecallDays(v)
+                      }
+                    }}
+                    disabled={!clinic?.proactive_outreach_enabled}
+                  />
+                  <span className="text-sm text-muted-foreground">dias</span>
+                </SettingsRow>
+              </SettingsGroup>
 
-                {billingLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm py-6">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Carregando status da assinatura...
-                  </div>
-                ) : !billingStatus ? (
-                  <p className="text-sm text-muted-foreground py-6">
-                    Não foi possível carregar o status da assinatura.
-                  </p>
-                ) : (
-                  <div className="rounded-xl border border-border/60 divide-y divide-border/60">
-                    <div className="flex items-center justify-between p-4">
-                      <span className="font-medium text-sm">Status</span>
-                      <Badge variant={SUBSCRIPTION_STATUS_LABELS[billingStatus.subscription_status].variant}>
-                        {SUBSCRIPTION_STATUS_LABELS[billingStatus.subscription_status].label}
-                      </Badge>
-                    </div>
-                    {billingStatus.subscription_period_end && (
-                      <div className="flex items-center justify-between p-4">
-                        <span className="font-medium text-sm">Próxima cobrança</span>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(billingStatus.subscription_period_end).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                    )}
-                    {billingStatus.checkout_url && (
-                      <div className="flex items-center justify-between p-4 gap-3 flex-wrap">
-                        <div className="space-y-0.5">
-                          <span className="font-medium text-sm block">
-                            {billingStatus.subscription_status === 'active' ? 'Gerenciar assinatura' : 'Regularizar pagamento'}
-                          </span>
-                          <p className="text-xs text-muted-foreground">
-                            Você será redirecionado para o checkout seguro da Kiwify.
-                          </p>
-                        </div>
-                        <Button asChild size="sm" className="gap-2">
-                          <a href={billingStatus.checkout_url} target="_blank" rel="noopener noreferrer">
-                            Ir para a Kiwify
-                            <ArrowSquareOut className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              <SettingsGroup>
+                <SettingsRow
+                  label="Qualificação automática do funil (CRM)"
+                  description="A IA classifica e move leads no funil com base nas conversas. Não envia mensagens."
+                >
+                  <Switch
+                    checked={clinic?.funnel_automation_enabled ?? false}
+                    onCheckedChange={(v) => handleToggleAutomation('funnel_automation_enabled', v)}
+                    disabled={saving === 'funnel_automation_enabled'}
+                  />
+                </SettingsRow>
+                <SettingsRow
+                  label="Resumo semanal de desempenho"
+                  description="Envia um resumo dos indicadores da clínica no seu WhatsApp, uma vez por semana."
+                >
+                  <Switch
+                    checked={clinic?.weekly_report_enabled ?? false}
+                    onCheckedChange={(v) => handleToggleAutomation('weekly_report_enabled', v)}
+                    disabled={saving === 'weekly_report_enabled'}
+                  />
+                </SettingsRow>
+              </SettingsGroup>
+            </>
+          )}
+
+          {/* Billing / Subscription */}
+          {activeSection === 'assinatura' && (
+            <>
+              <SectionHeader
+                title="Assinatura"
+                description="A assinatura do SDental é processada pela Kiwify."
+              />
+
+              {billingLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm py-6">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando status da assinatura...
+                </div>
+              ) : !billingStatus ? (
+                <p className="text-sm text-muted-foreground py-6">
+                  Não foi possível carregar o status da assinatura.
+                </p>
+              ) : (
+                <SettingsGroup>
+                  <SettingsRow label="Status">
+                    <Badge variant={SUBSCRIPTION_STATUS_LABELS[billingStatus.subscription_status].variant}>
+                      {SUBSCRIPTION_STATUS_LABELS[billingStatus.subscription_status].label}
+                    </Badge>
+                  </SettingsRow>
+                  {billingStatus.subscription_period_end && (
+                    <SettingsRow label="Próxima cobrança">
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(billingStatus.subscription_period_end).toLocaleDateString('pt-BR')}
+                      </span>
+                    </SettingsRow>
+                  )}
+                  {billingStatus.checkout_url && (
+                    <SettingsRow
+                      label={billingStatus.subscription_status === 'active' ? 'Gerenciar assinatura' : 'Regularizar pagamento'}
+                      description="Você será redirecionado para o checkout seguro da Kiwify."
+                      stacked
+                    >
+                      <Button asChild size="sm" className="gap-1.5">
+                        <a href={billingStatus.checkout_url} target="_blank" rel="noopener noreferrer">
+                          Ir para a Kiwify
+                          <ArrowSquareOut className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    </SettingsRow>
+                  )}
+                </SettingsGroup>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

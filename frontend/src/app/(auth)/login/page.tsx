@@ -74,10 +74,10 @@ export default function LoginPage() {
             <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center">
               <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
             </div>
-            <span className="text-xl font-extrabold uppercase tracking-tight text-white">SDental</span>
+            <span className="text-xl font-bold uppercase tracking-tight text-white">SDental</span>
           </div>
 
-          <h1 className="text-4xl xl:text-5xl font-extrabold text-white mb-5 leading-[0.95] tracking-tight uppercase">
+          <h1 className="text-4xl xl:text-5xl font-bold text-white mb-5 leading-[1.02]">
             Gerencie sua clinica<br />de forma inteligente
           </h1>
 
@@ -110,7 +110,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
               <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
             </div>
-            <span className="text-xl font-extrabold uppercase">SDental</span>
+            <span className="text-xl font-bold uppercase">SDental</span>
           </div>
 
           <Card>

@@ -139,7 +139,7 @@ export function WhatsappConnectionWizard() {
           return (
             <div key={s} className="flex items-center gap-2">
               <div className={cn(
-                'w-6 h-6 rounded-full flex items-center justify-center border text-[11px]',
+                'w-6 h-6 rounded-full flex items-center justify-center border text-2xs',
                 active && 'bg-primary text-primary-foreground border-primary',
                 done && !active && 'bg-primary/15 text-primary border-primary/30',
                 !active && !done && 'border-border text-muted-foreground'
@@ -157,13 +157,13 @@ export function WhatsappConnectionWizard() {
 
       {/* Step: intro */}
       {step === 'intro' && (
-        <div className="rounded-card border border-border/60 bg-card p-6">
+        <div className="rounded-card border border-border bg-card shadow-soft p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
               <MessageCircle className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-foreground">Conecte o WhatsApp da sua clinica</h3>
+              <h3 className="font-semibold text-foreground">Conecte o WhatsApp da sua clinica</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Voce vai escanear um QR code com o celular que usa o WhatsApp da clinica. A partir dai, o assistente de IA podera responder pacientes automaticamente.
               </p>
@@ -198,7 +198,7 @@ export function WhatsappConnectionWizard() {
 
       {/* Step: connecting */}
       {step === 'connecting' && (
-        <div className="rounded-card border border-border/60 bg-card p-10 flex flex-col items-center justify-center text-center">
+        <div className="rounded-card border border-border bg-card shadow-soft p-10 flex flex-col items-center justify-center text-center">
           <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
           <p className="font-medium text-foreground">Preparando a conexao...</p>
           <p className="text-sm text-muted-foreground mt-1">Isso leva apenas alguns segundos</p>
@@ -207,13 +207,13 @@ export function WhatsappConnectionWizard() {
 
       {/* Step: qrcode */}
       {step === 'qrcode' && qrCode && (
-        <div className="rounded-card border border-border/60 bg-card p-6 flex flex-col items-center">
-          <h3 className="font-bold text-foreground mb-1">Escaneie o QR Code</h3>
+        <div className="rounded-card border border-border bg-card shadow-soft p-6 flex flex-col items-center">
+          <h3 className="font-semibold text-foreground mb-1">Escaneie o QR Code</h3>
           <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
             No WhatsApp do celular, va em <strong>Aparelhos conectados</strong> {'>'} <strong>Conectar aparelho</strong> e aponte a camera para o codigo abaixo.
           </p>
 
-          <div className="relative bg-white p-4 rounded-card border border-border/60">
+          <div className="relative bg-white p-4 rounded-card border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element -- QR code
                 arrives as a base64 data URI from Evolution API; next/image
                 adds no optimization for data URIs. */}
@@ -256,7 +256,7 @@ export function WhatsappConnectionWizard() {
           <div className="w-14 h-14 rounded-full bg-success/15 flex items-center justify-center mb-3">
             <CheckCircle2 className="h-7 w-7 text-success" />
           </div>
-          <h3 className="font-bold text-foreground">WhatsApp conectado!</h3>
+          <h3 className="font-semibold text-foreground">WhatsApp conectado!</h3>
           <p className="text-sm text-muted-foreground mt-1">
             {phoneNumber
               ? `Numero conectado: +${phoneNumber}`

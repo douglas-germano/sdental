@@ -53,10 +53,10 @@ export default function RegisterPage() {
             <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center">
               <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
             </div>
-            <span className="text-xl font-extrabold uppercase tracking-tight text-white">SDental</span>
+            <span className="text-xl font-bold uppercase tracking-tight text-white">SDental</span>
           </div>
 
-          <h1 className="text-4xl xl:text-5xl font-extrabold text-white mb-5 leading-[0.95] tracking-tight uppercase">
+          <h1 className="text-4xl xl:text-5xl font-bold text-white mb-5 leading-[1.02]">
             Comece sua jornada<br />digital
           </h1>
 
@@ -72,7 +72,7 @@ export default function RegisterPage() {
               { value: 'Dados', label: 'Relatórios em tempo real' }
             ].map((stat, i) => (
               <div key={i} className="p-4 rounded-card border border-white/25">
-                <div className="text-2xl font-extrabold text-primary mb-0.5 tracking-tight">{stat.value}</div>
+                <div className="text-2xl font-semibold text-primary mb-0.5">{stat.value}</div>
                 <div className="text-xs text-white/50 font-medium">{stat.label}</div>
               </div>
             ))}
@@ -90,7 +90,7 @@ export default function RegisterPage() {
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
               <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
             </div>
-            <span className="text-xl font-extrabold uppercase">SDental</span>
+            <span className="text-xl font-bold uppercase">SDental</span>
           </div>
 
           <Card>

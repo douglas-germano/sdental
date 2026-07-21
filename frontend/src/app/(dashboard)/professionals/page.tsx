@@ -71,7 +71,7 @@ export default function ProfessionalsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader title="Profissionais" description="Gerencie os profissionais da clinica">
         <Button onClick={() => setShowNewModal(true)} variant="gradient" className="gap-2">
           <Plus className="h-4 w-4" />

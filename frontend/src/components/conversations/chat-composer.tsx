@@ -237,14 +237,14 @@ export function ChatComposer({ onSendText, onSendMedia, disabled, quickReplies =
       {slashOpen && (
         <div className="absolute bottom-full left-3 right-3 mb-1 rounded-card border border-border bg-popover shadow-border overflow-hidden z-10">
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/60">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+            <span className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
               <Lightning className="h-3 w-3" /> Respostas rápidas
             </span>
             {onManageQuickReplies && (
               <button
                 type="button"
                 onClick={onManageQuickReplies}
-                className="text-[11px] text-primary font-medium flex items-center gap-1 hover:underline"
+                className="text-2xs text-primary font-medium flex items-center gap-1 hover:underline"
               >
                 <GearSix className="h-3 w-3" /> Gerenciar
               </button>

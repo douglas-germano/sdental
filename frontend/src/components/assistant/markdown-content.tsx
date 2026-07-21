@@ -26,9 +26,9 @@ export function MarkdownContent({ content, className }: { content: string; class
               {children}
             </a>
           ),
-          h1: ({ children }) => <h3 className="text-base font-bold mt-4 mb-1">{children}</h3>,
-          h2: ({ children }) => <h3 className="text-sm font-bold mt-4 mb-1">{children}</h3>,
-          h3: ({ children }) => <h3 className="text-sm font-bold mt-3 mb-1">{children}</h3>,
+          h1: ({ children }) => <h3 className="text-base font-semibold mt-4 mb-1">{children}</h3>,
+          h2: ({ children }) => <h3 className="text-sm font-semibold mt-4 mb-1">{children}</h3>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold mt-3 mb-1">{children}</h3>,
           blockquote: ({ children }) => (
             <blockquote className="border-l-2 border-border pl-3 text-muted-foreground">{children}</blockquote>
           ),
@@ -36,13 +36,13 @@ export function MarkdownContent({ content, className }: { content: string; class
             const isBlock = /language-/.test(codeClassName || '')
             if (isBlock) {
               return (
-                <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-[13px]">
+                <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-sm">
                   <code className={codeClassName} {...props}>{children}</code>
                 </pre>
               )
             }
             return (
-              <code className="bg-muted rounded px-1.5 py-0.5 text-[13px] font-mono" {...props}>
+              <code className="bg-muted rounded px-1.5 py-0.5 text-sm font-mono" {...props}>
                 {children}
               </code>
             )

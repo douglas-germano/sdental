@@ -44,7 +44,7 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150"
+        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-150"
         onClick={() => onOpenChange?.(false)}
         aria-hidden="true"
       />

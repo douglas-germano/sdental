@@ -110,7 +110,7 @@ export function MessageBubble({ message }: { message: Message }) {
         <div className={cn('flex items-center gap-1 mt-1', outgoing ? 'justify-end' : 'justify-start')}>
           {fromPhone && (
             <span
-              className="flex items-center gap-0.5 text-[10px] text-muted-foreground/80"
+              className="flex items-center gap-0.5 text-2xs text-muted-foreground/80"
               title="Enviado diretamente pelo WhatsApp, fora da plataforma"
             >
               <Phone className="h-2.5 w-2.5" /> WhatsApp
@@ -118,13 +118,13 @@ export function MessageBubble({ message }: { message: Message }) {
           )}
           {fromDashboard && (
             <span
-              className="flex items-center gap-0.5 text-[10px] text-muted-foreground/80"
+              className="flex items-center gap-0.5 text-2xs text-muted-foreground/80"
               title="Enviado manualmente pela equipe, por este painel"
             >
               <Headset className="h-2.5 w-2.5" /> Equipe
             </span>
           )}
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-2xs text-muted-foreground">
             {new Date(message.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </span>
           {outgoing && <MessageStatusTicks status={message.status} />}

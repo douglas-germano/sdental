@@ -202,7 +202,7 @@ export default function BookingPage() {
                         <div className="h-20 w-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
                             <CheckCircle className="h-10 w-10 text-success" />
                         </div>
-                        <h2 className="text-2xl font-bold text-success mb-2">
+                        <h2 className="text-2xl font-semibold text-success mb-2">
                             Agendamento Confirmado!
                         </h2>
                         <p className="text-muted-foreground mb-6">
@@ -228,7 +228,7 @@ export default function BookingPage() {
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-extrabold uppercase tracking-tight text-foreground mb-2">
+                    <h1 className="text-3xl font-semibold text-foreground mb-2">
                         {clinic?.name}
                     </h1>
                     <p className="text-muted-foreground">Agende sua consulta online</p>

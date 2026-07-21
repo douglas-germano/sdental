@@ -130,7 +130,7 @@ export function ConversationsSidebar() {
             >
               {f.label}
               {f.value === 'needs_attention' && needsAttentionCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-warning/15 text-warning">
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-warning/15 text-warning">
                   {needsAttentionCount}
                 </span>
               )}
@@ -183,7 +183,7 @@ export function ConversationsSidebar() {
                         )}>
                           {conv.patient?.name || formatPhone(conv.phone_number)}
                         </span>
-                        <span className="text-[11px] text-muted-foreground shrink-0">
+                        <span className="text-2xs text-muted-foreground shrink-0">
                           {formatRelativeTime(conv.last_message_at)}
                         </span>
                       </div>
@@ -206,7 +206,7 @@ export function ConversationsSidebar() {
                           )}
                           {(conv.unread_count || 0) > 0 && (
                             <span
-                              className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10.5px] font-bold flex items-center justify-center"
+                              className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-2xs font-semibold flex items-center justify-center"
                               aria-label={`${conv.unread_count} mensagens não lidas`}
                             >
                               {(conv.unread_count || 0) > 99 ? '99+' : conv.unread_count}
