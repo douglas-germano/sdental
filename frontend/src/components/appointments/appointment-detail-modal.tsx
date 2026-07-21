@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -92,28 +92,28 @@ export function AppointmentDetailModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogClose onClick={() => onOpenChange(false)} />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetClose onClick={() => onOpenChange(false)} />
 
-        <DialogHeader>
+        <SheetHeader>
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-card bg-primary flex items-center justify-center">
               <Calendar className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3">
-                <DialogTitle className="text-lg">Agendamento</DialogTitle>
+                <SheetTitle className="text-lg">Agendamento</SheetTitle>
                 <Badge className={getStatusColor(appointment.status)} size="sm">
                   {getStatusLabel(appointment.status)}
                 </Badge>
               </div>
-              <DialogDescription>
+              <SheetDescription>
                 {formatDateTime(appointment.scheduled_datetime)}
-              </DialogDescription>
+              </SheetDescription>
             </div>
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
         <div className="space-y-5">
           {/* Patient Info */}
@@ -216,7 +216,7 @@ export function AppointmentDetailModal({
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-3">
+        <SheetFooter className="flex-col sm:flex-row gap-3">
           {appointment.status === 'pending' && (
             <Button
               onClick={() => handleStatusChange('confirmed')}
@@ -246,8 +246,8 @@ export function AppointmentDetailModal({
           >
             Fechar
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

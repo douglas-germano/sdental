@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { RevenueChart } from '@/components/financial/revenue-chart'
 import { PaymentsTab } from '@/components/financial/payments-tab'
@@ -101,19 +102,12 @@ export default function FinancialPage() {
     <div className="space-y-6">
       <PageHeader title="Financeiro" description="Faturamento, pagamentos, despesas, comissões e fluxo de caixa da clínica">
         {activeSection === 'overview' && (
-          <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg">
-            {PERIOD_OPTIONS.map((opt) => (
-              <Button
-                key={opt.value}
-                variant={days === opt.value ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setDays(opt.value)}
-                className="h-7 text-xs px-2.5"
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            size="sm"
+            options={PERIOD_OPTIONS}
+            value={days}
+            onValueChange={setDays}
+          />
         )}
       </PageHeader>
 
@@ -176,19 +170,12 @@ export default function FinancialPage() {
                   </div>
                   Faturamento ao longo do tempo
                 </CardTitle>
-                <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg">
-                  {GROUP_BY_OPTIONS.map((opt) => (
-                    <Button
-                      key={opt.value}
-                      variant={groupBy === opt.value ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setGroupBy(opt.value)}
-                      className="h-7 text-xs px-2.5"
-                    >
-                      {opt.label}
-                    </Button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  size="sm"
+                  options={GROUP_BY_OPTIONS}
+                  value={groupBy}
+                  onValueChange={setGroupBy}
+                />
               </div>
             </CardHeader>
             <CardContent className="pt-0">

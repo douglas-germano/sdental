@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -229,20 +229,20 @@ export function PatientDetailModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogClose onClick={() => onOpenChange(false)} />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetClose onClick={() => onOpenChange(false)} />
 
-        <DialogHeader>
+        <SheetHeader>
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-card bg-primary flex items-center justify-center text-white font-semibold text-lg">
               {patient.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1">
-              <DialogTitle className="text-lg">{patient.name}</DialogTitle>
-              <DialogDescription>
+              <SheetTitle className="text-lg">{patient.name}</SheetTitle>
+              <SheetDescription>
                 Cadastrado em {formatDate(patient.created_at)}
-              </DialogDescription>
+              </SheetDescription>
             </div>
             {!isEditing && (
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="gap-2">
@@ -251,7 +251,7 @@ export function PatientDetailModal({
               </Button>
             )}
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
         {isEditing ? (
           <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
@@ -394,7 +394,7 @@ export function PatientDetailModal({
               </div>
             </div>
 
-            <DialogFooter>
+            <SheetFooter>
               <Button
                 variant="outline"
                 onClick={() => setIsEditing(false)}
@@ -407,7 +407,7 @@ export function PatientDetailModal({
                 <Save className="h-4 w-4" />
                 Salvar Alterações
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </div>
         ) : (
           <div className="space-y-5">
@@ -532,16 +532,16 @@ export function PatientDetailModal({
               </div>
             </div>
 
-            <DialogFooter>
+            <SheetFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Fechar
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </div>
         )}
-      </DialogContent>
+      </SheetContent>
 
       {ConfirmDialogComponent}
-    </Dialog>
+    </Sheet>
   )
 }

@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Input } from '@/components/ui/input'
+import { SearchField } from '@/components/ui/search-field'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
@@ -11,7 +12,7 @@ import { PageLoader } from '@/components/ui/page-loader'
 import { useConversations, FilterStatus } from './conversations-provider'
 import { Conversation } from '@/types'
 import { formatRelativeTime, formatPhone, cn } from '@/lib/utils'
-import { Chat as MessageSquare, ArrowsClockwise as RefreshCw, MagnifyingGlass as Search, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Image as ImageIcon, Microphone as Mic, FileText, SpeakerHigh, SpeakerSlash, Bell, BellSlash } from '@phosphor-icons/react'
+import { Chat as MessageSquare, ArrowsClockwise as RefreshCw, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Image as ImageIcon, Microphone as Mic, FileText, SpeakerHigh, SpeakerSlash, Bell, BellSlash } from '@phosphor-icons/react'
 
 function avatarInitial(conv: Conversation): string {
   const name = conv.patient?.name?.trim()
@@ -108,35 +109,32 @@ export function ConversationsSidebar() {
           </div>
         </div>
 
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-          <Input
-            placeholder="Buscar por nome ou telefone..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9 h-9"
-          />
-        </div>
+        <SearchField
+          placeholder="Buscar por nome ou telefone..."
+          value={searchInput}
+          onChange={setSearchInput}
+          className="mb-3"
+        />
 
-        <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={cn(
-                'px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors duration-150',
-                filter === f.value ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              {f.label}
-              {f.value === 'needs_attention' && needsAttentionCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-warning/15 text-warning">
-                  {needsAttentionCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          size="sm"
+          fullWidth
+          value={filter}
+          onValueChange={setFilter}
+          options={FILTERS.map((f) => ({
+            value: f.value,
+            label: (
+              <span className="inline-flex items-center gap-1">
+                {f.label}
+                {f.value === 'needs_attention' && needsAttentionCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-warning/15 text-warning">
+                    {needsAttentionCount}
+                  </span>
+                )}
+              </span>
+            ),
+          }))}
+        />
       </div>
 
       {/* List */}

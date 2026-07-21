@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { Stepper } from '@/components/ui/stepper'
+import { Progress } from '@/components/ui/progress'
 import { clinicsApi, billingApi, conversationsApi } from '@/lib/api'
 import { getDayName, formatPhone } from '@/lib/utils'
 import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, X, CircleNotch as Loader2, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning, CreditCard, ArrowSquareOut } from '@phosphor-icons/react'
@@ -129,6 +131,9 @@ export default function SettingsPage() {
   // Business Hours State
   const [businessHours, setBusinessHours] = useState(clinic?.business_hours || {})
 
+  // Recall inactivity period (stepper-controlled, saved on change)
+  const [recallDays, setRecallDays] = useState(clinic?.recall_inactive_days ?? 180)
+
   // Services State
   const [services, setServices] = useState(clinic?.services || [])
   const [newService, setNewService] = useState({ name: '', duration: 30, price: '', instructions: '' })
@@ -216,6 +221,7 @@ export default function SettingsPage() {
       setAgentEnabled(clinic.agent_enabled ?? true)
       setBusinessHours(clinic.business_hours || {})
       setServices(clinic.services || [])
+      setRecallDays(clinic.recall_inactive_days ?? 180)
     }
   }, [clinic])
 
@@ -234,21 +240,32 @@ export default function SettingsPage() {
   }
 
   const [syncingHistory, setSyncingHistory] = useState(false)
+  // Determinate progress for the batched history sync: the API works in
+  // batches and reports how many conversations remain, so the bar can show
+  // done/(done+remaining) while we auto-continue until nothing is left.
+  const [syncProgress, setSyncProgress] = useState<{ done: number; total: number } | null>(null)
+  const syncCancelled = useRef(false)
 
   const handleSyncAllHistory = async () => {
     setSyncingHistory(true)
+    syncCancelled.current = false
+    let done = 0
+    let imported = 0
     try {
-      const response = await conversationsApi.syncAllHistory()
-      const { synced, total_added, remaining } = response.data
-      if (remaining > 0) {
-        showMessage('success', `${total_added} mensagem(ns) importada(s) em ${synced} conversa(s). Clique novamente para continuar (${remaining} restante(s)).`)
-      } else {
-        showMessage('success', `${total_added} mensagem(ns) importada(s) em ${synced} conversa(s). Histórico sincronizado!`)
+      for (;;) {
+        const response = await conversationsApi.syncAllHistory()
+        const { synced, total_added, remaining } = response.data
+        done += synced
+        imported += total_added
+        setSyncProgress({ done, total: done + remaining })
+        if (remaining <= 0 || syncCancelled.current) break
       }
+      showMessage('success', `${imported} mensagem(ns) importada(s) em ${done} conversa(s). Histórico sincronizado.`)
     } catch {
       showMessage('error', 'Erro ao sincronizar histórico das conversas.')
     } finally {
       setSyncingHistory(false)
+      setSyncProgress(null)
     }
   }
 
@@ -497,10 +514,28 @@ export default function SettingsPage() {
                   description="Importa mensagens antigas de todas as conversas, incluindo as enviadas direto pelo aparelho, para dar mais contexto à IA."
                   stacked
                 >
-                  <Button variant="outline" size="sm" onClick={handleSyncAllHistory} loading={syncingHistory} disabled={syncingHistory}>
-                    Sincronizar tudo
-                  </Button>
+                  {syncingHistory ? (
+                    <Button variant="outline" size="sm" onClick={() => { syncCancelled.current = true }}>
+                      Parar
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={handleSyncAllHistory}>
+                      Sincronizar tudo
+                    </Button>
+                  )}
                 </SettingsRow>
+                {syncingHistory && (
+                  <div className="px-4 py-3 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Sincronizando conversas…</span>
+                      {syncProgress && <span className="tabular-nums">{syncProgress.done} de {syncProgress.total}</span>}
+                    </div>
+                    <Progress
+                      aria-label="Progresso da sincronização de histórico"
+                      value={syncProgress && syncProgress.total > 0 ? (syncProgress.done / syncProgress.total) * 100 : undefined}
+                    />
+                  </div>
+                )}
               </SettingsGroup>
             </>
           )}
@@ -639,16 +674,15 @@ export default function SettingsPage() {
                           className="pl-9"
                         />
                       </div>
-                      <div className="relative w-full sm:w-28">
-                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          placeholder="Min"
-                          value={newService.duration}
-                          onChange={(e) => setNewService({ ...newService, duration: parseInt(e.target.value) || 30 })}
-                          className="pl-9"
-                        />
-                      </div>
+                      <Stepper
+                        aria-label="Duração do serviço em minutos"
+                        value={newService.duration}
+                        min={5}
+                        max={480}
+                        step={5}
+                        unit="min"
+                        onChange={(v) => setNewService({ ...newService, duration: v })}
+                      />
                       <div className="relative w-full sm:w-32">
                         <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -705,16 +739,15 @@ export default function SettingsPage() {
                               className="pl-9"
                             />
                           </div>
-                          <div className="relative w-full sm:w-28">
-                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              type="number"
-                              placeholder="Min"
-                              value={service.duration}
-                              onChange={(e) => updateService(index, 'duration', parseInt(e.target.value) || 30)}
-                              className="pl-9"
-                            />
-                          </div>
+                          <Stepper
+                            aria-label="Duração do serviço em minutos"
+                            value={service.duration}
+                            min={5}
+                            max={480}
+                            step={5}
+                            unit="min"
+                            onChange={(v) => updateService(index, 'duration', v)}
+                          />
                           <div className="relative w-full sm:w-32">
                             <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -829,21 +862,19 @@ export default function SettingsPage() {
                   label="Considerar inativo após"
                   description="Dias sem consulta para acionar o recall."
                 >
-                  <Input
-                    type="number"
+                  <Stepper
+                    aria-label="Dias sem consulta para acionar o recall"
+                    value={recallDays}
                     min={30}
                     max={730}
-                    defaultValue={clinic?.recall_inactive_days ?? 180}
-                    className="w-20"
-                    onBlur={(e) => {
-                      const v = parseInt(e.target.value)
-                      if (!isNaN(v) && v !== (clinic?.recall_inactive_days ?? 180)) {
-                        handleSaveRecallDays(v)
-                      }
+                    step={30}
+                    unit="dias"
+                    onChange={(v) => {
+                      setRecallDays(v)
+                      if (v !== (clinic?.recall_inactive_days ?? 180)) handleSaveRecallDays(v)
                     }}
                     disabled={!clinic?.proactive_outreach_enabled}
                   />
-                  <span className="text-sm text-muted-foreground">dias</span>
                 </SettingsRow>
               </SettingsGroup>
 

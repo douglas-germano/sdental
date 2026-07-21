@@ -37,7 +37,7 @@ export function RevenueChart({ data, groupBy }: RevenueChartProps) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barGap={2} barCategoryGap="20%">
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} vertical={false} />
+        <CartesianGrid stroke="hsl(var(--border))" opacity={0.4} vertical={false} />
         <XAxis
           dataKey="period"
           tickFormatter={(value) => formatPeriodLabel(value, groupBy)}
@@ -56,11 +56,11 @@ export function RevenueChart({ data, groupBy }: RevenueChartProps) {
           labelFormatter={(value) => formatPeriodLabel(String(value), groupBy)}
           formatter={(value: number, name: string) => [formatCurrency(value), name]}
           contentStyle={{
-            backgroundColor: 'hsl(var(--background))',
+            backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
-            borderRadius: '6px',
+            borderRadius: '10px',
             fontSize: '12px',
-            boxShadow: 'none',
+            boxShadow: '0 2px 8px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04)',
           }}
         />
         <Legend

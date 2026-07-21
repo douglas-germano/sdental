@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -133,11 +133,11 @@ export function ProfessionalDetailModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogClose onClick={() => onOpenChange(false)} />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetClose onClick={() => onOpenChange(false)} />
 
-        <DialogHeader>
+        <SheetHeader>
           <div className="flex items-center gap-3">
             <div
               className="h-12 w-12 rounded-card flex items-center justify-center text-white font-semibold text-lg"
@@ -147,14 +147,14 @@ export function ProfessionalDetailModal({
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-lg">{professional.name}</DialogTitle>
+                <SheetTitle className="text-lg">{professional.name}</SheetTitle>
                 {professional.is_default && (
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                 )}
               </div>
-              <DialogDescription>
+              <SheetDescription>
                 {professional.specialty || 'Profissional'} - Cadastrado em {formatDate(professional.created_at)}
-              </DialogDescription>
+              </SheetDescription>
             </div>
             {!isEditing && (
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="gap-2">
@@ -163,7 +163,7 @@ export function ProfessionalDetailModal({
               </Button>
             )}
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
         {isEditing ? (
           <div className="space-y-5">
@@ -271,7 +271,7 @@ export function ProfessionalDetailModal({
               </div>
             </div>
 
-            <DialogFooter>
+            <SheetFooter>
               <Button
                 variant="outline"
                 onClick={() => setIsEditing(false)}
@@ -284,7 +284,7 @@ export function ProfessionalDetailModal({
                 <Save className="h-4 w-4" />
                 Salvar Alteracoes
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </div>
         ) : (
           <div className="space-y-5">
@@ -359,14 +359,14 @@ export function ProfessionalDetailModal({
               </div>
             </div>
 
-            <DialogFooter>
+            <SheetFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Fechar
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }
