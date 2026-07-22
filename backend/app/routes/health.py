@@ -1,6 +1,8 @@
 """
 Health check endpoints.
 """
+import logging
+
 from flask import Blueprint, jsonify
 from sqlalchemy import text
 
@@ -8,6 +10,7 @@ from app.utils.datetime_utils import utcnow
 from app import db
 
 bp = Blueprint('health', __name__, url_prefix='/api')
+logger = logging.getLogger(__name__)
 
 
 @bp.route('/health', methods=['GET'])
@@ -63,8 +66,11 @@ def check_database() -> dict:
             'healthy': True,
             'message': 'Database connection successful'
         }
-    except Exception as e:
+    except Exception:
+        # This endpoint is unauthenticated - log the real error, but never
+        # return the exception text (it can leak host/port/DB internals).
+        logger.exception('Readiness check: database connection failed')
         return {
             'healthy': False,
-            'message': f'Database connection failed: {str(e)}'
+            'message': 'Database connection failed'
         }

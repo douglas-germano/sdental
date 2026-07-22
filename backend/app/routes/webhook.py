@@ -57,6 +57,10 @@ def _webhook_rate_limit_key():
 
 
 @bp.route('/evolution', methods=['POST'])
+# Per-source-IP ceiling: the per-instance key below is derived from the
+# (pre-auth) request body, so a flood with randomized `instance` values would
+# otherwise get unlimited fresh buckets. This caps total volume per IP.
+@limiter.limit("600 per minute")
 @limiter.limit("100 per minute", key_func=_webhook_rate_limit_key)
 @webhook_auth_required
 def evolution_webhook():
@@ -426,6 +430,7 @@ def _handle_connection_update(instance_name: str, data: dict):
 
 
 @bp.route('/evolution/status', methods=['POST'])
+@limiter.limit("600 per minute")
 @limiter.limit("100 per minute", key_func=_webhook_rate_limit_key)
 @webhook_auth_required
 def evolution_status_webhook():

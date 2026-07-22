@@ -8,11 +8,22 @@ from app import db
 from app.models import Clinic, SubscriptionStatus
 from app.utils.validators import validate_email, validate_phone, validate_password, normalize_phone
 from app.utils.rate_limiter import limiter
+from app.utils.cache import cache
 from app.services.email_service import EmailService
 from app.services.billing_service import BillingService
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 logger = logging.getLogger(__name__)
+
+# Per-account login throttle: on top of the per-IP rate limit, lock an email
+# out for a while after too many failures so distributed credential-stuffing
+# (many IPs, one account) can't run unbounded.
+LOGIN_MAX_FAILURES = 8
+LOGIN_FAILURE_WINDOW_SECONDS = 900  # 15 minutes
+
+
+def _login_failure_key(email: str) -> str:
+    return f'login_fail:{email}'
 
 
 @bp.route('/register', methods=['POST'])
@@ -110,10 +121,24 @@ def login():
 
     # Emails are stored lowercased (see Clinic.validate_email), so normalize
     # the lookup - otherwise logging in with a different casing fails.
-    clinic = Clinic.query.filter_by(email=data['email'].lower()).first()
+    email = data['email'].lower().strip()
+    fail_key = _login_failure_key(email)
+
+    # Too many recent failures for this account -> locked out temporarily. Same
+    # response regardless of whether the email exists, so it isn't an oracle.
+    if (cache.get(fail_key) or 0) >= LOGIN_MAX_FAILURES:
+        return jsonify({
+            'error': 'Muitas tentativas de login para esta conta. Aguarde alguns minutos e tente novamente.'
+        }), 429
+
+    clinic = Clinic.query.filter_by(email=email).first()
 
     if not clinic or not clinic.check_password(data['password']):
+        cache.set(fail_key, (cache.get(fail_key) or 0) + 1, timeout=LOGIN_FAILURE_WINDOW_SECONDS)
         return jsonify({'error': 'Invalid email or password'}), 401
+
+    # Successful credential check -> clear the failure counter.
+    cache.delete(fail_key)
 
     if not clinic.active:
         return jsonify({
@@ -221,6 +246,9 @@ def reset_password():
 
     clinic.set_password(new_password)
     clinic.clear_password_reset_token()
+    # Revoke any tokens issued before the reset - if the account was
+    # compromised, this is what actually kicks the attacker out.
+    clinic.invalidate_sessions()
     db.session.commit()
 
     return jsonify({'message': 'Senha redefinida com sucesso'})

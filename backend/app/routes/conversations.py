@@ -1,5 +1,6 @@
 import base64
 import binascii
+import logging
 
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 
@@ -15,6 +16,7 @@ from app.utils.pagination import get_pagination_params
 from app.utils.validators import normalize_phone
 
 bp = Blueprint('conversations', __name__, url_prefix='/api/conversations')
+logger = logging.getLogger(__name__)
 
 MAX_MEDIA_BYTES = 8 * 1024 * 1024  # 8MB, base64-decoded size
 ALLOWED_MEDIA_TYPES = {'image', 'audio', 'document'}
@@ -107,8 +109,9 @@ def sync_all_conversations_history(current_clinic):
     """
     try:
         result = ConversationService(current_clinic).sync_all_conversations_history()
-    except Exception as e:
-        return jsonify({'error': f'Failed to sync history: {str(e)}'}), 502
+    except Exception:
+        logger.exception('Failed to sync all conversations history for clinic %s', current_clinic.id)
+        return jsonify({'error': 'Falha ao sincronizar o histórico'}), 502
 
     return jsonify(result)
 
@@ -150,8 +153,9 @@ def sync_conversation_history(conversation_id, current_clinic):
 
     try:
         added = ConversationService(current_clinic).sync_history_from_whatsapp(conversation)
-    except Exception as e:
-        return jsonify({'error': f'Failed to sync history: {str(e)}'}), 502
+    except Exception:
+        logger.exception('Failed to sync history for conversation %s', conversation_id)
+        return jsonify({'error': 'Falha ao sincronizar o histórico'}), 502
 
     return jsonify({
         'message': f'{added} mensagem(ns) importada(s)' if added else 'Nenhuma mensagem nova encontrada',
@@ -372,8 +376,9 @@ def send_manual_message(conversation_id, current_clinic):
 
     try:
         result = evolution.send_message(conversation.phone_number, message)
-    except Exception as e:
-        return jsonify({'error': f'Failed to send message: {str(e)}'}), 500
+    except Exception:
+        logger.exception('Failed to send manual message on conversation %s', conversation_id)
+        return jsonify({'error': 'Falha ao enviar a mensagem'}), 500
 
     if isinstance(result, dict) and result.get('error'):
         return jsonify({'error': f"Failed to send message: {result['error']}"}), 502
@@ -430,6 +435,16 @@ def send_media_message(conversation_id, current_clinic):
     if not b64_data or not mimetype:
         return jsonify({'error': 'data and mimetype are required'}), 400
 
+    # The mimetype is echoed back when the asset is later served, so it must be
+    # consistent with the declared media_type - otherwise an image/audio upload
+    # carrying e.g. mimetype=text/html becomes a stored-XSS vector.
+    mimetype = str(mimetype).split(';', 1)[0].strip().lower()
+    expected_prefix = {'image': 'image/', 'audio': 'audio/'}.get(media_type)
+    if expected_prefix and not mimetype.startswith(expected_prefix):
+        return jsonify({'error': f"mimetype '{mimetype}' does not match media_type '{media_type}'"}), 400
+    if media_type == 'document' and (mimetype.startswith('text/html') or 'javascript' in mimetype):
+        return jsonify({'error': 'Unsupported document mimetype'}), 400
+
     # Strip data URI prefix if present (e.g. "data:image/png;base64,...")
     if ',' in b64_data and b64_data.strip().lower().startswith('data:'):
         b64_data = b64_data.split(',', 1)[1]
@@ -453,8 +468,9 @@ def send_media_message(conversation_id, current_clinic):
             filename=filename,
             caption=caption
         )
-    except Exception as e:
-        return jsonify({'error': f'Failed to send media: {str(e)}'}), 500
+    except Exception:
+        logger.exception('Failed to send media on conversation %s', conversation_id)
+        return jsonify({'error': 'Falha ao enviar a mídia'}), 500
 
     if isinstance(result, dict) and result.get('error'):
         return jsonify({'error': f"Failed to send media: {result['error']}"}), 502

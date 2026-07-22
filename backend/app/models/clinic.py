@@ -8,7 +8,7 @@ from sqlalchemy.orm import validates
 
 from app.utils.datetime_utils import utcnow
 from app import db
-from app.models.types import JSONB, UUID
+from app.models.types import JSONB, UUID, EncryptedString
 from .mixins import TimestampMixin
 
 PASSWORD_RESET_TOKEN_TTL = timedelta(hours=1)
@@ -36,9 +36,10 @@ class Clinic(db.Model, TimestampMixin):
     slug = db.Column(db.String(100), unique=True, nullable=True)  # URL-friendly identifier
     booking_enabled = db.Column(db.Boolean, default=True)
 
-    # Evolution API configuration
+    # Evolution API configuration. The key is encrypted at rest when
+    # FIELD_ENCRYPTION_KEY is set (columns are widened to hold the ciphertext).
     evolution_api_url = db.Column(db.String(500), nullable=True)
-    evolution_api_key = db.Column(db.String(255), nullable=True)
+    evolution_api_key = db.Column(EncryptedString(512), nullable=True)
     evolution_instance_name = db.Column(db.String(100), nullable=True)
 
     # Last known WhatsApp connection state, fed by Evolution's
@@ -49,8 +50,9 @@ class Clinic(db.Model, TimestampMixin):
     # Canned responses for the dashboard chat composer: [{title, text}, ...]
     quick_replies = db.Column(JSONB, default=list)
 
-    # AI provider (OpenRouter) API key override (nullable - use global key by default)
-    openrouter_api_key = db.Column(db.String(255), nullable=True)
+    # AI provider (OpenRouter) API key override (nullable - use global key by
+    # default). Encrypted at rest when FIELD_ENCRYPTION_KEY is set.
+    openrouter_api_key = db.Column(EncryptedString(512), nullable=True)
 
     # Business configuration
     business_hours = db.Column(JSONB, default=dict)
@@ -100,6 +102,11 @@ class Clinic(db.Model, TimestampMixin):
     # Password reset (hashed token, never store the raw token)
     password_reset_token_hash = db.Column(db.String(64), nullable=True)
     password_reset_expires_at = db.Column(db.DateTime, nullable=True)
+
+    # Bumped whenever every existing session must be invalidated (password
+    # reset/change). Embedded as the `tv` claim in issued JWTs and checked on
+    # each request, so tokens minted before the bump stop being accepted.
+    token_version = db.Column(db.Integer, default=0, nullable=False)
 
     __table_args__ = (
         db.CheckConstraint('agent_temperature >= 0 AND agent_temperature <= 1', name='check_temperature_range'),
@@ -162,6 +169,13 @@ class Clinic(db.Model, TimestampMixin):
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
+
+    def invalidate_sessions(self) -> None:
+        """
+        Revoke every JWT issued so far by bumping the token version. Call after
+        a password reset/change so a stolen token can't outlive the compromise.
+        """
+        self.token_version = (self.token_version or 0) + 1
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)

@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_sqlalchemy.query import Query
 from flask_migrate import Migrate
@@ -29,6 +29,30 @@ migrate = Migrate()
 jwt = JWTManager()
 
 
+def _register_jwt_session_guards(jwt_manager):
+    """
+    Bind the per-clinic token version into every issued JWT and reject tokens
+    whose version is stale (i.e. minted before a password reset). This is what
+    makes `Clinic.invalidate_sessions()` actually revoke outstanding sessions.
+    """
+    from app.models import Clinic
+
+    @jwt_manager.additional_claims_loader
+    def _add_token_version(identity):
+        clinic = Clinic.query.get(identity)
+        return {'tv': clinic.token_version if clinic else 0}
+
+    @jwt_manager.token_in_blocklist_loader
+    def _is_token_revoked(_jwt_header, jwt_payload):
+        clinic = Clinic.query.get(jwt_payload.get('sub'))
+        # Unknown clinic: leave it to the handler (which returns 404), keeping
+        # existing behaviour. Known clinic: revoke if the token predates the
+        # last invalidation.
+        if clinic is None:
+            return False
+        return jwt_payload.get('tv', 0) != clinic.token_version
+
+
 def create_app(config_name: str = None) -> Flask:
     """Application factory pattern."""
     if config_name is None:
@@ -55,7 +79,22 @@ def create_app(config_name: str = None) -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    _register_jwt_session_guards(jwt)
     CORS(app, resources={r"/api/*": {"origins": app.config['ALLOWED_ORIGINS']}})
+
+    @app.after_request
+    def _security_headers(response):
+        # Baseline hardening headers for every response.
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'DENY')
+        # no-referrer also stops the ?token= on the SSE/media URLs from leaking
+        # to third parties via the Referer header.
+        response.headers.setdefault('Referrer-Policy', 'no-referrer')
+        if request.is_secure:
+            response.headers.setdefault(
+                'Strict-Transport-Security', 'max-age=31536000; includeSubDomains'
+            )
+        return response
 
     # Initialize rate limiter
     from .utils.rate_limiter import init_limiter
