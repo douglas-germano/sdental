@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { conversationsApi } from '@/lib/api'
+import { conversationsApi, refreshAccessToken } from '@/lib/api'
 
 export type StreamEventType = 'new_message' | 'message_status' | 'typing' | 'connection_status'
 
@@ -66,7 +66,14 @@ export function useConversationStream() {
         if (cancelled) return
         const delay = Math.min(1000 * 2 ** retryCount, MAX_RETRY_DELAY)
         retryCount += 1
-        retryTimeout = setTimeout(connect, delay)
+        // The short-lived access token rides in the stream URL, so a drop may
+        // just mean it expired. Refresh (best-effort) before reconnecting so an
+        // idle dashboard recovers instead of retrying forever with a dead token.
+        retryTimeout = setTimeout(() => {
+          void refreshAccessToken().finally(() => {
+            if (!cancelled) connect()
+          })
+        }, delay)
       }
     }
 

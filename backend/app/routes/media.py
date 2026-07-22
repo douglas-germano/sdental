@@ -35,11 +35,24 @@ def get_media(asset_id):
         return jsonify({'error': 'Mídia não encontrada'}), 404
 
     filename = (asset.filename or f'media-{asset.id}').replace('"', '')
+
+    # Only image/audio are rendered inline by the dashboard (<img>/<audio>);
+    # anything else (documents, or a forged text/html upload) is forced to
+    # download rather than rendered in the browser.
+    mimetype = asset.mimetype or 'application/octet-stream'
+    inline_ok = mimetype.split('/', 1)[0].lower() in ('image', 'audio')
+    disposition = 'inline' if inline_ok else 'attachment'
+
     return Response(
         asset.data,
-        mimetype=asset.mimetype,
+        mimetype=mimetype,
         headers={
             'Cache-Control': 'private, max-age=86400',
-            'Content-Disposition': f'inline; filename="{filename}"',
+            'Content-Disposition': f'{disposition}; filename="{filename}"',
+            # Don't let the browser MIME-sniff a served blob into executable
+            # HTML, and sandbox it so any HTML/JS in the payload can't run in
+            # our origin (stored-XSS defence for patient/staff-supplied media).
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': "default-src 'none'; sandbox",
         }
     )

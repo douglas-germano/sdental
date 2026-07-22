@@ -11,6 +11,29 @@ const api = axios.create({
   }
 })
 
+/**
+ * Exchange the refresh token for a fresh access token and persist it.
+ * Returns the new access token, or null if refresh isn't possible.
+ * Shared by the 401 interceptor and the SSE stream (which authenticates via a
+ * ?token= query param and must refresh before reconnecting once the short-lived
+ * access token expires).
+ */
+export async function refreshAccessToken(): Promise<string | null> {
+  if (typeof window === 'undefined') return null
+  const refreshToken = localStorage.getItem('refresh_token')
+  if (!refreshToken) return null
+  try {
+    const response = await axios.post(`${API_URL}/auth/refresh`, {}, {
+      headers: { Authorization: `Bearer ${refreshToken}` }
+    })
+    const { access_token } = response.data
+    localStorage.setItem('access_token', access_token)
+    return access_token
+  } catch {
+    return null
+  }
+}
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -35,31 +58,19 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
-      try {
-        const refreshToken = localStorage.getItem('refresh_token')
-        if (refreshToken) {
-          const response = await axios.post(`${API_URL}/auth/refresh`, {}, {
-            headers: {
-              Authorization: `Bearer ${refreshToken}`
-            }
-          })
-
-          const { access_token } = response.data
-          localStorage.setItem('access_token', access_token)
-
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${access_token}`
-          }
-
-          return api(originalRequest)
+      const access_token = await refreshAccessToken()
+      if (access_token) {
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${access_token}`
         }
-      } catch {
-        // Refresh failed, clear tokens and redirect to login
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login'
-        }
+        return api(originalRequest)
+      }
+
+      // Refresh failed/unavailable: clear tokens and redirect to login
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
       }
     }
 

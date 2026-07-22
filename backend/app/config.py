@@ -27,11 +27,21 @@ class Config:
 
     # JWT
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    # Access tokens are short-lived: they travel in the URL for the SSE stream
+    # and media endpoints (?token=, since EventSource/<img> can't send headers),
+    # so a shorter lifetime bounds the damage if one leaks into logs/history.
+    # The dashboard refreshes transparently via the refresh token. Override with
+    # JWT_ACCESS_TOKEN_MINUTES if needed.
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_MINUTES', '120')))
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_DAYS', '30')))
     # Allows the SSE stream endpoint to authenticate via ?token=, since
     # EventSource cannot set an Authorization header.
     JWT_QUERY_STRING_NAME = 'token'
+
+    # Optional field-level encryption at rest for stored third-party API keys
+    # (clinic OpenRouter / Evolution keys). Any string; encryption is active
+    # only when this is set. See app/models/types.py:EncryptedString.
+    FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY')
 
     # AI provider - OpenRouter (OpenAI-compatible API, gives access to models
     # from many providers - Anthropic, OpenAI, Google, Meta, etc. - by
