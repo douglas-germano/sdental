@@ -10,7 +10,7 @@ Flask-Limiter==3.5.0
 Flask-Caching==2.1.0
 
 # Database
-psycopg2-binary>=2.9.11
+psycopg[binary]>=3.2,<4
 redis>=5.0.0
 
 # Validation
