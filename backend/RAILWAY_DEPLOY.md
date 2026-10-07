@@ -17,6 +17,17 @@ SECRET_KEY=<generate-a-secure-random-key>
 JWT_SECRET_KEY=<generate-a-secure-random-key>
 ```
 
+### Redis
+In the backend's Variables tab, set `REDIS_URL` using Add Reference and select
+the Redis service's `REDIS_URL`. For a service named `Redis`, the reference is
+`${{Redis.REDIS_URL}}`; use the actual service name. This keeps the URL's user,
+password, host and port synchronized with the database service.
+
+`invalid username-password pair or user is disabled` means Redis rejected the
+credentials. Correct the reference rather than copying an old URL or password.
+The health endpoints are exempt from rate limiting so monitoring can still run;
+application endpoints retain their rate limits and require working Redis credentials.
+
 ### AI Provider (OpenRouter)
 ```
 OPENROUTER_API_KEY=<your-openrouter-api-key>

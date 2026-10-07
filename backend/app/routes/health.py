@@ -7,9 +7,12 @@ from flask import Blueprint, jsonify
 from sqlalchemy import text
 
 from app.utils.datetime_utils import utcnow
+from app.utils.rate_limiter import limiter
 from app import db
 
 bp = Blueprint('health', __name__, url_prefix='/api')
+# Monitoring must work even when the rate-limit Redis backend is unavailable.
+limiter.exempt(bp)
 logger = logging.getLogger(__name__)
 
 
