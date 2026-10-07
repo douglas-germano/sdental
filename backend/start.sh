@@ -5,13 +5,12 @@ echo "=== SDental Backend Starting ==="
 echo "Environment: ${FLASK_ENV:-development}"
 echo "Port: ${PORT:-5001}"
 
-# Run database migrations
+# Initialize new databases, then migrate existing ones. Never start the web
+# server after a database preparation failure.
+python bootstrap_database.py
 echo "Running database migrations..."
-if flask db upgrade; then
-    echo "Migrations completed successfully."
-else
-    echo "WARNING: Migrations failed. Attempting to start anyway..."
-fi
+ENABLE_SCHEDULER=false flask --app run:app db upgrade
+echo "Migrations completed successfully."
 
 # Calculate workers based on available resources
 # Railway free tier: use 2 workers; otherwise scale with CPU

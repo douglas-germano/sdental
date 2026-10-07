@@ -49,14 +49,24 @@ EVOLUTION_API_KEY=<your-evolution-api-key>
 
 ### 4. Set Root Directory
 1. Go to Settings → "Root Directory"
-2. Set to: `backend`
+2. Set to: `/backend`
+3. Set "Railway Config File" to `/backend/railway.json`. The config path is
+   relative to the repository root, independently of Root Directory.
 
 ### 5. Deploy
 Railway will automatically:
 - Install dependencies from `requirements.txt`
 - Run `start.sh` which:
-  - Runs database migrations (`flask db upgrade`)
+  - Creates the current model schema and stamps the migration head **only if
+    the database has no application tables and no applied Alembic revisions**
+  - Runs database migrations (`flask --app run:app db upgrade`)
+  - Stops on initialization or migration errors instead of serving a broken schema
   - Starts Gunicorn server
+
+Database preparation disables background jobs; the scheduler starts with the web
+workers according to `ENABLE_SCHEDULER`. Schema creation and stamping share a
+PostgreSQL transaction. Existing databases are never stamped by the bootstrap;
+they keep the normal migration path.
 
 ### 6. Custom Domain (Optional)
 1. Go to Settings → "Domains"
@@ -74,10 +84,11 @@ print(secrets.token_urlsafe(32))
 
 After deployment, test:
 ```bash
-curl https://your-app.railway.app/health
+curl https://your-app.railway.app/api/health
 ```
 
-Should return: `{"status": "healthy"}`
+Should return HTTP 200 with `"status": "healthy"` and a timestamp. Use
+`/api/health/ready` to also verify database connectivity.
 
 ## Updating Evolution Webhook
 
@@ -96,6 +107,13 @@ Check logs in Railway dashboard:
 ## Troubleshooting
 
 ### Migration Errors
+The legacy first migration alters `clinics` without creating the initial tables.
+For an empty database, `bootstrap_database.py` creates the current schema before
+the upgrade, following [Alembic's fresh-database recipe](https://alembic.sqlalchemy.org/en/latest/cookbook.html#building-an-up-to-date-database-from-scratch).
+An empty `alembic_version` table left by a failed first migration is supported.
+If the database already has application tables or applied revisions, bootstrap
+does nothing; inspect the failing migration rather than stamping it manually.
+
 If migrations fail, you can run them manually:
 ```bash
 railway run flask db upgrade
