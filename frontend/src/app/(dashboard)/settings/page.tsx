@@ -5,15 +5,14 @@ import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Stepper } from '@/components/ui/stepper'
 import { Progress } from '@/components/ui/progress'
 import { clinicsApi, billingApi, conversationsApi } from '@/lib/api'
 import { getDayName, formatPhone } from '@/lib/utils'
-import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, X, CircleNotch as Loader2, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, Warning, CreditCard, ArrowSquareOut } from '@phosphor-icons/react'
+import { FloppyDisk as Save, WifiHigh as Wifi, Clock, Stethoscope, Trash as Trash2, Plus, CheckCircle, XCircle, X, CircleNotch as Loader2, Buildings as Building2, EnvelopeSimple as Mail, Phone, Link, Copy, CurrencyDollar, NotePencil, Sparkle, CreditCard, ArrowSquareOut } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
-import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'
+import NextLink from 'next/link'
 import type { BillingStatus, SubscriptionStatus, Service } from '@/types'
 
 type Section = 'profile' | 'whatsapp' | 'hours' | 'services' | 'automacao' | 'assinatura'
@@ -121,6 +120,10 @@ function EditActions({ editing, saving, onEdit, onCancel, onSave }: {
 export default function SettingsPage() {
   const { clinic, refreshClinic } = useAuth()
   const [activeSection, setActiveSection] = useState<Section>('profile')
+  useEffect(() => {
+    const section = new URLSearchParams(window.location.search).get('section')
+    if (section === 'hours' || section === 'services' || section === 'whatsapp') setActiveSection(section)
+  }, [])
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -132,7 +135,6 @@ export default function SettingsPage() {
   const [businessHours, setBusinessHours] = useState(clinic?.business_hours || {})
 
   // Recall inactivity period (stepper-controlled, saved on change)
-  const [recallDays, setRecallDays] = useState(clinic?.recall_inactive_days ?? 180)
 
   // Services State
   const [services, setServices] = useState(clinic?.services || [])
@@ -147,10 +149,10 @@ export default function SettingsPage() {
 
   const sections = [
     { id: 'profile' as Section, label: 'Perfil da Clínica', icon: Building2 },
-    { id: 'whatsapp' as Section, label: 'WhatsApp / Evolution', icon: Wifi },
+    { id: 'whatsapp' as Section, label: 'WhatsApp', icon: Wifi },
     { id: 'hours' as Section, label: 'Horários de Funcionamento', icon: Clock },
     { id: 'services' as Section, label: 'Serviços / Procedimentos', icon: Stethoscope },
-    { id: 'automacao' as Section, label: 'Automação (IA proativa)', icon: Sparkle },
+    { id: 'automacao' as Section, label: 'Mensagens automáticas', icon: Sparkle },
     { id: 'assinatura' as Section, label: 'Assinatura', icon: CreditCard },
   ]
 
@@ -160,41 +162,6 @@ export default function SettingsPage() {
       .catch(() => setBillingStatus(null))
       .finally(() => setBillingLoading(false))
   }, [])
-
-  const handleToggleAutomation = async (
-    field:
-      | 'proactive_outreach_enabled'
-      | 'noshow_recovery_enabled'
-      | 'waitlist_enabled'
-      | 'recall_enabled'
-      | 'funnel_automation_enabled'
-      | 'weekly_report_enabled',
-    value: boolean
-  ) => {
-    setSaving(field)
-    try {
-      await clinicsApi.updateProfile({ [field]: value })
-      await refreshClinic()
-      showMessage('success', 'Configuração de automação salva!')
-    } catch {
-      showMessage('error', 'Erro ao salvar configuração.')
-    } finally {
-      setSaving(null)
-    }
-  }
-
-  const handleSaveRecallDays = async (days: number) => {
-    setSaving('recall_inactive_days')
-    try {
-      await clinicsApi.updateProfile({ recall_inactive_days: days })
-      await refreshClinic()
-      showMessage('success', 'Período de recall atualizado!')
-    } catch {
-      showMessage('error', 'Erro ao salvar período.')
-    } finally {
-      setSaving(null)
-    }
-  }
 
   const showMessage = (type: 'success' | 'error', message: string) => {
     if (type === 'success') {
@@ -218,26 +185,10 @@ export default function SettingsPage() {
         phone: clinic.phone || '',
         slug: clinic.slug || ''
       })
-      setAgentEnabled(clinic.agent_enabled ?? true)
       setBusinessHours(clinic.business_hours || {})
       setServices(clinic.services || [])
-      setRecallDays(clinic.recall_inactive_days ?? 180)
     }
   }, [clinic])
-
-  const [agentEnabled, setAgentEnabled] = useState(true)
-
-  const handleToggleAgent = async (enabled: boolean) => {
-    setAgentEnabled(enabled)
-    try {
-      await clinicsApi.updateProfile({ agent_enabled: enabled })
-      showMessage('success', enabled ? 'IA ativada com sucesso!' : 'IA desativada com sucesso!')
-      await refreshClinic()
-    } catch {
-      setAgentEnabled(!enabled) // revert
-      showMessage('error', 'Erro ao atualizar configuração.')
-    }
-  }
 
   const [syncingHistory, setSyncingHistory] = useState(false)
   // Determinate progress for the batched history sync: the API works in
@@ -493,20 +444,8 @@ export default function SettingsPage() {
           {/* WhatsApp */}
           {activeSection === 'whatsapp' && (
             <>
-              <SectionHeader
-                title="WhatsApp / Evolution API"
-                description="Conexão do número da clínica e comportamento do assistente."
-              />
-              <SettingsGroup>
-                <SettingsRow
-                  label="Agente de IA"
-                  description="Quando ativado, a IA responde automaticamente aos pacientes."
-                >
-                  <Switch checked={agentEnabled} onCheckedChange={handleToggleAgent} />
-                </SettingsRow>
-              </SettingsGroup>
-
-              <WhatsappConnectionWizard />
+              <SectionHeader title="WhatsApp" description="Conexão e atendimento ficam juntos em uma área guiada." />
+              <NextLink className="inline-flex items-center min-h-11 px-4 rounded-lg bg-primary text-primary-foreground" href="/agents">Abrir atendimento no WhatsApp</NextLink>
 
               <SettingsGroup>
                 <SettingsRow
@@ -797,109 +736,10 @@ export default function SettingsPage() {
             </>
           )}
 
-          {/* Automation */}
           {activeSection === 'automacao' && (
             <>
-              <SectionHeader
-                title="Automação (IA proativa)"
-                description="Deixe a IA agir sozinha para recuperar faltas, reativar pacientes e qualificar leads — sempre com trilha de auditoria e opção de opt-out."
-              />
-
-              <div className="flex items-start gap-3 px-4 py-3 rounded-card bg-warning/10 border border-warning/20">
-                <Warning className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">
-                  O envio proativo dispara mensagens de WhatsApp por iniciativa da clínica.
-                  Use com responsabilidade: mensagens em excesso podem levar ao bloqueio do
-                  número. A IA respeita horário comercial, limite diário por paciente e o
-                  pedido de <strong>SAIR</strong> de cada paciente.
-                </p>
-              </div>
-
-              <SettingsGroup>
-                <SettingsRow
-                  label="Envio proativo (interruptor geral)"
-                  description="Quando ativado, a IA pode iniciar conversas com pacientes por conta própria. Os recursos abaixo só funcionam com esta chave ligada."
-                >
-                  <Switch
-                    checked={clinic?.proactive_outreach_enabled ?? false}
-                    onCheckedChange={(v) => handleToggleAutomation('proactive_outreach_enabled', v)}
-                    disabled={saving === 'proactive_outreach_enabled'}
-                  />
-                </SettingsRow>
-              </SettingsGroup>
-
-              <SettingsGroup className={cn(
-                'transition-opacity',
-                !clinic?.proactive_outreach_enabled && 'opacity-50 pointer-events-none'
-              )}>
-                {[
-                  {
-                    field: 'noshow_recovery_enabled' as const,
-                    title: 'Recuperação de faltas e cancelamentos',
-                    desc: 'Reabre a conversa com quem faltou ou cancelou e oferece remarcar.',
-                  },
-                  {
-                    field: 'waitlist_enabled' as const,
-                    title: 'Lista de espera inteligente',
-                    desc: 'Quando um horário abre, oferece a vaga a um paciente com consulta mais distante.',
-                  },
-                  {
-                    field: 'recall_enabled' as const,
-                    title: 'Reativação de pacientes inativos (recall)',
-                    desc: 'Convida pacientes sem consulta há muito tempo para um retorno.',
-                  },
-                ].map((item) => (
-                  <SettingsRow key={item.field} label={item.title} description={item.desc}>
-                    <Switch
-                      checked={(clinic?.[item.field] as boolean) ?? false}
-                      onCheckedChange={(v) => handleToggleAutomation(item.field, v)}
-                      disabled={saving === item.field || !clinic?.proactive_outreach_enabled}
-                    />
-                  </SettingsRow>
-                ))}
-
-                <SettingsRow
-                  label="Considerar inativo após"
-                  description="Dias sem consulta para acionar o recall."
-                >
-                  <Stepper
-                    aria-label="Dias sem consulta para acionar o recall"
-                    value={recallDays}
-                    min={30}
-                    max={730}
-                    step={30}
-                    unit="dias"
-                    onChange={(v) => {
-                      setRecallDays(v)
-                      if (v !== (clinic?.recall_inactive_days ?? 180)) handleSaveRecallDays(v)
-                    }}
-                    disabled={!clinic?.proactive_outreach_enabled}
-                  />
-                </SettingsRow>
-              </SettingsGroup>
-
-              <SettingsGroup>
-                <SettingsRow
-                  label="Qualificação automática do funil (CRM)"
-                  description="A IA classifica e move leads no funil com base nas conversas. Não envia mensagens."
-                >
-                  <Switch
-                    checked={clinic?.funnel_automation_enabled ?? false}
-                    onCheckedChange={(v) => handleToggleAutomation('funnel_automation_enabled', v)}
-                    disabled={saving === 'funnel_automation_enabled'}
-                  />
-                </SettingsRow>
-                <SettingsRow
-                  label="Resumo semanal de desempenho"
-                  description="Envia um resumo dos indicadores da clínica no seu WhatsApp, uma vez por semana."
-                >
-                  <Switch
-                    checked={clinic?.weekly_report_enabled ?? false}
-                    onCheckedChange={(v) => handleToggleAutomation('weekly_report_enabled', v)}
-                    disabled={saving === 'weekly_report_enabled'}
-                  />
-                </SettingsRow>
-              </SettingsGroup>
+              <SectionHeader title="Mensagens automáticas" description="Escolha quando a clínica pode iniciar conversas na preparação do atendimento." />
+              <NextLink className="inline-flex items-center min-h-11 px-4 rounded-lg bg-primary text-primary-foreground" href="/agents?step=prepare">Configurar mensagens automáticas</NextLink>
             </>
           )}
 

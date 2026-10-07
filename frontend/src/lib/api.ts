@@ -307,27 +307,13 @@ export const analyticsApi = {
     api.get('/analytics/agent-actions', { params })
 }
 
-// Agents API
+// Agents API: previews never persist the draft.
 export const agentsApi = {
-  getConfig: () => api.get('/agents/config'),
-
-  updateConfig: (data: {
-    name?: string
-    system_prompt?: string
-    temperature?: number
-    context?: string
-  }) => api.put('/agents/config', data),
-
-  // system_prompt/context/temperature preview unsaved draft edits without
-  // persisting them - omit a field (or pass '') to fall back to whatever's
-  // actually saved for the clinic, matching real WhatsApp behavior.
-  testMessage: (message: string, draft?: { systemPrompt?: string; context?: string; temperature?: number }) =>
-    api.post('/agents/test', {
-      message,
-      ...(draft?.systemPrompt !== undefined && { system_prompt: draft.systemPrompt }),
-      ...(draft?.context !== undefined && { context: draft.context }),
-      ...(draft?.temperature !== undefined && { temperature: draft.temperature }),
-    })
+  getConfig: () => api.get<import('./agent-config').AgentConfig>('/agents/config'),
+  updateConfig: (data: Partial<import('./agent-config').AgentDraft> & { agent_enabled?: boolean }) =>
+    api.put<{ config: import('./agent-config').AgentConfig }>('/agents/config', data),
+  testMessage: (message: string, draft: import('./agent-config').AgentDraft, sessionId: string) =>
+    api.post<{ response: string }>('/agents/test', { ...draft, message, session_id: sessionId }),
 }
 
 // Pipeline API

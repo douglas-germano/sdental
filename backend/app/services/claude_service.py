@@ -419,14 +419,15 @@ class ClaudeService:
         ]
 
     def _format_services(self) -> str:
-        """Format clinic services for the prompt, including price and prep instructions when set."""
+        """Format services, respecting the price disclosure setting."""
+        from app.services.agent_setup import settings_for
         services = self.clinic.services or []
         if not services:
             return "Consulta Geral (30 min)"
         parts = []
         for s in services:
             entry = f"{s.get('name')} ({s.get('duration', 30)} min"
-            if s.get('price'):
+            if s.get('price') and settings_for(self.clinic, self._overrides.get('settings'))['show_prices']:
                 entry += f", R$ {s['price']}"
             entry += ")"
             parts.append(entry)
@@ -501,6 +502,11 @@ class ClaudeService:
         conversation: Conversation
     ) -> str:
         """Execute a tool and return the result."""
+        # Tests may read availability, but never perform real actions.
+        if conversation.phone_number.startswith('TEST-') and tool_name not in {
+            'check_availability', 'list_professionals', 'list_appointments', 'get_current_datetime'
+        }:
+            return 'Simulação: ação concluída apenas no teste. Nenhum agendamento, cadastro ou mensagem real foi alterado. Em produção, essa ação seria executada.'
         logger.info('Executing tool: %s with input: %s', tool_name, tool_input)
 
         handler_entry = self._TOOL_HANDLERS.get(tool_name)
@@ -1188,7 +1194,8 @@ class ClaudeService:
         # customized agent_system_prompt - prevents the agent from answering
         # about procedures the clinic doesn't actually offer using its own
         # general training knowledge instead of the clinic's real service list.
-        guardrail_text = SCOPE_GUARDRAIL_TEMPLATE.format(services=self._format_services())
+        from app.services.agent_setup import instructions
+        guardrail_text = SCOPE_GUARDRAIL_TEMPLATE.format(services=self._format_services()) + instructions(self.clinic, self._overrides)
         if isinstance(system_prompt, list):
             # Default-template path: system_prompt is [static cached block,
             # dynamic uncached block] - append to the last (uncached) block
@@ -1233,9 +1240,12 @@ class ClaudeService:
                         "Desculpe, não estou conseguindo concluir sua solicitação agora. "
                         "Vou transferir você para um de nossos atendentes."
                     )
-                    self.conversation_service.transfer_to_human(
-                        conversation, 'Limite de chamadas de ferramentas excedido', urgent=False
-                    )
+                    if conversation.phone_number.startswith('TEST-'):
+                        final_response = 'Simulação: não consegui concluir a solicitação. Em produção, encaminharia para a recepção.'
+                    else:
+                        self.conversation_service.transfer_to_human(
+                            conversation, 'Limite de chamadas de ferramentas excedido', urgent=False
+                        )
                     self.conversation_service.add_message(conversation, 'assistant', final_response)
                     return final_response
 

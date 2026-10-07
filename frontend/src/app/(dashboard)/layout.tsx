@@ -38,7 +38,7 @@ const navigation = [
   {
     label: 'Inteligência',
     items: [
-      { name: 'Agente WhatsApp', href: '/agents', icon: Bot },
+      { name: 'Atendimento no WhatsApp', href: '/agents', icon: Bot },
       { name: 'Assistente IA', href: '/assistant', icon: Sparkle },
     ],
   },
@@ -292,9 +292,11 @@ export default function DashboardLayout({
             no page padding on mobile and docks a composer at the very bottom. */}
         <button
           className={cn(
-            'lg:hidden fixed left-4 z-40 p-3 bg-card border border-border/60 rounded-card hover:bg-muted transition-colors duration-200',
-            pathname.startsWith('/conversations') || pathname.startsWith('/assistant') ? 'bottom-20' : 'bottom-4'
+            'lg:hidden z-40 p-3 bg-card border border-border/60 rounded-card hover:bg-muted transition-colors duration-200',
+            pathname === '/agents' ? 'self-start ml-4 mt-4 min-h-11' : 'fixed left-4',
+            pathname === '/agents' ? '' : pathname.startsWith('/conversations') || pathname.startsWith('/assistant') ? 'bottom-20' : 'bottom-4'
           )}
+          aria-label="Abrir menu"
           onClick={() => setSidebarOpen(true)}
         >
           <Menu className="h-5 w-5 text-foreground" />

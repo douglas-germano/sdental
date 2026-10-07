@@ -63,6 +63,7 @@ class Clinic(db.Model, TimestampMixin):
     agent_temperature = db.Column(db.Float, default=0.7)
     agent_system_prompt = db.Column(db.Text, nullable=True)
     agent_context = db.Column(db.Text, nullable=True)
+    agent_settings = db.Column(JSONB, nullable=True)
     agent_enabled = db.Column(db.Boolean, default=True)
 
     # Reminder configuration

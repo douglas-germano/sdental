@@ -1,885 +1,1080 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/app/providers'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { agentsApi, clinicsApi } from '@/lib/api'
+import {
+  AgentConfig,
+  AgentDraft,
+  AgentSettings,
+  draftOf,
+} from '@/lib/agent-config'
+import { WhatsappConnectionWizard } from '@/components/settings/whatsapp-connection-wizard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { useToast } from '@/components/ui/toast'
-import { agentsApi } from '@/lib/api'
-import { Robot as Bot, FloppyDisk as Save, Sparkle as Sparkles, Chat as MessageSquare, PaperPlaneTilt as Send, CircleNotch as Loader2, User, Lightning as Zap, Brain, WarningCircle as AlertCircle, ArrowCounterClockwise as RotateCcw, Check, CheckCircle, Info, Thermometer, CaretDown as ChevronDown, SlidersHorizontal } from '@phosphor-icons/react'
-import { PageLoader } from '@/components/ui/page-loader'
 import { PageHeader } from '@/components/ui/page-header'
 import { cn } from '@/lib/utils'
 
-interface TestMessage {
-    role: 'user' | 'assistant'
-    content: string
-}
-
-interface AgentDraft {
-    name: string
-    temperature: number
-    systemPrompt: string
-    context: string
-}
-
-const PROMPT_TEMPLATES = [
-    {
-        name: 'Equilibrado',
-        icon: Bot,
-        description: 'Tom cordial e profissional. Ideal para a maioria das clinicas.',
-        content: `Você é uma assistente virtual da clínica odontológica {clinic_name}.
-Seu objetivo é agendar consultas, tirar dúvidas sobre tratamentos e fornecer informações sobre a clínica.
-Seja sempre cordial, profissional e empática.
-Use emojis ocasionalmente para tornar a conversa mais leve.`
-    },
-    {
-        name: 'Acolhedor',
-        icon: Sparkles,
-        description: 'Linguagem calorosa com emojis. Otimo para publico jovem.',
-        content: `Oi! Sou a assistente virtual da {clinic_name} 😊
-Estou aqui para te ajudar a marcar consultas e tirar dúvidas com muito carinho!
-Pode contar comigo para o que precisar.
-Use bastante emojis e uma linguagem bem acolhedora!`
-    },
-    {
-        name: 'Formal',
-        icon: Brain,
-        description: 'Comunicacao direta sem emojis. Para publico corporativo.',
-        content: `Você é uma assistente virtual da {clinic_name}.
-Atue com formalidade e profissionalismo estrito.
-Foque em eficiência e clareza no agendamento.
-Não utilize emojis ou gírias.`
-    },
-    {
-        name: 'Vendas',
-        icon: Zap,
-        description: 'Foco em converter contatos em agendamentos.',
-        content: `Você é uma consultora de agendamentos da {clinic_name}.
-Seu objetivo principal é converter contatos em agendamentos confirmados.
-Seja persuasiva, destaque a qualidade dos nossos serviços e a importância da saúde bucal.
-Sempre ofereça opções de horários e tente fechar o agendamento rapidamente.`
-    }
+type Step = 'connect' | 'prepare' | 'test'
+type Message = { role: 'user' | 'assistant'; content: string }
+const steps: { id: Step; label: string; detail: string }[] = [
+  { id: 'connect', label: 'Conectar', detail: 'Número da clínica' },
+  { id: 'prepare', label: 'Preparar', detail: 'Como atender seus pacientes' },
+  { id: 'test', label: 'Testar e ativar', detail: 'Confira antes de publicar' },
 ]
-
-const PROMPT_VARIABLES = [
-    { code: '{clinic_name}', label: 'Nome da Clinica', example: 'Clinica SDental' },
-    { code: '{services}', label: 'Lista de Servicos', example: 'Limpeza, Clareamento...' },
-    { code: '{business_hours}', label: 'Horarios', example: 'Seg-Sex: 8h-18h' },
-    { code: '{current_datetime}', label: 'Data/Hora Atual', example: '25/03/2026 14:30' },
-    { code: '{context_info}', label: 'Contexto do Paciente', example: 'Ultimo atendimento...' }
+const tones = [
+  {
+    id: 'balanced',
+    label: 'Equilibrado',
+    example: 'Olá! Posso ajudar você a encontrar um horário.',
+  },
+  {
+    id: 'direct',
+    label: 'Direto',
+    example: 'Qual dia você prefere para a consulta?',
+  },
+  {
+    id: 'warm',
+    label: 'Acolhedor',
+    example: 'Entendo sua preocupação. Vamos encontrar um horário para você?',
+  },
+  {
+    id: 'formal',
+    label: 'Formal',
+    example: 'Bom dia. Como podemos ajudar com seu atendimento?',
+  },
+] as const
+const knowledge: {
+  key: keyof Omit<AgentSettings, 'tone' | 'show_prices'>
+  label: string
+  placeholder: string
+}[] = [
+  {
+    key: 'address',
+    label: 'Endereço e como chegar',
+    placeholder: 'Rua, número, bairro e ponto de referência',
+  },
+  {
+    key: 'insurance',
+    label: 'Convênios aceitos',
+    placeholder: 'Liste os convênios ou informe que atende somente particular',
+  },
+  {
+    key: 'payment_methods',
+    label: 'Formas de pagamento',
+    placeholder: 'Ex.: Pix, cartão e condições de parcelamento',
+  },
+  {
+    key: 'cancellation_policy',
+    label: 'Cancelamentos e remarcações',
+    placeholder: 'Ex.: pedir aviso com 24 horas de antecedência',
+  },
+  {
+    key: 'faq',
+    label: 'Perguntas frequentes',
+    placeholder: 'Escreva uma pergunta e sua resposta por linha',
+  },
 ]
-
-const QUICK_TEST_MESSAGES = [
-    'Oi, quero agendar uma consulta',
-    'Quais horarios disponiveis?',
-    'Quanto custa uma limpeza?',
-    'Preciso cancelar minha consulta',
-    'Voces atendem no sabado?',
-]
-
-const TEMPERATURE_LABELS: Record<string, { label: string; description: string; color: string }> = {
-    '0': { label: 'Muito preciso', description: 'Respostas sempre iguais e previsiveis', color: 'text-blue-500' },
-    '0.1': { label: 'Preciso', description: 'Minima variacao entre respostas', color: 'text-blue-500' },
-    '0.2': { label: 'Conservador', description: 'Respostas consistentes com leve variacao', color: 'text-blue-400' },
-    '0.3': { label: 'Equilibrado-baixo', description: 'Bom para FAQs e respostas padrao', color: 'text-cyan-500' },
-    '0.4': { label: 'Moderado', description: 'Respostas naturais mas consistentes', color: 'text-teal-500' },
-    '0.5': { label: 'Balanceado', description: 'Equilibrio entre precisao e naturalidade', color: 'text-emerald-500' },
-    '0.6': { label: 'Natural', description: 'Conversas mais fluidas e humanas', color: 'text-green-500' },
-    '0.7': { label: 'Recomendado', description: 'Melhor para atendimento ao cliente', color: 'text-primary' },
-    '0.8': { label: 'Criativo', description: 'Respostas mais variadas e expressivas', color: 'text-orange-500' },
-    '0.9': { label: 'Muito criativo', description: 'Alta variacao, pode ser imprevisivel', color: 'text-orange-600' },
-    '1': { label: 'Maximo', description: 'Maximo de criatividade, menos previsivel', color: 'text-red-500' },
+const errorMessage = (error: unknown, fallback: string): string => {
+  const message = (error as { response?: { data?: { error?: string } } })
+    ?.response?.data?.error
+  return typeof message === 'string' ? message : fallback
 }
-
-const DEFAULT_TEMPERATURE = 0.7
+function Field({
+  label,
+  help,
+  children,
+}: {
+  label: string
+  help?: string
+  children: React.ReactNode
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="font-medium text-sm">{label}</span>
+      {children}
+      {help && (
+        <span className="block text-sm text-muted-foreground">{help}</span>
+      )}
+    </label>
+  )
+}
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description?: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="rounded-xl border bg-card p-4 sm:p-6 space-y-5">
+      <div>
+        <h2 className="font-semibold text-lg">{title}</h2>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        )}
+      </div>
+      {children}
+    </section>
+  )
+}
 
 export default function AgentsPage() {
-    const { clinic } = useAuth()
-    const { toast } = useToast()
-    const [saving, setSaving] = useState(false)
-    const [applyingTemplate, setApplyingTemplate] = useState<number | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState('general')
-    const [hasChanges, setHasChanges] = useState(false)
-    const [savedConfig, setSavedConfig] = useState<string>('')
-    // Whatever's actually live on WhatsApp right now has no custom prompt or
-    // knowledge saved - the agent is running entirely on smart defaults.
-    // Tracks the persisted state, not the draft, so it doesn't flicker while typing.
-    const [usingDefaults, setUsingDefaults] = useState(true)
-    const [previewTemplate, setPreviewTemplate] = useState<number | null>(null)
-    const [copiedVar, setCopiedVar] = useState<string | null>(null)
-    const [showAdvanced, setShowAdvanced] = useState(false)
+  const { clinic, refreshClinic } = useAuth()
+  const [config, setConfig] = useState<AgentConfig | null>(null)
+  const [draft, setDraft] = useState<AgentDraft | null>(null)
+  const [step, setStep] = useState<Step>('connect')
+  const [connected, setConnected] = useState<boolean | null>(null)
+  const [connectionError, setConnectionError] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [loadError, setLoadError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [message, setMessage] = useState('')
+  const [sessionId, setSessionId] = useState('')
+  const [testedDraft, setTestedDraft] = useState('')
+  const [approved, setApproved] = useState(false)
+  const [previousContext, setPreviousContext] = useState<string | null>(null)
+  const chatEnd = useRef<HTMLDivElement>(null)
+  const fingerprint = JSON.stringify(draft)
+  const dirty =
+    !!config && !!draft && fingerprint !== JSON.stringify(draftOf(config))
+  const tested = testedDraft === fingerprint
 
-    const [agentConfig, setAgentConfig] = useState<AgentDraft>({
-        name: 'Assistente SDental',
-        temperature: DEFAULT_TEMPERATURE,
-        systemPrompt: '',
-        context: ''
-    })
-
-    // Test chat state
-    const [testMessages, setTestMessages] = useState<TestMessage[]>([])
-    const [testInput, setTestInput] = useState('')
-    const [sendingTest, setSendingTest] = useState(false)
-    const messagesEndRef = useRef<HTMLDivElement>(null)
-
-    // Track unsaved changes
-    useEffect(() => {
-        if (savedConfig) {
-            setHasChanges(JSON.stringify(agentConfig) !== savedConfig)
-        }
-    }, [agentConfig, savedConfig])
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [testMessages])
-
-    // Warn before leaving with unsaved changes
-    useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (hasChanges) {
-                e.preventDefault()
-            }
-        }
-        window.addEventListener('beforeunload', handleBeforeUnload)
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [hasChanges])
-
-    // Example text only - never written into agentConfig automatically. An
-    // empty prompt is a real, valid state (the backend already has a good
-    // default), so we don't fabricate content the clinic never asked for.
-    const getExampleSystemPrompt = useCallback(() => {
-        return `Você é uma assistente virtual da clínica odontológica ${clinic?.name || 'SDental'}.
-Seu objetivo é agendar consultas, tirar dúvidas sobre tratamentos e fornecer informações sobre a clínica.
-Seja sempre cordial, profissional e empática.`
-    }, [clinic?.name])
-
-    const getContextScaffold = useCallback(() => {
-        // Horarios de funcionamento e servicos ja sao montados dinamicamente
-        // a partir do banco de dados a cada mensagem (ver _format_business_hours
-        // e _format_services no backend) - nao devem ser duplicados aqui como
-        // texto fixo, ou esse texto fica desatualizado assim que o gestor
-        // mudar os horarios em Configuracoes.
-        return `Telefone: ${clinic?.phone || 'Nao informado'}
-
-Adicione aqui outras informacoes que o agente deve saber e que nao vem automaticamente do sistema: endereco, ponto de referencia, estacionamento, formas de pagamento aceitas, convenios/planos atendidos, politica de cancelamento, etc.
-
-Horarios de funcionamento e servicos oferecidos ja sao enviados automaticamente e atualizados em tempo real a partir de Configuracoes - nao e necessario repeti-los aqui.`
-    }, [clinic])
-
-    const fetchConfig = useCallback(async () => {
-        try {
-            const response = await agentsApi.getConfig()
-            const config = response.data
-            const loaded: AgentDraft = {
-                name: config.name || 'Assistente SDental',
-                temperature: config.temperature ?? DEFAULT_TEMPERATURE,
-                // Empty stays empty: it means "no customization saved yet",
-                // not "let's pre-fill the box with generated text".
-                systemPrompt: config.system_prompt || '',
-                context: config.context || ''
-            }
-            setAgentConfig(loaded)
-            setSavedConfig(JSON.stringify(loaded))
-            setUsingDefaults(!loaded.systemPrompt.trim() && !loaded.context.trim())
-        } catch (error) {
-            console.error('Error fetching agent config:', error)
-            toast({
-                title: 'Erro ao carregar configuração',
-                description: 'Não foi possível carregar as configurações do agente.',
-                variant: 'error',
-            })
-        } finally {
-            setLoading(false)
-        }
-    }, [toast])
-
-    useEffect(() => {
-        fetchConfig()
-    }, [fetchConfig])
-
-    // Shared by the manual "Salvar" button and by one-click template
-    // application - both just persist a draft, they only differ in which
-    // fields change and which UI shows a spinner while it happens.
-    const persistConfig = useCallback(async (patch: Partial<AgentDraft> = {}) => {
-        const next: AgentDraft = { ...agentConfig, ...patch }
-        await agentsApi.updateConfig({
-            name: next.name,
-            system_prompt: next.systemPrompt,
-            temperature: next.temperature,
-            context: next.context
-        })
-        setAgentConfig(next)
-        setSavedConfig(JSON.stringify(next))
-        setHasChanges(false)
-        setUsingDefaults(!next.systemPrompt.trim() && !next.context.trim())
-        return next
-    }, [agentConfig])
-
-    const handleSave = async () => {
-        setSaving(true)
-        try {
-            await persistConfig()
-            toast({
-                title: 'Configuracoes salvas',
-                description: 'O agente foi atualizado com sucesso.',
-                variant: 'success',
-            })
-        } catch (error) {
-            console.error('Error saving config:', error)
-            toast({
-                title: 'Erro ao salvar',
-                description: 'Nao foi possivel salvar as configuracoes.',
-                variant: 'error',
-            })
-        } finally {
-            setSaving(false)
-        }
+  const loadConfig = useCallback(async () => {
+    setLoadError('')
+    try {
+      const { data } = await agentsApi.getConfig()
+      setConfig(data)
+      setDraft(draftOf(data))
+    } catch {
+      setLoadError('Não conseguimos carregar o atendimento. Tente novamente.')
     }
-
-    const handleSendTestMessage = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!testInput.trim() || sendingTest) return
-
-        const userMessage = testInput.trim()
-        setTestInput('')
-        setTestMessages(prev => [...prev, { role: 'user', content: userMessage }])
-        setSendingTest(true)
-
-        try {
-            // Always the live draft, saved or not - what you see in the
-            // fields above is exactly what gets tested.
-            const response = await agentsApi.testMessage(userMessage, {
-                systemPrompt: agentConfig.systemPrompt,
-                context: agentConfig.context,
-                temperature: agentConfig.temperature,
-            })
-            setTestMessages(prev => [...prev, { role: 'assistant', content: response.data.response }])
-        } catch (error) {
-            console.error('Error testing message:', error)
-            setTestMessages(prev => [...prev, {
-                role: 'assistant',
-                content: 'Desculpe, nao foi possivel processar sua mensagem. Verifique se a API esta configurada corretamente.'
-            }])
-        } finally {
-            setSendingTest(false)
-        }
+  }, [])
+  const checkConnection = useCallback(async () => {
+    try {
+      const { data } = await clinicsApi.getEvolutionStatus()
+      setConnected(!!data.connected)
+      setPhone(data.phone_number || '')
+      setConnectionError(false)
+    } catch {
+      setConnected(null)
+      setConnectionError(true)
     }
-
-    const handleQuickMessage = (message: string) => {
-        setTestInput(message)
+  }, [])
+  useEffect(() => {
+    loadConfig()
+    checkConnection()
+    setSessionId(crypto.randomUUID())
+    if (new URLSearchParams(window.location.search).get('step') === 'prepare')
+      setStep('prepare')
+    const timer = setInterval(checkConnection, 15000)
+    return () => clearInterval(timer)
+  }, [loadConfig, checkConnection])
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
     }
-
-    const clearTestChat = () => {
-        setTestMessages([])
+    const warnNavigation = (event: MouseEvent) => {
+      const anchor = (event.target as HTMLElement).closest('a')
+      if (!anchor || anchor.target === '_blank') return
+      const url = new URL(anchor.href, window.location.href)
+      if (
+        url.pathname === window.location.pathname &&
+        url.search === window.location.search
+      )
+        return
+      if (
+        !window.confirm(
+          'Há alterações em rascunho. Sair desta página vai descartá-las. Deseja continuar?',
+        )
+      ) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
     }
-
-    const handleApplyTemplate = async (index: number) => {
-        const template = PROMPT_TEMPLATES[index]
-        setApplyingTemplate(index)
-        try {
-            await persistConfig({ systemPrompt: template.content })
-            setPreviewTemplate(null)
-            toast({
-                title: `Modelo "${template.name}" aplicado`,
-                description: 'Já está ativo e no ar - você pode ajustar o texto abaixo quando quiser.',
-                variant: 'success',
-            })
-        } catch (error) {
-            console.error('Error applying template:', error)
-            toast({
-                title: 'Erro ao aplicar modelo',
-                description: 'Nao foi possivel salvar o modelo escolhido.',
-                variant: 'error',
-            })
-        } finally {
-            setApplyingTemplate(null)
-        }
+    window.addEventListener('beforeunload', warn)
+    document.addEventListener('click', warnNavigation, true)
+    return () => {
+      window.removeEventListener('beforeunload', warn)
+      document.removeEventListener('click', warnNavigation, true)
     }
+  }, [dirty])
+  useEffect(() => {
+    setApproved(false)
+    setTestedDraft('')
+    setMessages([])
+    setSessionId(crypto.randomUUID())
+  }, [fingerprint])
+  useEffect(() => {
+    chatEnd.current?.scrollIntoView({ block: 'nearest' })
+  }, [messages, sending])
 
-    const handleInsertVariable = (variable: string) => {
-        const textarea = document.getElementById('prompt') as HTMLTextAreaElement
-        if (textarea) {
-            const start = textarea.selectionStart
-            const end = textarea.selectionEnd
-            const text = agentConfig.systemPrompt
-            const newText = text.substring(0, start) + variable + text.substring(end)
-            setAgentConfig(prev => ({ ...prev, systemPrompt: newText }))
-            setTimeout(() => {
-                textarea.focus()
-                textarea.setSelectionRange(start + variable.length, start + variable.length)
-            }, 0)
-        } else {
-            setAgentConfig(prev => ({
-                ...prev,
-                systemPrompt: prev.systemPrompt + variable
-            }))
-        }
-
-        setCopiedVar(variable)
-        setTimeout(() => setCopiedVar(null), 1500)
+  const edit = (patch: Partial<AgentDraft>) => {
+    setDraft((current) => (current ? { ...current, ...patch } : current))
+    setNotice('')
+    setError('')
+  }
+  const editSetting = <K extends keyof AgentSettings>(
+    key: K,
+    value: AgentSettings[K],
+  ) => {
+    if (draft) edit({ settings: { ...draft.settings, [key]: value } })
+  }
+  const newConversation = () => {
+    setMessages([])
+    setSessionId(crypto.randomUUID())
+    setTestedDraft('')
+    setApproved(false)
+    setError('')
+  }
+  const send = async (text: string) => {
+    if (!text.trim() || !draft || sending || saving) return
+    setSending(true)
+    setError('')
+    setMessage('')
+    const currentFingerprint = JSON.stringify(draft)
+    setMessages((current) => [...current, { role: 'user', content: text }])
+    try {
+      const { data } = await agentsApi.testMessage(text, draft, sessionId)
+      setMessages((current) => [
+        ...current,
+        { role: 'assistant', content: data.response },
+      ])
+      setTestedDraft(currentFingerprint)
+    } catch (failure) {
+      setError(
+        errorMessage(
+          failure,
+          'O teste não respondeu. Tente enviar a mensagem novamente.',
+        ),
+      )
+    } finally {
+      setSending(false)
     }
-
-    const handleRefreshContext = () => {
-        const newContext = getContextScaffold()
-        setAgentConfig(prev => ({ ...prev, context: newContext }))
-        toast({
-            title: 'Modelo de texto inserido',
-            description: 'Edite e salve quando estiver pronto.',
-        })
+  }
+  const publish = async (activate: boolean) => {
+    if (!draft || !tested || !approved || saving || sending) return
+    setSaving(true)
+    setError('')
+    setNotice('')
+    try {
+      const { data } = await agentsApi.updateConfig({
+        ...draft,
+        ...(activate ? { agent_enabled: true } : {}),
+      })
+      setConfig(data.config)
+      setDraft(draftOf(data.config))
+      setNotice(
+        activate
+          ? 'Atendimento ativado com as configurações testadas.'
+          : 'Configuração publicada. O estado do atendimento foi mantido.',
+      )
+      await refreshClinic()
+    } catch (failure) {
+      setError(
+        errorMessage(
+          failure,
+          'Não foi possível publicar. Seu rascunho continua aqui.',
+        ),
+      )
+    } finally {
+      setSaving(false)
+      checkConnection()
     }
-
-    const tempKey = agentConfig.temperature.toFixed(1)
-    const tempInfo = TEMPERATURE_LABELS[tempKey] || TEMPERATURE_LABELS['0.7']
-    const promptLength = agentConfig.systemPrompt.length
-    const contextLength = agentConfig.context.length
-
-    if (loading) {
-        return <PageLoader />
+  }
+  const pause = async () => {
+    setSaving(true)
+    setError('')
+    setNotice('')
+    try {
+      const { data } = await agentsApi.updateConfig({ agent_enabled: false })
+      setConfig(data.config) // Do not publish or discard the current draft.
+      setNotice(
+        'Respostas automáticas pausadas. As opções de envio iniciado pela clínica continuam separadas.',
+      )
+      await refreshClinic()
+    } catch (failure) {
+      setError(
+        errorMessage(failure, 'Não foi possível pausar. Tente novamente.'),
+      )
+    } finally {
+      setSaving(false)
     }
-
+  }
+  if (!config || !draft)
     return (
-        <div className="space-y-6">
-            {/* Header with status and save */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <PageHeader title="Agentes IA" description="Configure o comportamento da sua assistente virtual" />
-                <div className="flex items-center gap-3 shrink-0">
-                    {/* Agent status */}
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border/60">
-                        <div className="w-2 h-2 rounded-full bg-success" />
-                        <span className="text-xs font-medium text-muted-foreground">Agente ativo</span>
-                    </div>
-
-                    {/* Save button */}
-                    <Button
-                        variant={hasChanges ? 'gradient' : 'outline'}
-                        onClick={handleSave}
-                        disabled={saving || !hasChanges}
-                        className="gap-2"
-                    >
-                        {saving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Save className="h-4 w-4" />
-                        )}
-                        {saving ? 'Salvando...' : hasChanges ? 'Salvar alteracoes' : 'Salvo'}
-                    </Button>
-                </div>
-            </div>
-
-            {/* Already-working reassurance: shown whenever nothing persisted
-                differs from the built-in defaults, so the owner never feels
-                pressured to fill this page out before the bot is "ready". */}
-            {usingDefaults && (
-                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-success/[0.06] border border-success/20">
-                    <CheckCircle className="h-5 w-5 text-success shrink-0 mt-0.5" />
-                    <div className="text-sm">
-                        <p className="font-medium text-foreground">Seu assistente já está no ar</p>
-                        <p className="text-muted-foreground mt-0.5">
-                            Ele está respondendo pacientes com uma configuração padrão testada. Tudo abaixo é opcional -
-                            personalize só se quiser um tom diferente ou adicionar informações extras.
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Unsaved changes banner */}
-            {hasChanges && (
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning/[0.08] border border-warning/20 text-warning text-sm font-medium">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    Voce tem alteracoes nao salvas
-                </div>
-            )}
-
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid w-full max-w-md grid-cols-3">
-                    <TabsTrigger value="general" className="gap-2">
-                        <Bot className="h-4 w-4" />
-                        Personalidade
-                    </TabsTrigger>
-                    <TabsTrigger value="knowledge" className="gap-2">
-                        <Brain className="h-4 w-4" />
-                        Conhecimento
-                    </TabsTrigger>
-                    <TabsTrigger value="test" className="gap-2">
-                        <MessageSquare className="h-4 w-4" />
-                        Testar
-                    </TabsTrigger>
-                </TabsList>
-
-                {/* ======================== TAB: PERSONALIDADE ======================== */}
-                <TabsContent value="general" className="space-y-6">
-                    {/* Agent Identity */}
-                    <Card className="border-border/60">
-                        <CardHeader className="pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-soft">
-                                    <Bot className="h-5 w-5 text-white" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-base">Identidade do Agente</CardTitle>
-                                    <CardDescription>Como o agente se apresenta aos pacientes</CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Nome do Agente</Label>
-                                <div className="relative">
-                                    <Bot className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-                                    <Input
-                                        id="name"
-                                        value={agentConfig.name}
-                                        onChange={(e) => setAgentConfig(prev => ({ ...prev, name: e.target.value }))}
-                                        className="pl-11"
-                                        placeholder="Ex: Assistente da Clinica"
-                                    />
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Este nome aparece no inicio das conversas com pacientes.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Prompt Templates */}
-                    <Card className="border-border/60">
-                        <CardHeader className="pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-card bg-primary/10 flex items-center justify-center">
-                                    <Sparkles className="h-5 w-5 text-primary" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-base">Modelo de Personalidade</CardTitle>
-                                    <CardDescription>Um clique aplica e já salva - ajuste o texto depois, se quiser</CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-5">
-                            {/* Template Cards */}
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                {PROMPT_TEMPLATES.map((template, i) => {
-                                    const Icon = template.icon
-                                    const isPreviewing = previewTemplate === i
-                                    const isApplying = applyingTemplate === i
-                                    const isActiveTemplate = agentConfig.systemPrompt === template.content
-                                    return (
-                                        <div
-                                            key={template.name}
-                                            className={cn(
-                                                "text-left p-4 rounded-xl border transition-all duration-200",
-                                                isActiveTemplate
-                                                    ? "border-success/30 bg-success/[0.04]"
-                                                    : "border-border/50 hover:border-border hover:bg-muted/30"
-                                            )}
-                                        >
-                                            <div className="flex items-start gap-3">
-                                                <div className={cn(
-                                                    "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                                                    isActiveTemplate ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                                                )}>
-                                                    <Icon className="h-4 w-4" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <p className="font-medium text-sm text-foreground">{template.name}</p>
-                                                        {isActiveTemplate && <Check className="h-3.5 w-3.5 text-success shrink-0" />}
-                                                    </div>
-                                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{template.description}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-2 mt-3">
-                                                <Button
-                                                    size="sm"
-                                                    variant={isActiveTemplate ? 'outline' : 'default'}
-                                                    onClick={() => handleApplyTemplate(i)}
-                                                    disabled={isApplying || isActiveTemplate}
-                                                    className="gap-1.5 h-7 text-xs flex-1"
-                                                >
-                                                    {isApplying ? (
-                                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                                    ) : isActiveTemplate ? (
-                                                        <Check className="h-3 w-3" />
-                                                    ) : null}
-                                                    {isApplying ? 'Aplicando...' : isActiveTemplate ? 'Em uso' : 'Usar este modelo'}
-                                                </Button>
-                                                <button
-                                                    onClick={() => setPreviewTemplate(isPreviewing ? null : i)}
-                                                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 shrink-0"
-                                                >
-                                                    {isPreviewing ? 'Ocultar' : 'Ver texto'}
-                                                </button>
-                                            </div>
-
-                                            {isPreviewing && (
-                                                <pre className="mt-3 text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 whitespace-pre-wrap font-mono leading-relaxed max-h-40 overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                                                    {template.content}
-                                                </pre>
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </div>
-
-                            {/* Prompt Editor */}
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label htmlFor="prompt">Prompt do Sistema</Label>
-                                        {!agentConfig.systemPrompt && (
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                Vazio = usando o modelo padrão automaticamente. Escreva algo ou escolha um modelo acima para personalizar.
-                                            </p>
-                                        )}
-                                    </div>
-                                    <span className={cn(
-                                        "text-xs tabular-nums shrink-0",
-                                        promptLength > 2000 ? "text-warning" : "text-muted-foreground"
-                                    )}>
-                                        {promptLength.toLocaleString('pt-BR')} caracteres
-                                    </span>
-                                </div>
-
-                                <Textarea
-                                    id="prompt"
-                                    rows={10}
-                                    value={agentConfig.systemPrompt}
-                                    onChange={(e) => setAgentConfig(prev => ({ ...prev, systemPrompt: e.target.value }))}
-                                    className="font-mono text-sm leading-relaxed"
-                                    placeholder={getExampleSystemPrompt()}
-                                />
-
-                                {/* Variables - Outside textarea */}
-                                <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 rounded-xl border border-border/40">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div className="flex items-center gap-1 text-xs text-muted-foreground cursor-help">
-                                                <Info className="h-3.5 w-3.5" />
-                                                <span className="font-medium">Variaveis:</span>
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-xs">
-                                            <p>Clique para inserir no prompt. Estas variaveis sao substituidas automaticamente durante a conversa.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                    {PROMPT_VARIABLES.map((v) => (
-                                        <Tooltip key={v.code}>
-                                            <TooltipTrigger asChild>
-                                                <button
-                                                    onClick={() => handleInsertVariable(v.code)}
-                                                    className={cn(
-                                                        "text-[11px] font-mono px-2.5 py-1 rounded-lg transition-all duration-150",
-                                                        copiedVar === v.code
-                                                            ? "bg-success/10 text-success"
-                                                            : "bg-primary/[0.08] hover:bg-primary/15 text-primary"
-                                                    )}
-                                                >
-                                                    {copiedVar === v.code ? (
-                                                        <span className="flex items-center gap-1">
-                                                            <Check className="h-3 w-3" />
-                                                            Inserido
-                                                        </span>
-                                                    ) : (
-                                                        v.code
-                                                    )}
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p className="font-medium">{v.label}</p>
-                                                <p className="text-muted-foreground">Ex: {v.example}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Advanced settings - collapsed by default. Temperature is
-                        an LLM tuning parameter with no obvious business
-                        meaning; the recommended default is right for
-                        virtually every clinic, so it's hidden instead of
-                        competing for attention with the decisions that
-                        actually matter. */}
-                    <div className="rounded-xl border border-border/50 overflow-hidden">
-                        <button
-                            onClick={() => setShowAdvanced(v => !v)}
-                            className="w-full flex items-center justify-between gap-3 p-4 hover:bg-muted/30 transition-colors"
-                        >
-                            <div className="flex items-center gap-2.5">
-                                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium text-foreground">Configuracoes avancadas</span>
-                                {agentConfig.temperature !== DEFAULT_TEMPERATURE && (
-                                    <Badge variant="outline" className="text-[10px]">Personalizado</Badge>
-                                )}
-                            </div>
-                            <ChevronDown className={cn(
-                                "h-4 w-4 text-muted-foreground transition-transform",
-                                showAdvanced && "rotate-180"
-                            )} />
-                        </button>
-
-                        {showAdvanced && (
-                            <div className="p-4 pt-0 space-y-3">
-                                <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Thermometer className="h-4 w-4 text-muted-foreground" />
-                                            <Label className="mb-0">Criatividade</Label>
-                                        </div>
-                                        <Badge variant={agentConfig.temperature === DEFAULT_TEMPERATURE ? 'default' : 'outline'} className="text-xs">
-                                            {tempInfo.label}
-                                        </Badge>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="relative pt-1">
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="1"
-                                                step="0.1"
-                                                value={agentConfig.temperature}
-                                                onChange={(e) => setAgentConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
-                                                className="w-full h-2 rounded-full appearance-none cursor-pointer bg-border"
-                                                style={{
-                                                    background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${agentConfig.temperature * 100}%, hsl(var(--border)) ${agentConfig.temperature * 100}%, hsl(var(--border)) 100%)`
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="flex justify-between text-[11px] text-muted-foreground px-0.5">
-                                            <span>Preciso</span>
-                                            <span>Recomendado</span>
-                                            <span>Criativo</span>
-                                        </div>
-                                    </div>
-
-                                    <p className={cn("text-xs", tempInfo.color)}>
-                                        {tempInfo.description}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </TabsContent>
-
-                {/* ======================== TAB: CONHECIMENTO ======================== */}
-                <TabsContent value="knowledge" className="space-y-6">
-                    <Card className="border-border/60">
-                        <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-card bg-accent/10 flex items-center justify-center">
-                                        <Brain className="h-5 w-5 text-accent" />
-                                    </div>
-                                    <div>
-                                        <CardTitle className="text-base">Base de Conhecimento</CardTitle>
-                                        <CardDescription>Informacoes extras que o agente usa para responder</CardDescription>
-                                    </div>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleRefreshContext}
-                                    className="gap-2"
-                                >
-                                    <RotateCcw className="h-3.5 w-3.5" />
-                                    Inserir modelo
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-5">
-                            {/* Info banner */}
-                            <div className="flex gap-3 p-4 rounded-xl bg-primary/[0.04] border border-primary/10">
-                                <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                                <div className="text-xs text-muted-foreground leading-relaxed">
-                                    <p className="font-medium text-foreground mb-1">Como funciona?</p>
-                                    Horarios de funcionamento e servicos ja sao enviados automaticamente ao agente, sempre atualizados a partir de Configuracoes - nao precisam ser repetidos aqui. Use este campo para outras informacoes: endereco, estacionamento, formas de pagamento, politica de cancelamento, etc.
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label htmlFor="context">Contexto da Clinica</Label>
-                                        {!agentConfig.context && (
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                Vazio por enquanto - nenhuma informação extra é obrigatória para o agente funcionar.
-                                            </p>
-                                        )}
-                                    </div>
-                                    <span className={cn(
-                                        "text-xs tabular-nums shrink-0",
-                                        contextLength > 3000 ? "text-warning" : "text-muted-foreground"
-                                    )}>
-                                        {contextLength.toLocaleString('pt-BR')} caracteres
-                                    </span>
-                                </div>
-                                <Textarea
-                                    id="context"
-                                    rows={14}
-                                    value={agentConfig.context}
-                                    onChange={(e) => setAgentConfig(prev => ({ ...prev, context: e.target.value }))}
-                                    className="font-mono text-sm leading-relaxed"
-                                    placeholder={getContextScaffold()}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Inclua tudo que o agente precisa saber: endereco, estacionamento, formas de pagamento, politica de cancelamento, etc.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* ======================== TAB: TESTE ======================== */}
-                <TabsContent value="test">
-                    <Card className="border-border/60">
-                        <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-card bg-success/10 flex items-center justify-center">
-                                        <MessageSquare className="h-5 w-5 text-success" />
-                                    </div>
-                                    <div>
-                                        <CardTitle className="text-base">Testar Agente</CardTitle>
-                                        <CardDescription>Simule uma conversa - sempre reflete o que está na tela, mesmo sem salvar</CardDescription>
-                                    </div>
-                                </div>
-                                {testMessages.length > 0 && (
-                                    <Button variant="outline" size="sm" onClick={clearTestChat} className="gap-1.5">
-                                        <RotateCcw className="h-3.5 w-3.5" />
-                                        Limpar
-                                    </Button>
-                                )}
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="border border-border/60 rounded-2xl flex flex-col bg-muted/20 overflow-hidden" style={{ height: 'min(500px, 60vh)' }}>
-                                {/* Messages */}
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                                    {testMessages.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                                            <div className="h-14 w-14 rounded-card bg-muted/50 border border-border/40 flex items-center justify-center mb-4">
-                                                <Bot className="h-7 w-7 text-muted-foreground/40" />
-                                            </div>
-                                            <p className="font-medium text-foreground mb-1">Teste seu agente</p>
-                                            <p className="text-sm text-muted-foreground mb-5 max-w-[240px]">
-                                                Envie uma mensagem ou use uma sugestao abaixo
-                                            </p>
-
-                                            {/* Quick test messages */}
-                                            <div className="flex flex-wrap gap-2 justify-center max-w-sm">
-                                                {QUICK_TEST_MESSAGES.map((msg) => (
-                                                    <button
-                                                        key={msg}
-                                                        onClick={() => handleQuickMessage(msg)}
-                                                        className="text-xs px-3 py-1.5 rounded-full bg-primary/[0.06] hover:bg-primary/[0.12] text-primary border border-primary/10 transition-colors"
-                                                    >
-                                                        {msg}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        testMessages.map((msg, index) => (
-                                            <div
-                                                key={index}
-                                                className={cn(
-                                                    "flex items-start gap-3",
-                                                    msg.role === 'user' && 'flex-row-reverse'
-                                                )}
-                                            >
-                                                <div
-                                                    className={cn(
-                                                        "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
-                                                        msg.role === 'user'
-                                                            ? 'bg-primary text-white'
-                                                            : 'bg-muted border border-border/40'
-                                                    )}
-                                                >
-                                                    {msg.role === 'user' ? (
-                                                        <User className="h-3.5 w-3.5" />
-                                                    ) : (
-                                                        <Bot className="h-3.5 w-3.5" />
-                                                    )}
-                                                </div>
-                                                <div
-                                                    className={cn(
-                                                        "max-w-[75%] rounded-2xl px-4 py-2.5",
-                                                        msg.role === 'user'
-                                                            ? 'bg-primary text-white rounded-tr-md'
-                                                            : 'bg-background border border-border/60 rounded-tl-md'
-                                                    )}
-                                                >
-                                                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                    {sendingTest && (
-                                        <div className="flex items-start gap-3">
-                                            <div className="h-8 w-8 rounded-full bg-muted border border-border/40 flex items-center justify-center">
-                                                <Bot className="h-3.5 w-3.5" />
-                                            </div>
-                                            <div className="bg-background border border-border/60 rounded-2xl rounded-tl-md px-4 py-2.5">
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-pulse" />
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-pulse" style={{ animationDelay: '150ms' }} />
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-pulse" style={{ animationDelay: '300ms' }} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div ref={messagesEndRef} />
-                                </div>
-
-                                {/* Quick replies when chat is active */}
-                                {testMessages.length > 0 && !sendingTest && (
-                                    <div className="px-4 py-2 border-t border-border/30 flex gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                                        {['Obrigado!', 'Pode ser amanha?', 'Qual o valor?', 'Aceita convenio?'].map((msg) => (
-                                            <button
-                                                key={msg}
-                                                onClick={() => handleQuickMessage(msg)}
-                                                className="text-[11px] px-2.5 py-1 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/40 transition-colors whitespace-nowrap shrink-0"
-                                            >
-                                                {msg}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Input */}
-                                <form onSubmit={handleSendTestMessage} className="border-t border-border/60 p-3 flex gap-2 bg-background">
-                                    <Input
-                                        value={testInput}
-                                        onChange={(e) => setTestInput(e.target.value)}
-                                        placeholder="Digite sua mensagem..."
-                                        disabled={sendingTest}
-                                        className="rounded-xl h-10"
-                                    />
-                                    <Button
-                                        type="submit"
-                                        variant="gradient"
-                                        disabled={sendingTest || !testInput.trim()}
-                                        size="icon"
-                                        className="rounded-xl h-10 w-10 shrink-0"
-                                    >
-                                        <Send className="h-4 w-4" />
-                                    </Button>
-                                </form>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
-        </div>
+      <div className="space-y-4">
+        <PageHeader
+          title="Atendimento no WhatsApp"
+          description="Conecte, prepare e teste o assistente da sua clínica."
+        />
+        {loadError ? (
+          <div role="alert">
+            <p>{loadError}</p>
+            <Button className="mt-3 min-h-11" onClick={loadConfig}>
+              Tentar novamente
+            </Button>
+          </div>
+        ) : (
+          <p role="status">Carregando atendimento…</p>
+        )}
+      </div>
     )
+  const status =
+    connected === null
+      ? 'Conexão não verificada'
+      : !connected
+        ? 'WhatsApp desconectado'
+        : !config.ai_configured
+          ? 'Assistente indisponível'
+          : config.agent_enabled
+            ? 'Respondendo pacientes'
+            : 'Respostas pausadas'
+  const live = connected && config.ai_configured && config.agent_enabled
+  const canActivate = connected && config.ai_configured && tested && approved
+  return (
+    <div className="space-y-6 max-w-5xl mx-auto pb-8">
+      <PageHeader
+        title="Atendimento no WhatsApp"
+        description="Conecte seu número, prepare as respostas e confira o resultado antes de ativar."
+      />
+      <section
+        className="rounded-xl border bg-card p-4 flex flex-wrap justify-between items-center gap-4"
+        aria-label="Estado atual do atendimento"
+      >
+        <div>
+          <p
+            className={cn(
+              'font-semibold',
+              live ? 'text-success' : 'text-foreground',
+            )}
+            role="status"
+          >
+            {status}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {phone
+              ? `Número: +${phone.replace(/^\+/, '')}`
+              : 'O estado abaixo corresponde ao atendimento publicado.'}
+            {config.agent_enabled &&
+              connected === false &&
+              ' As respostas estão habilitadas, mas dependem da reconexão.'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className="min-h-11"
+            onClick={checkConnection}
+          >
+            Verificar conexão
+          </Button>
+          {config.agent_enabled && (
+            <Button
+              variant="destructive"
+              className="min-h-11"
+              onClick={pause}
+              disabled={saving || sending}
+            >
+              Pausar respostas
+            </Button>
+          )}
+        </div>
+      </section>
+      {connectionError && (
+        <p className="text-sm" role="alert">
+          Não conseguimos verificar o WhatsApp. Use “Verificar conexão” para
+          tentar novamente.
+        </p>
+      )}
+      <nav
+        aria-label="Etapas de configuração"
+        className="grid grid-cols-3 gap-2"
+      >
+        {steps.map((item, index) => (
+          <button
+            key={item.id}
+            aria-current={step === item.id ? 'step' : undefined}
+            onClick={() => {
+              setStep(item.id)
+              setError('')
+            }}
+            className={cn(
+              'text-left rounded-xl border p-3 sm:p-4 min-h-16 focus-visible:ring-2 focus-visible:ring-primary',
+              step === item.id ? 'border-primary bg-primary/10' : 'bg-card',
+            )}
+          >
+            <span className="block text-sm font-semibold">
+              {index + 1}. {item.label}
+            </span>
+            <span className="hidden sm:block text-sm text-muted-foreground mt-1">
+              {item.detail}
+            </span>
+          </button>
+        ))}
+      </nav>
+      <div className="rounded-lg bg-muted p-3 flex flex-wrap justify-between gap-3 text-sm">
+        <p>
+          {dirty
+            ? 'Você tem alterações em rascunho. Os pacientes ainda recebem a versão publicada.'
+            : 'Configuração publicada carregada. Alterações só entram em uso depois de testar e publicar.'}
+        </p>
+        {dirty && (
+          <button
+            className="underline min-h-11"
+            disabled={saving || sending}
+            onClick={() => {
+              setDraft(draftOf(config))
+              setPreviousContext(null)
+              newConversation()
+              setNotice(
+                'Rascunho descartado. A versão publicada foi restaurada.',
+              )
+            }}
+          >
+            Descartar rascunho
+          </button>
+        )}
+      </div>
+      {notice && (
+        <p role="status" className="rounded-lg bg-success/10 p-3 text-sm">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p
+          role="alert"
+          className="rounded-lg bg-destructive/10 text-destructive p-3 text-sm"
+        >
+          {error}
+        </p>
+      )}
+
+      {step === 'connect' && (
+        <div className="space-y-5">
+          <WhatsappConnectionWizard onStatusChange={checkConnection} />
+          <p className="text-sm text-muted-foreground">
+            Conectar o número não altera a configuração atual das respostas. Se
+            você estiver configurando pela primeira vez, mantenha as respostas
+            pausadas até concluir o teste.
+          </p>
+          <Button className="min-h-11" onClick={() => setStep('prepare')}>
+            Continuar: preparar atendimento
+          </Button>
+        </div>
+      )}
+      {step === 'prepare' && (
+        <div className="space-y-5">
+          <Section
+            title="Como seu assistente conversa"
+            description="Escolha um estilo pronto. Você poderá conferir as respostas no próximo passo."
+          >
+            <Field
+              label="Nome do assistente"
+              help="Esse nome orienta como o assistente se apresenta quando perguntarem."
+            >
+              <Input
+                maxLength={100}
+                value={draft.name}
+                onChange={(event) => edit({ name: event.target.value })}
+                className="min-h-11"
+              />
+            </Field>
+            <fieldset>
+              <legend className="text-sm font-medium mb-3">
+                Estilo de atendimento
+              </legend>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {tones.map((tone) => (
+                  <label
+                    key={tone.id}
+                    className={cn(
+                      'flex gap-3 p-4 rounded-xl border cursor-pointer min-h-11',
+                      draft.settings.tone === tone.id &&
+                        'border-primary bg-primary/5',
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="tone"
+                      value={tone.id}
+                      checked={draft.settings.tone === tone.id}
+                      onChange={() => editSetting('tone', tone.id)}
+                      className="mt-1 accent-primary"
+                    />
+                    <span>
+                      <span className="block font-medium text-sm">
+                        {tone.label}
+                      </span>
+                      <span className="block text-sm text-muted-foreground mt-1">
+                        {tone.example}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <label className="flex gap-3 items-start min-h-11 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 accent-primary"
+                checked={draft.settings.show_prices}
+                onChange={(event) =>
+                  editSetting('show_prices', event.target.checked)
+                }
+              />
+              <span className="text-sm">
+                <strong>Informar preços cadastrados</strong>
+                <span className="block text-muted-foreground">
+                  Se desligado, dúvidas de preço serão encaminhadas à recepção.
+                  Valores ausentes nunca devem ser inventados.
+                </span>
+              </span>
+            </label>
+            <Field
+              label="Quando chamar a recepção"
+              help="O assistente encaminha a conversa para uma pessoa nesses casos."
+            >
+              <Textarea
+                maxLength={5000}
+                rows={3}
+                value={draft.settings.handoff_rules}
+                onChange={(event) =>
+                  editSetting('handoff_rules', event.target.value)
+                }
+              />
+            </Field>
+          </Section>
+          <Section
+            title="O que o assistente sabe sobre a clínica"
+            description="Preencha com informações reais. Se algo ficar em branco, o assistente deverá pedir ajuda à recepção."
+          >
+            <div className="rounded-lg bg-muted p-4 text-sm space-y-2">
+              <p>
+                <strong>Horários e serviços são usados automaticamente.</strong>
+              </p>
+              <p>
+                {clinic?.services?.length || 0} serviços cadastrados. Os
+                horários disponíveis consideram o expediente e a agenda.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link
+                  className="underline inline-flex items-center min-h-11"
+                  href="/settings?section=hours"
+                >
+                  Editar horários
+                </Link>
+                <Link
+                  className="underline inline-flex items-center min-h-11"
+                  href="/settings?section=services"
+                >
+                  Editar serviços e preços
+                </Link>
+              </div>
+            </div>
+            {knowledge.slice(0, 3).map((field) => (
+              <Field key={field.key} label={field.label}>
+                <Textarea
+                  rows={field.key === 'faq' ? 4 : 2}
+                  maxLength={5000}
+                  placeholder={field.placeholder}
+                  value={draft.settings[field.key]}
+                  onChange={(event) =>
+                    editSetting(field.key, event.target.value)
+                  }
+                />
+              </Field>
+            ))}
+            <details className="rounded-lg border p-4">
+              <summary className="cursor-pointer min-h-11 py-3 text-sm font-medium">
+                Regras e perguntas frequentes (opcional)
+              </summary>
+              <div className="space-y-4 pt-3">
+                {knowledge.slice(3).map((field) => (
+                  <Field key={field.key} label={field.label}>
+                    <Textarea
+                      rows={3}
+                      maxLength={5000}
+                      placeholder={field.placeholder}
+                      value={draft.settings[field.key]}
+                      onChange={(event) =>
+                        editSetting(field.key, event.target.value)
+                      }
+                    />
+                  </Field>
+                ))}
+              </div>
+            </details>
+            <Field
+              label="Outras informações"
+              help="Informações já cadastradas foram preservadas aqui. Este campo complementa os campos acima."
+            >
+              <Textarea
+                rows={4}
+                maxLength={20000}
+                value={draft.context}
+                onChange={(event) => edit({ context: event.target.value })}
+              />
+            </Field>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                className="min-h-11"
+                onClick={() => {
+                  setPreviousContext(draft.context)
+                  edit({
+                    context: `${draft.context}${draft.context ? '\n\n' : ''}Orientações adicionais:\n- Acesso e estacionamento: [preencher]\n- Documentos para a primeira consulta: [preencher]`,
+                  })
+                }}
+                disabled={draft.context.length > 19700}
+              >
+                Adicionar roteiro de informações
+              </Button>
+              {previousContext !== null && (
+                <Button
+                  variant="ghost"
+                  className="min-h-11"
+                  onClick={() => {
+                    edit({ context: previousContext })
+                    setPreviousContext(null)
+                  }}
+                >
+                  Desfazer inclusão
+                </Button>
+              )}
+            </div>
+          </Section>
+          <details className="rounded-xl border bg-card p-4">
+            <summary className="cursor-pointer min-h-11 py-3 text-sm font-medium">
+              Mensagens automáticas (opcional) ·{' '}
+              {draft.automation.proactive_outreach_enabled
+                ? 'Envio iniciado pela clínica ligado'
+                : 'Envio iniciado pela clínica desligado'}
+            </summary>
+            <div className="pt-4">
+              <Section
+                title="Mensagens iniciadas pela clínica"
+                description="Responder a um paciente e iniciar uma conversa são opções separadas. Essas alterações também precisam ser publicadas."
+              >
+                <label className="flex items-start gap-3 min-h-11">
+                  <input
+                    type="checkbox"
+                    className="mt-1 accent-primary"
+                    checked={draft.automation.proactive_outreach_enabled}
+                    onChange={(event) =>
+                      edit({
+                        automation: {
+                          ...draft.automation,
+                          proactive_outreach_enabled: event.target.checked,
+                        },
+                      })
+                    }
+                  />
+                  <span className="text-sm">
+                    <strong>Permitir iniciar conversas com pacientes</strong>
+                    <span className="block text-muted-foreground">
+                      Usa horário comercial e limites de envio. Pacientes podem
+                      pedir para parar de receber mensagens.
+                    </span>
+                  </span>
+                </label>
+                <fieldset
+                  disabled={!draft.automation.proactive_outreach_enabled}
+                  className="space-y-3 disabled:opacity-50"
+                >
+                  <legend className="text-sm font-medium mb-3">
+                    Em quais situações?
+                  </legend>
+                  {(
+                    [
+                      [
+                        'noshow_recovery_enabled',
+                        'Convidar quem faltou ou cancelou a remarcar',
+                      ],
+                      [
+                        'waitlist_enabled',
+                        'Oferecer horários livres a pacientes da lista de espera',
+                      ],
+                      [
+                        'recall_enabled',
+                        'Convidar pacientes sem consulta há algum tempo',
+                      ],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <label
+                      key={key}
+                      className="flex gap-3 items-center min-h-11 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={draft.automation[key]}
+                        onChange={(event) =>
+                          edit({
+                            automation: {
+                              ...draft.automation,
+                              [key]: event.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      {label}
+                    </label>
+                  ))}
+                  <Field label="Convidar para retorno após quantos dias sem consulta?">
+                    <Input
+                      type="number"
+                      min={30}
+                      max={730}
+                      className="min-h-11 max-w-48"
+                      value={draft.automation.recall_inactive_days}
+                      onChange={(event) =>
+                        edit({
+                          automation: {
+                            ...draft.automation,
+                            recall_inactive_days: Number(event.target.value),
+                          },
+                        })
+                      }
+                    />
+                  </Field>
+                </fieldset>
+                <p className="text-sm text-muted-foreground">
+                  Revise essas opções antes de publicar: habilitar envios pode
+                  iniciar mensagens automaticamente conforme as regras acima.
+                </p>
+                {(
+                  [
+                    [
+                      'funnel_automation_enabled',
+                      'Organizar automaticamente os pacientes no funil de atendimento',
+                    ],
+                    [
+                      'weekly_report_enabled',
+                      'Enviar resumo semanal da clínica no meu WhatsApp',
+                    ],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label
+                    key={key}
+                    className="flex gap-3 items-center min-h-11 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={draft.automation[key]}
+                      onChange={(event) =>
+                        edit({
+                          automation: {
+                            ...draft.automation,
+                            [key]: event.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </Section>
+            </div>
+          </details>
+          <details className="rounded-xl border bg-card p-4">
+            <summary className="cursor-pointer min-h-11 py-3 font-medium text-sm">
+              Configurações avançadas
+            </summary>
+            <div className="space-y-4 pt-4">
+              <p className="text-sm text-muted-foreground">
+                As opções prontas já orientam o assistente. Use estes campos
+                apenas se precisar personalizar instruções adicionais.
+              </p>
+              {draft.system_prompt && (
+                <p className="text-sm">
+                  Há instruções personalizadas anteriores. Elas foram
+                  preservadas e serão combinadas às novas opções.
+                </p>
+              )}
+              <Field label="Instruções personalizadas">
+                <Textarea
+                  rows={8}
+                  maxLength={20000}
+                  value={draft.system_prompt}
+                  onChange={(event) =>
+                    edit({ system_prompt: event.target.value })
+                  }
+                  className="font-mono"
+                />
+              </Field>
+              <p className="text-sm text-muted-foreground break-words">
+                Variáveis disponíveis:{' '}
+                {
+                  '{clinic_name}, {services}, {business_hours}, {current_datetime}, {context_info}'
+                }
+              </p>
+              <Field
+                label={`Criatividade: ${draft.temperature.toFixed(1)}`}
+                help="Valores menores favorecem respostas consistentes. O padrão é 0,7."
+              >
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={draft.temperature}
+                  onChange={(event) =>
+                    edit({ temperature: Number(event.target.value) })
+                  }
+                  className="w-full min-h-11"
+                />
+              </Field>
+            </div>
+          </details>
+          <Button
+            className="min-h-11"
+            onClick={() => {
+              newConversation()
+              setStep('test')
+            }}
+          >
+            Continuar: testar respostas
+          </Button>
+        </div>
+      )}
+
+      {step === 'test' && (
+        <div className="space-y-5">
+          <Section
+            title="Converse como se fosse um paciente"
+            description="O teste usa o rascunho desta tela. Nenhuma mensagem é enviada pelo WhatsApp e ações de agendamento são simuladas."
+          >
+            {!config.ai_configured && (
+              <p role="alert" className="text-sm text-destructive">
+                O assistente está indisponível para testes. Peça ao suporte para
+                concluir a configuração.
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {[
+                'Quais horários estão disponíveis?',
+                'Quanto custa uma limpeza?',
+                'Vocês aceitam convênio?',
+                'Quero falar com a recepção',
+              ].map((text) => (
+                <Button
+                  key={text}
+                  variant="outline"
+                  className="min-h-11 h-auto text-sm whitespace-normal text-left"
+                  disabled={sending || saving || !config.ai_configured}
+                  onClick={() => send(text)}
+                >
+                  {text}
+                </Button>
+              ))}
+            </div>
+            <div
+              className="border rounded-xl bg-muted/30 h-80 sm:h-96 overflow-y-auto p-4 space-y-4"
+              role="log"
+              aria-live="polite"
+              aria-label="Conversa de teste"
+            >
+              {!messages.length && (
+                <p className="text-sm text-muted-foreground">
+                  Escolha uma pergunta acima ou escreva sua mensagem abaixo.
+                </p>
+              )}
+              {messages.map((item, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    'rounded-xl p-3 max-w-[92%] text-sm whitespace-pre-wrap break-words',
+                    item.role === 'user'
+                      ? 'ml-auto bg-primary text-primary-foreground'
+                      : 'bg-card border',
+                  )}
+                >
+                  <strong className="block text-xs mb-1">
+                    {item.role === 'user' ? 'Você, como paciente' : draft.name}
+                  </strong>
+                  {item.content}
+                </div>
+              ))}
+              {sending && (
+                <p role="status" className="text-sm">
+                  O assistente está respondendo…
+                </p>
+              )}
+              <div ref={chatEnd} />
+            </div>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                send(message)
+              }}
+              className="flex flex-wrap sm:flex-nowrap gap-2"
+            >
+              <Input
+                aria-label="Mensagem de teste"
+                placeholder="Escreva como um paciente…"
+                maxLength={5000}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                disabled={sending || saving}
+                className="min-h-11 flex-1 min-w-0"
+              />
+              <Button
+                type="submit"
+                className="min-h-11"
+                disabled={
+                  !message.trim() || sending || saving || !config.ai_configured
+                }
+              >
+                Enviar
+              </Button>
+            </form>
+            <Button
+              variant="outline"
+              className="min-h-11"
+              disabled={sending || saving}
+              onClick={newConversation}
+            >
+              Começar nova conversa
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Uma nova conversa começa sem as mensagens e a memória do teste
+              anterior. Este simulador avalia respostas; os envios automáticos
+              são revisados abaixo.
+            </p>
+          </Section>
+          <Section
+            title="Revise e publique"
+            description="Os pacientes só recebem as alterações quando você publicar."
+          >
+            <dl className="grid sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <dt className="text-muted-foreground">Assistente</dt>
+                <dd>
+                  {draft.name} ·{' '}
+                  {tones.find((item) => item.id === draft.settings.tone)?.label}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Preços</dt>
+                <dd>
+                  {draft.settings.show_prices
+                    ? 'Somente valores cadastrados'
+                    : 'Encaminhar à recepção'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">
+                  Mensagens iniciadas pela clínica
+                </dt>
+                <dd>
+                  {draft.automation.proactive_outreach_enabled
+                    ? 'Permitidas nas situações selecionadas'
+                    : 'Desligadas'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">WhatsApp</dt>
+                <dd>
+                  {connected
+                    ? 'Conectado'
+                    : connected === null
+                      ? 'Não verificado'
+                      : 'Desconectado'}
+                </dd>
+              </div>
+            </dl>
+            <div className="rounded-lg bg-muted p-3 text-sm space-y-2">
+              <p>
+                <strong>Revisão dos envios:</strong>{' '}
+                {draft.automation.proactive_outreach_enabled
+                  ? [
+                      draft.automation.noshow_recovery_enabled &&
+                        'remarcar faltas',
+                      draft.automation.waitlist_enabled &&
+                        'oferecer vagas da lista de espera',
+                      draft.automation.recall_enabled &&
+                        `convidar após ${draft.automation.recall_inactive_days} dias sem consulta`,
+                    ]
+                      .filter(Boolean)
+                      .join('; ') || 'nenhuma situação de envio selecionada'
+                  : 'a clínica não inicia conversas com pacientes por estas automações'}
+                .
+              </p>
+              <p>
+                Resumo semanal no seu WhatsApp:{' '}
+                {draft.automation.weekly_report_enabled
+                  ? 'ligado'
+                  : 'desligado'}
+                . Organização automática do funil:{' '}
+                {draft.automation.funnel_automation_enabled
+                  ? 'ligada'
+                  : 'desligada'}
+                .
+              </p>
+            </div>
+            <label className="flex gap-3 items-start min-h-11 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={approved}
+                disabled={!tested || sending}
+                onChange={(event) => setApproved(event.target.checked)}
+              />
+              <span>
+                Conferi as respostas e as opções de envio. Quero usar esta
+                configuração.
+                {!tested && (
+                  <span className="block text-muted-foreground">
+                    Envie uma mensagem de teste com este rascunho para
+                    continuar.
+                  </span>
+                )}
+              </span>
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                className="min-h-11"
+                disabled={!tested || !approved || saving || sending}
+                onClick={() => publish(false)}
+              >
+                {saving ? 'Salvando…' : 'Publicar configuração'}
+              </Button>
+              <Button
+                className="min-h-11"
+                disabled={!canActivate || saving || sending}
+                onClick={() => publish(true)}
+              >
+                {config.agent_enabled
+                  ? 'Publicar e manter respostas ativas'
+                  : 'Publicar e ativar respostas'}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              “Publicar configuração” mantém as respostas{' '}
+              {config.agent_enabled ? 'habilitadas' : 'pausadas'}. A ativação
+              exige o WhatsApp conectado e o assistente disponível.
+            </p>
+          </Section>
+          <Button
+            variant="ghost"
+            className="min-h-11"
+            onClick={() => setStep('prepare')}
+          >
+            Voltar e ajustar
+          </Button>
+        </div>
+      )}
+    </div>
+  )
 }

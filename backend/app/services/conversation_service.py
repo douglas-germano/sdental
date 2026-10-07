@@ -30,7 +30,7 @@ class ConversationService:
         Returns:
             Conversation instance
         """
-        phone = normalize_phone(phone_number)
+        phone = phone_number if phone_number.startswith(TEST_PHONE_PREFIX) else normalize_phone(phone_number)
 
         # Look for active conversation
         conversation = Conversation.query.filter(

@@ -10,7 +10,7 @@ type WizardStep = 'intro' | 'connecting' | 'qrcode' | 'connected'
 
 const STATUS_POLL_INTERVAL_MS = 3000
 
-export function WhatsappConnectionWizard() {
+export function WhatsappConnectionWizard({ onStatusChange }: { onStatusChange?: () => void }) {
   const [step, setStep] = useState<WizardStep>('intro')
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [qrExpiresIn, setQrExpiresIn] = useState(30)
@@ -32,14 +32,18 @@ export function WhatsappConnectionWizard() {
   const checkInitialStatus = useCallback(async () => {
     try {
       const { data } = await clinicsApi.getEvolutionStatus()
+      onStatusChange?.()
       if (data.connected) {
         setPhoneNumber(data.phone_number || null)
         setStep('connected')
+      } else {
+        setPhoneNumber(null)
+        setStep('intro')
       }
     } catch {
       // Stay on intro - clinic likely has no instance yet
     }
-  }, [])
+  }, [onStatusChange])
 
   useEffect(() => {
     checkInitialStatus()
@@ -58,10 +62,12 @@ export function WhatsappConnectionWizard() {
         setSecondsLeft(ttl)
         setStep('qrcode')
       } else {
-        setError('Nao foi possivel gerar o QR code. Tente novamente.')
+        setError('Não foi possível gerar o QR code. Confira sua conexão e tente novamente.')
+        setStep('intro')
       }
     } catch {
-      setError('Nao foi possivel gerar o QR code. Tente novamente.')
+      setError('Não foi possível gerar o QR code. Confira sua conexão e tente novamente.')
+        setStep('intro')
     } finally {
       setRefreshingQr(false)
     }
@@ -98,6 +104,7 @@ export function WhatsappConnectionWizard() {
           setPhoneNumber(data.phone_number || null)
           setQrCode(null)
           setStep('connected')
+          onStatusChange?.()
         }
       } catch {
         // Ignore transient polling errors
@@ -165,7 +172,7 @@ export function WhatsappConnectionWizard() {
             <div className="flex-1">
               <h3 className="font-semibold text-foreground">Conecte o WhatsApp da sua clinica</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Voce vai escanear um QR code com o celular que usa o WhatsApp da clinica. A partir dai, o assistente de IA podera responder pacientes automaticamente.
+                Voce vai escanear um QR code com o celular que usa o WhatsApp da clinica. Depois, prepare e teste as respostas antes de ativar o atendimento.
               </p>
             </div>
           </div>
@@ -181,7 +188,7 @@ export function WhatsappConnectionWizard() {
             </div>
             <div className="flex items-start gap-2.5 p-3 rounded-xl bg-muted/40">
               <ShieldCheck className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <span className="text-xs text-muted-foreground">A conexao usa o WhatsApp Web oficial do seu numero</span>
+              <span className="text-xs text-muted-foreground">Você conecta o número pela opção Aparelhos conectados do WhatsApp</span>
             </div>
           </div>
 
@@ -210,7 +217,7 @@ export function WhatsappConnectionWizard() {
         <div className="rounded-card border border-border bg-card shadow-soft p-6 flex flex-col items-center">
           <h3 className="font-semibold text-foreground mb-1">Escaneie o QR Code</h3>
           <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
-            No WhatsApp do celular, va em <strong>Aparelhos conectados</strong> {'>'} <strong>Conectar aparelho</strong> e aponte a camera para o codigo abaixo.
+            No WhatsApp do celular, va em <strong>Aparelhos conectados</strong> {'>'} <strong>Conectar aparelho</strong> e aponte a câmera para o código abaixo. Se estiver usando apenas um celular, abra esta página em um computador para escanear.
           </p>
 
           <div className="relative bg-white p-4 rounded-card border border-border">
@@ -244,7 +251,7 @@ export function WhatsappConnectionWizard() {
             Aguardando leitura do codigo...
           </div>
 
-          <Button variant="ghost" size="sm" className="mt-4" onClick={handleReconnect}>
+          <Button variant="ghost" size="sm" className="mt-4 min-h-11" onClick={handleReconnect}>
             Cancelar
           </Button>
         </div>
@@ -260,11 +267,11 @@ export function WhatsappConnectionWizard() {
           <p className="text-sm text-muted-foreground mt-1">
             {phoneNumber
               ? `Numero conectado: +${phoneNumber}`
-              : 'Sua clinica ja pode receber e responder mensagens.'}
+              : 'Número conectado. Você pode preparar e testar o atendimento.'}
           </p>
-          <Button variant="outline" size="sm" className="gap-2 mt-4" onClick={handleReconnect}>
+          <Button variant="outline" size="sm" className="gap-2 mt-4 min-h-11" onClick={checkInitialStatus}>
             <RefreshCw className="h-3.5 w-3.5" />
-            Reconectar / trocar numero
+            Verificar conexão
           </Button>
         </div>
       )}
