@@ -78,7 +78,7 @@ export function RevenueChart({ data, groupBy }: RevenueChartProps) {
         <Bar
           dataKey="forecast"
           name="Previsto"
-          fill="hsl(var(--accent))"
+          fill="hsl(var(--info))"
           radius={[4, 4, 0, 0]}
           maxBarSize={24}
         />

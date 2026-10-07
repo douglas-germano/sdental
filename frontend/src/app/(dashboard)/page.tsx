@@ -127,7 +127,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Operational overview in the deep-green brand surface. */}
+      <section className="brand-panel rounded-card px-5 py-6 sm:p-8 shadow-soft">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-mint mb-3">Visão geral da clínica</p>
       <PageHeader
         title={`${getGreeting()}${clinic?.name ? `, ${clinic.name}` : ''}`}
         description={getFormattedDate()}
@@ -149,6 +151,7 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </PageHeader>
+      </section>
 
       {/* ─── HOJE: o que precisa da sua atenção agora ─────────────────── */}
       <section className="space-y-3">

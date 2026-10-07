@@ -46,21 +46,21 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Charcoal institutional panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-charcoal text-charcoal-foreground">
+      {/* Left side - SDental brand surface */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden brand-panel text-charcoal-foreground">
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center">
-              <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
+            <div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center">
+              <ChatCircleDots className="h-5 w-5 text-primary" weight="fill" />
             </div>
             <span className="text-xl font-bold uppercase tracking-tight text-white">SDental</span>
           </div>
 
-          <h1 className="text-4xl xl:text-5xl font-bold text-white mb-5 leading-[1.02]">
-            Comece sua jornada<br />digital
+          <h1 className="text-4xl xl:text-5xl font-semibold text-white mb-5 leading-[1.15]">
+            Organize o atendimento<br />da sua clínica
           </h1>
 
-          <p className="text-base text-white/60 mb-10 max-w-sm leading-relaxed">
+          <p className="text-base text-white/75 mb-10 max-w-sm leading-relaxed">
             Cadastre sua clinica e tenha acesso a todas as ferramentas para modernizar seu atendimento.
           </p>
 
@@ -73,7 +73,7 @@ export default function RegisterPage() {
             ].map((stat, i) => (
               <div key={i} className="p-4 rounded-card border border-white/25">
                 <div className="text-2xl font-semibold text-primary mb-0.5">{stat.value}</div>
-                <div className="text-xs text-white/50 font-medium">{stat.label}</div>
+                <div className="text-xs text-white/75 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -103,7 +103,7 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/8 text-destructive p-3 rounded-button text-sm flex items-center gap-2 border border-destructive/20">
+                  <div className="bg-destructive/8 text-destructive p-3 rounded-card text-sm flex items-center gap-2 border border-destructive/20">
                     <AlertIcon />
                     {error}
                   </div>
@@ -117,6 +117,7 @@ export default function RegisterPage() {
                       type="text"
                       placeholder="Clinica Exemplo"
                       {...register('name')}
+                      aria-invalid={!!errors.name}
                       className="pl-10"
                     />
                   </div>
@@ -132,6 +133,7 @@ export default function RegisterPage() {
                         type="email"
                         placeholder="email@exemplo.com"
                         {...register('email')}
+                      aria-invalid={!!errors.email}
                         className="pl-10"
                       />
                     </div>
@@ -146,6 +148,7 @@ export default function RegisterPage() {
                         type="tel"
                         placeholder="(11) 99999-9999"
                         {...register('phone')}
+                      aria-invalid={!!errors.phone}
                         className="pl-10"
                       />
                     </div>
@@ -162,6 +165,7 @@ export default function RegisterPage() {
                         type="password"
                         placeholder="Min. 8 caracteres"
                         {...register('password')}
+                      aria-invalid={!!errors.password}
                         className="pl-10"
                       />
                     </div>

@@ -38,7 +38,7 @@ const navigation = [
   {
     label: 'Inteligência',
     items: [
-      { name: 'Atendimento no WhatsApp', href: '/agents', icon: Bot },
+      { name: 'WhatsApp', href: '/agents', icon: Bot },
       { name: 'Assistente IA', href: '/assistant', icon: Sparkle },
     ],
   },
@@ -111,7 +111,7 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 bg-card border-r border-border/60 transform transition-all duration-300 ease-out-expo',
+          'app-sidebar fixed inset-y-0 left-0 z-50 bg-card border-r border-border/60 transform transition-all duration-300 ease-out-expo',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
           sidebarCollapsed ? 'lg:w-[72px]' : 'lg:w-60',
@@ -128,9 +128,10 @@ export default function DashboardLayout({
               'flex items-center gap-2.5 group',
               sidebarCollapsed && 'lg:gap-0'
             )}>
-              <div className="shrink-0 rounded-full overflow-hidden ring-1 ring-border">
+              <div className="shrink-0 rounded-full overflow-hidden bg-white ring-1 ring-border">
                 <Image
                   src="/icon.png"
+                  unoptimized
                   alt="SDental Logo"
                   width={32}
                   height={32}
@@ -147,7 +148,8 @@ export default function DashboardLayout({
 
             {/* Mobile close button */}
             <button
-              className="lg:hidden p-1.5 hover:bg-muted rounded-lg transition-colors"
+              aria-label="Fechar menu"
+              className="lg:hidden p-3 hover:bg-muted rounded-full transition-colors"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5 text-muted-foreground" />
@@ -192,7 +194,7 @@ export default function DashboardLayout({
                       sidebarCollapsed && 'lg:block'
                     )} />
                     <p className={cn(
-                      'px-3 pt-4 pb-1.5 text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/70',
+                      'px-3 pt-4 pb-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground',
                       sidebarCollapsed && 'lg:hidden'
                     )}>
                       {group.label}
@@ -211,7 +213,7 @@ export default function DashboardLayout({
                         href={item.href}
                         className={cn(
                           'relative flex items-center gap-3 text-sm font-medium rounded-button transition-colors duration-150',
-                          sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-2' : 'px-3 py-2',
+                          sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-3' : 'px-3 py-3',
                           isActive
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -246,7 +248,7 @@ export default function DashboardLayout({
               href="/settings"
               className={cn(
                 'flex items-center gap-3 text-sm font-medium rounded-button transition-colors duration-150',
-                sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-2' : 'px-3 py-2',
+                sidebarCollapsed ? 'lg:px-0 lg:py-2.5 lg:justify-center px-3 py-3' : 'px-3 py-3',
                 isNavItemActive(pathname, '/settings')
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'

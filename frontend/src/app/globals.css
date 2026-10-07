@@ -2,111 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
+/* SDental: warm clinical surfaces, tiered greens and restrained elevation.
+   DESIGN.md records the adaptation and the reference-to-product decisions. */
 @layer base {
   :root {
-    /*
-     * HIG-inspired surface hierarchy: a faint grouped-background canvas with
-     * white cards floating above it (hairline border + soft elevation).
-     */
-    --background: 240 10% 98%;
-    --foreground: 240 6% 10%;
-
-    /* Card - elevated white surface (label ~ Apple's near-black) */
-    --card: 0 0% 100%;
-    --card-foreground: 240 6% 10%;
-
-    /* Popover */
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 6% 10%;
-
-    /* Primary - Azul-petróleo (#0E7490): the single dominant brand accent (clinical, calm, fresh) */
-    --primary: 193 82% 31%;
-    --primary-foreground: 0 0% 100%;
-    --primary-shade: 195 80% 24%; /* Deep teal shade #0A5A6E - quiet tag chips */
-
-    /* Secondary - systemGray6-like fill for quiet controls */
-    --secondary: 240 6% 94%;
-    --secondary-foreground: 240 6% 10%;
-
-    /* Muted fill + secondaryLabel gray */
-    --muted: 240 6% 94%;
-    --muted-foreground: 240 3% 44%;
-
-    /* Accent - Signal Blue (#3860be): reserved for inline links, never a rival brand hue */
-    --accent: 222 55% 48%;
-    --accent-foreground: 0 0% 100%;
-
-    /* Destructive - systemRed territory for cancel/delete */
-    --destructive: 0 72% 46%;
-    --destructive-foreground: 0 0% 100%;
-
-    /* Success - emerald green, nudged off the teal brand hue so the two greens stay distinct (status only) */
-    --success: 152 76% 36%;
-    --success-foreground: 0 0% 100%;
-
-    /* Warning - amber gold */
-    --warning: 42 93% 47%;
-    --warning-foreground: 42 93% 14%;
-
-    /* Border & Input - hairline neutral separators */
-    --border: 240 6% 90%;
-    --input: 240 5% 84%;
-    --ring: 193 82% 31%;
-
-    /* Radius base - 10px continuous-curve card radius (HIG) */
-    --radius: 10px;
-
-    /* Sidebar */
-    --sidebar-bg: 0 0% 100%;
-    --sidebar-border: 240 6% 91%;
-
-    /* Charcoal institutional panel - footer, data panels */
-    --charcoal: 240 6% 15%;
-    --charcoal-foreground: 0 0% 100%;
+    --background: 42.9 21.2% 93.5%;
+    --foreground: 158.8 19.1% 17.5%;
+    --card: 0.0 0.0% 100.0%;
+    --card-foreground: 158.8 19.1% 17.5%;
+    --popover: 0.0 0.0% 100.0%;
+    --popover-foreground: 158.8 19.1% 17.5%;
+    --primary: 157.9 100.0% 22.9%;
+    --primary-foreground: 0.0 0.0% 100.0%;
+    --primary-shade: 159.8 100.0% 19.2%;
+    --brand: 159.8 100.0% 19.2%;
+    --house: 164.4 31.0% 17.1%;
+    --uplift: 165.8 30.6% 24.3%;
+    --mint: 160.0 32.3% 87.3%;
+    --ceramic: 30.0 10.0% 92.2%;
+    --secondary: 30.0 10.0% 92.2%;
+    --secondary-foreground: 158.8 19.1% 17.5%;
+    --muted: 30.0 10.0% 92.2%;
+    --muted-foreground: 150.0 6.3% 37.3%;
+    --accent: 159.8 100.0% 19.2%;
+    --accent-foreground: 0.0 0.0% 100.0%;
+    --destructive: 4.2 66.7% 42.4%;
+    --destructive-foreground: 0.0 0.0% 100.0%;
+    --success: 152.6 47.9% 27.8%;
+    --success-foreground: 0.0 0.0% 100.0%;
+    --warning: 34.6 67.0% 34.5%;
+    --warning-foreground: 0.0 0.0% 100.0%;
+    --info: 201.9 27.1% 37.6%;
+    --border: 68.6 9.9% 86.1%;
+    --input: 140.0 7.8% 69.8%;
+    --ring: 157.9 100.0% 22.9%;
+    --sidebar-bg: 164.4 31.0% 17.1%;
+    --sidebar-border: 165.8 30.6% 24.3%;
+    --charcoal: 164.4 31.0% 17.1%;
+    --charcoal-foreground: 0.0 0.0% 100.0%;
+    --radius: 12px;
   }
-
   .dark {
-    /* HIG dark: neutral elevated grays (base < card < popover) */
-    --background: 240 4% 9%;
-    --foreground: 240 5% 96%;
-
-    --card: 240 4% 13%;
-    --card-foreground: 240 5% 96%;
-
-    --popover: 240 4% 15%;
-    --popover-foreground: 240 5% 96%;
-
-    --primary: 193 78% 42%;
-    --primary-foreground: 0 0% 100%;
-    --primary-shade: 195 70% 34%;
-
-    --secondary: 240 4% 18%;
-    --secondary-foreground: 240 5% 88%;
-
-    --muted: 240 4% 18%;
-    --muted-foreground: 240 3% 64%;
-
-    --accent: 222 60% 62%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 58%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 152 65% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 42 93% 55%;
-    --warning-foreground: 42 93% 12%;
-
-    --border: 240 4% 22%;
-    --input: 240 4% 26%;
-    --ring: 193 78% 42%;
-
-    --sidebar-bg: 240 5% 7%;
-    --sidebar-border: 240 4% 16%;
-
-    --charcoal: 240 5% 7%;
-    --charcoal-foreground: 240 5% 96%;
+    --background: 161.1 34.5% 10.8%;
+    --foreground: 42.9 21.2% 93.5%;
+    --card: 164.4 31.0% 17.1%;
+    --card-foreground: 42.9 21.2% 93.5%;
+    --popover: 163.1 30.2% 20.8%;
+    --popover-foreground: 42.9 21.2% 93.5%;
+    --primary: 150.5 39.0% 72.4%;
+    --primary-foreground: 161.1 34.5% 10.8%;
+    --primary-shade: 148.5 39.2% 80.0%;
+    --brand: 148.5 39.2% 80.0%;
+    --house: 161.7 33.3% 13.5%;
+    --uplift: 165.8 30.6% 24.3%;
+    --mint: 157.5 27.8% 28.2%;
+    --ceramic: 159.3 26.6% 21.4%;
+    --secondary: 159.3 26.6% 21.4%;
+    --secondary-foreground: 42.9 21.2% 93.5%;
+    --muted: 159.3 26.6% 21.4%;
+    --muted-foreground: 145.3 15.7% 76.3%;
+    --accent: 148.5 39.2% 80.0%;
+    --accent-foreground: 161.1 34.5% 10.8%;
+    --destructive: 6.2 83.0% 72.4%;
+    --destructive-foreground: 5.8 43.7% 13.9%;
+    --success: 150.5 39.0% 72.4%;
+    --success-foreground: 161.1 34.5% 10.8%;
+    --warning: 36.4 75.7% 71.0%;
+    --warning-foreground: 34.0 44.1% 13.3%;
+    --info: 198.5 43.3% 75.1%;
+    --border: 156.7 23.1% 30.6%;
+    --input: 151.7 16.1% 43.9%;
+    --ring: 150.5 39.0% 72.4%;
+    --sidebar-bg: 161.7 33.3% 13.5%;
+    --sidebar-border: 157.5 27.8% 28.2%;
+    --charcoal: 161.7 33.3% 13.5%;
+    --charcoal-foreground: 42.9 21.2% 93.5%;
   }
 }
 
@@ -117,7 +87,8 @@
 
   body {
     @apply bg-background text-foreground antialiased text-base;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: -0.01em;
+    font-variant-numeric: lining-nums;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -133,7 +104,7 @@
     border-radius: 4px;
   }
 
-  /* HIG titles are semibold, never heavier - hierarchy comes from size, not weight */
+  /* Weight and green tiers establish hierarchy without oversized headings. */
   h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.01em;
     font-weight: 600;
@@ -160,7 +131,7 @@
     color: hsl(var(--primary));
   }
 
-  /* Uppercase eyebrow label - HIG section-header caption role */
+  /* Quiet section labels keep operational information easy to scan. */
   .text-kicker {
     @apply text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground;
   }
@@ -185,7 +156,7 @@
     background: hsl(var(--charcoal) / 0.92);
   }
 
-  /* HIG hover: gentle elevation rise */
+  /* Restrained card elevation. */
   .hover-lift {
     @apply transition-all duration-150 ease-out hover:shadow-soft-md;
   }
@@ -437,4 +408,42 @@ input[type="range"]::-moz-range-thumb {
 
 input[type="range"]::-moz-range-thumb:hover {
   transform: scale(1.1);
+}
+
+/* Deep-green zones have their own contrast-safe text and control tokens. */
+.app-sidebar, .brand-panel {
+  --foreground: 0 0% 100%;
+  --card: 164.4 31% 17.1%;
+  --card-foreground: 0 0% 100%;
+  --muted: 165 30% 24%;
+  --muted-foreground: 156 25% 80%;
+  --primary: 160 32% 87%;
+  --primary-foreground: 164 31% 17%;
+  --primary-shade: 160 32% 82%;
+  --brand: 160 32% 87%;
+  --accent: 160 32% 87%;
+  --border: 163 20% 34%;
+  --input: 163 20% 55%;
+  --ring: 160 32% 87%;
+  color: white;
+}
+.app-sidebar { box-shadow: 2px 0 12px rgb(30 57 50 / 0.06); }
+.brand-panel { background: hsl(var(--house)); }
+.brand-panel h1 { color: white; }
+
+input[type="checkbox"], input[type="radio"] { accent-color: hsl(var(--primary)); }
+input[aria-invalid="true"], textarea[aria-invalid="true"], select[aria-invalid="true"] {
+  border-color: hsl(var(--destructive));
+  background-color: hsl(var(--destructive) / 0.04);
+}
+@media (max-width: 767px) {
+  input, select, textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

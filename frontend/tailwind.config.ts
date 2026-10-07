@@ -9,10 +9,16 @@ const config: Config = {
   ],
   theme: {
     fontFamily: {
-      sans: ['var(--font-sans)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+      sans: ['var(--font-sans)', 'Manrope', 'system-ui', '-apple-system', 'sans-serif'],
     },
     extend: {
       colors: {
+        brand: 'hsl(var(--brand))',
+        house: 'hsl(var(--house))',
+        uplift: 'hsl(var(--uplift))',
+        mint: 'hsl(var(--mint))',
+        ceramic: 'hsl(var(--ceramic))',
+        info: 'hsl(var(--info))',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -66,16 +72,17 @@ const config: Config = {
         },
       },
       borderRadius: {
-        /* HIG continuous-curve scale: 8px controls, 10px cards, 14px+ overlays */
+        /* Pills for actions; compact rectangles for fields and data surfaces. */
         none: '0px',
         hairline: '1px',
-        button: '8px',
+        button: '50px',
+        field: '10px',
         sm: '6px',
         DEFAULT: '8px',
         md: '8px',
-        card: '10px',
+        card: '12px',
         lg: 'var(--radius)',
-        xl: '14px',
+        xl: '12px',
         '2xl': '18px',
         'glass-pill': '24px',
         'badge-pill': '32px',
@@ -83,10 +90,10 @@ const config: Config = {
         full: '9999px',
       },
       boxShadow: {
-        /* HIG elevation: barely-there on resting surfaces, growing with float distance */
+        /* Layered, low-alpha shadows rather than heavy drop shadows. */
         none: 'none',
-        soft: '0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.03)',
-        'soft-md': '0 2px 8px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04)',
+        soft: '0 0 1px rgb(30 57 50 / 0.12), 0 1px 2px rgb(30 57 50 / 0.08)',
+        'soft-md': '0 2px 8px rgb(30 57 50 / 0.07), 0 1px 2px rgb(30 57 50 / 0.05)',
         'soft-lg': '0 8px 24px rgb(0 0 0 / 0.10), 0 2px 6px rgb(0 0 0 / 0.05)',
         'soft-xl': '0 16px 48px rgb(0 0 0 / 0.14), 0 4px 12px rgb(0 0 0 / 0.06)',
         focus: 'inset 0 0 0 1px hsl(var(--ring))',
@@ -151,19 +158,14 @@ const config: Config = {
         display: '-0.01em',
       },
       fontSize: {
-        /*
-         * HIG-calibrated ramp (caption2 → large title). Redefining the default
-         * Tailwind steps snaps every existing text-* call site in the app to
-         * this scale - the ramp IS the system, no per-page migration needed.
-         *   2xs 11 · xs 12 · sm 13 · base 15 · lg 17 · xl 20 · 2xl 22 · 3xl 28 · 4xl 34
-         */
-        '2xs': ['0.6875rem', { lineHeight: '0.875rem' }],
-        xs: ['0.75rem', { lineHeight: '1rem' }],
-        sm: ['0.8125rem', { lineHeight: '1.125rem' }],
-        base: ['0.9375rem', { lineHeight: '1.375rem' }],
-        lg: ['1.0625rem', { lineHeight: '1.5rem', letterSpacing: '-0.01em' }],
+        /* Operational type: 16px body, 14px controls, 24px page titles. */
+        '2xs': ['0.75rem', { lineHeight: '1.125rem' }],
+        xs: ['0.8125rem', { lineHeight: '1.25rem' }],
+        sm: ['0.875rem', { lineHeight: '1.375rem' }],
+        base: ['1rem', { lineHeight: '1.5rem' }],
+        lg: ['1.125rem', { lineHeight: '1.625rem', letterSpacing: '-0.01em' }],
         xl: ['1.25rem', { lineHeight: '1.625rem', letterSpacing: '-0.012em' }],
-        '2xl': ['1.375rem', { lineHeight: '1.75rem', letterSpacing: '-0.015em' }],
+        '2xl': ['1.5rem', { lineHeight: '1.75rem', letterSpacing: '-0.015em' }],
         '3xl': ['1.75rem', { lineHeight: '2.125rem', letterSpacing: '-0.018em' }],
         '4xl': ['2.125rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em' }],
         'display-sm': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '700' }],

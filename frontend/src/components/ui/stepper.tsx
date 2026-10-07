@@ -46,7 +46,7 @@ export function Stepper({
   return (
     <div
       className={cn(
-        'inline-flex items-stretch h-9 rounded-button border border-input bg-card overflow-hidden',
+        'inline-flex items-stretch h-9 rounded-field border border-input bg-card overflow-hidden',
         disabled && 'opacity-50 pointer-events-none',
         className
       )}

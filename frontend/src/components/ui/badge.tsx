@@ -3,8 +3,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
-/* HIG tinted chips: rounded-full, medium weight, sentence case - the tint
-   carries the meaning, the type never shouts. */
+/* Semantic state chips retain labels as well as color. */
 const badgeVariants = cva(
   'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
   {
@@ -23,7 +22,7 @@ const badgeVariants = cva(
         warning:
           'border-transparent bg-warning/10 text-warning',
         info:
-          'border-transparent bg-accent/10 text-accent',
+          'border-transparent bg-info/10 text-info',
       },
       size: {
         default: 'px-2.5 py-0.5 text-xs',
@@ -53,7 +52,7 @@ function Badge({ className, variant, size, dot, children, ...props }: BadgeProps
           variant === 'success' && 'bg-success',
           variant === 'destructive' && 'bg-destructive',
           variant === 'warning' && 'bg-warning',
-          variant === 'info' && 'bg-accent',
+          variant === 'info' && 'bg-info',
           variant === 'default' && 'bg-primary',
           (!variant || variant === 'secondary' || variant === 'outline') && 'bg-muted-foreground',
         )} />

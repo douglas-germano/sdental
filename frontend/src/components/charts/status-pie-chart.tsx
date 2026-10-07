@@ -12,7 +12,7 @@ const COLORS = {
   completed: 'hsl(var(--success))',
   cancelled: 'hsl(var(--destructive))',
   no_shows: 'hsl(var(--muted-foreground))',
-  upcoming: 'hsl(var(--primary))',
+  upcoming: 'hsl(var(--info))',
 }
 
 export function StatusPieChart({ overview, height = 95 }: StatusPieChartProps) {

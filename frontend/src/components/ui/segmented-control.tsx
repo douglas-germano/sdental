@@ -19,7 +19,7 @@ export interface SegmentedControlProps<T extends string | number> {
 }
 
 /**
- * HIG segmented control: switches between VIEWS of the same content
+ * Segmented control: switches between VIEWS of the same content
  * (tabs switch between different content). Selected segment reads as a
  * raised chip on the recessed muted track.
  */
@@ -53,7 +53,7 @@ export function SegmentedControl<T extends string | number>({
       role="radiogroup"
       onKeyDown={handleKeyDown}
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5',
+        'inline-flex items-center gap-0.5 rounded-full bg-muted p-0.5',
         fullWidth && 'flex w-full',
         className
       )}
@@ -69,12 +69,12 @@ export function SegmentedControl<T extends string | number>({
             tabIndex={selected ? 0 : -1}
             onClick={() => onValueChange(option.value)}
             className={cn(
-              'rounded-md px-3 text-sm font-medium whitespace-nowrap transition-all duration-150',
-              size === 'sm' ? 'h-6 text-xs' : 'h-7',
+              'rounded-full px-3 text-sm font-medium whitespace-nowrap transition-all duration-150',
+              size === 'sm' ? 'h-8 max-md:min-h-11 text-xs' : 'h-9 max-md:min-h-11',
               fullWidth && 'flex-1',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
               selected
-                ? 'bg-card text-foreground shadow-soft'
+                ? 'bg-card text-primary shadow-soft'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >

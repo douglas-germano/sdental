@@ -32,8 +32,8 @@ const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
           }}
           placeholder={placeholder}
           className={cn(
-            'flex h-9 w-full rounded-button border border-input bg-card pl-9 pr-8 py-2 text-sm ring-offset-background transition-colors duration-150',
-            'placeholder:text-muted-foreground/50',
+            'flex h-11 w-full rounded-field border border-input bg-card pl-9 pr-8 py-2 text-sm ring-offset-background transition-colors duration-150',
+            'placeholder:text-muted-foreground',
             'hover:border-foreground/40',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:border-primary'
           )}

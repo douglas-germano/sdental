@@ -67,21 +67,21 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Charcoal institutional panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-charcoal text-charcoal-foreground">
+      {/* Left side - SDental brand surface */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden brand-panel text-charcoal-foreground">
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center">
-              <ChatCircleDots className="h-5 w-5 text-white" weight="fill" />
+            <div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center">
+              <ChatCircleDots className="h-5 w-5 text-primary" weight="fill" />
             </div>
             <span className="text-xl font-bold uppercase tracking-tight text-white">SDental</span>
           </div>
 
-          <h1 className="text-4xl xl:text-5xl font-bold text-white mb-5 leading-[1.02]">
-            Gerencie sua clinica<br />de forma inteligente
+          <h1 className="text-4xl xl:text-5xl font-semibold text-white mb-5 leading-[1.15]">
+            Agenda, pacientes<br />e atendimento conectados
           </h1>
 
-          <p className="text-base text-white/60 mb-10 max-w-sm leading-relaxed">
+          <p className="text-base text-white/75 mb-10 max-w-sm leading-relaxed">
             Automatize agendamentos, gerencie pacientes e otimize o atendimento com inteligencia artificial.
           </p>
 
@@ -123,7 +123,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/8 text-destructive p-3 rounded-button text-sm flex items-center gap-2 border border-destructive/20">
+                  <div className="bg-destructive/8 text-destructive p-3 rounded-card text-sm flex items-center gap-2 border border-destructive/20">
                     <AlertIcon />
                     {error}
                   </div>
@@ -137,6 +137,7 @@ export default function LoginPage() {
                       type="email"
                       placeholder="clinica@exemplo.com"
                       {...register('email')}
+                      aria-invalid={!!errors.email}
                       className="pl-10"
                     />
                   </div>
@@ -156,6 +157,7 @@ export default function LoginPage() {
                       type="password"
                       placeholder="********"
                       {...register('password')}
+                      aria-invalid={!!errors.password}
                       className="pl-10"
                     />
                   </div>
