@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Message } from '@/types'
 import { cn } from '@/lib/utils'
-import { resolveMediaUrl } from '@/lib/api'
+import api, { resolveMediaUrl } from '@/lib/api'
 import { Robot as Bot, User, Check, Checks as CheckCheck, Clock, Warning as AlertTriangle, FileText, DownloadSimple as Download, DeviceMobile as Phone, Headset } from '@phosphor-icons/react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 
@@ -23,59 +23,73 @@ function MessageStatusTicks({ status }: { status?: string }) {
   return <Clock className="h-3 w-3 text-muted-foreground/50" />
 }
 
-function MessageMedia({ message }: { message: Message }) {
+function MessageMedia({ message, conversationId }: { message: Message; conversationId: string }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  const mediaSrc = resolveMediaUrl(message.media_url)
+  const [failed, setFailed] = useState(false)
+  const [recovery, setRecovery] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const [documentLoading, setDocumentLoading] = useState(false)
+  const mediaUrl = message.media_url
+  const recoveryUrl = message.id ? `/api/media/conversations/${encodeURIComponent(conversationId)}/${encodeURIComponent(message.id)}` : undefined
+  // WhatsApp CDN links contain encrypted bytes, not browser-readable media.
+  const encrypted = mediaUrl ? /^https?:\/\/(?:[^/]+\.)?whatsapp\.net\//i.test(mediaUrl) || /\.enc(?:\?|$)/i.test(mediaUrl) : false
+  const selectedUrl = recovery || encrypted || !mediaUrl ? recoveryUrl : mediaUrl
+  const resolved = resolveMediaUrl(selectedUrl)
+  const mediaSrc = resolved && attempt ? `${resolved}${resolved.includes('?') ? '&' : '?'}retry=${attempt}` : resolved
+  const label = ({ image: 'Imagem', sticker: 'Figurinha', audio: 'Áudio', video: 'Vídeo', document: 'Documento' } as Record<string, string>)[message.type || ''] || 'Anexo'
 
-  if (message.type === 'image' && mediaSrc) {
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => setLightboxOpen(true)}
-          className="block rounded-lg overflow-hidden mb-1 max-w-[260px] hover:opacity-90 transition-opacity"
-        >
+  useEffect(() => { setFailed(false); setRecovery(false); setAttempt(0) }, [message.id, mediaUrl])
+
+  function onError() {
+    if (!recovery && selectedUrl !== recoveryUrl && recoveryUrl) setRecovery(true)
+    else setFailed(true)
+  }
+
+  if (!message.type || message.type === 'text') return null
+  if (failed || !mediaSrc) return <div className="rounded-lg border border-border bg-background/60 p-3 mb-1 max-w-[260px]">
+    <p className="text-sm font-medium">{label} indisponível</p>
+    <p className="text-xs text-muted-foreground mt-1">Não foi possível carregar o anexo. Se ele expirou no WhatsApp, peça o reenvio.</p>
+    {mediaSrc && <button type="button" className="text-xs font-semibold text-primary min-h-11 underline" onClick={() => { setFailed(false); setAttempt(a => a + 1) }}>Tentar novamente</button>}
+  </div>
+
+  if (message.type === 'image' || message.type === 'sticker') {
+    const sticker = message.type === 'sticker' || message.media_mimetype === 'image/webp'
+    return <>
+      <button type="button" aria-label={`Ampliar ${label.toLowerCase()}`} onClick={() => setLightboxOpen(true)} className="block rounded-lg overflow-hidden mb-1 max-w-[260px] hover:opacity-90 transition-opacity">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={mediaSrc} onError={onError} alt={message.caption || label} loading="lazy" className={cn('h-auto object-contain', sticker ? 'max-w-[160px] max-h-[160px]' : 'max-w-full max-h-[260px]')} />
+      </button>
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent aria-label={label} className="sm:max-w-2xl p-2 bg-card border-0 shadow-none">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={mediaSrc} alt={message.caption || 'Imagem'} className="w-full h-auto max-h-[260px] object-cover" />
-        </button>
-        <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-          <DialogContent className="sm:max-w-2xl p-2 bg-transparent border-0 shadow-none">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={mediaSrc} alt={message.caption || 'Imagem'} className="w-full h-auto rounded-lg" />
-          </DialogContent>
-        </Dialog>
-      </>
-    )
+          <img src={mediaSrc} onError={onError} alt={message.caption || label} className="max-w-full max-h-[80vh] mx-auto object-contain rounded-lg" />
+        </DialogContent>
+      </Dialog>
+    </>
   }
-
-  if (message.type === 'audio' && mediaSrc) {
-    return (
-      <audio controls src={mediaSrc} className="max-w-[260px] h-10 mb-1">
-        Seu navegador nao suporta audio.
-      </audio>
-    )
-  }
-
-  if (message.type === 'document' && mediaSrc) {
-    return (
-      <a
-        href={mediaSrc}
-        download
-        className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-background/60 px-3 py-2 mb-1 max-w-[260px] hover:bg-background transition-colors"
-      >
-        <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-          <FileText className="h-4 w-4 text-primary" />
-        </div>
-        <span className="text-xs font-medium truncate flex-1">Documento</span>
-        <Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-      </a>
-    )
-  }
-
-  return null
+  if (message.type === 'audio') return <audio key={mediaSrc} controls preload="none" src={mediaSrc} onError={onError} aria-label="Áudio recebido" className="max-w-full w-[260px] h-10 mb-1">Seu navegador não suporta áudio.</audio>
+  if (message.type === 'video') return <video key={mediaSrc} controls playsInline preload="metadata" src={mediaSrc} onError={onError} aria-label="Vídeo recebido" className="max-w-full w-[260px] max-h-[320px] rounded-lg mb-1">Seu navegador não suporta vídeo.</video>
+  if (message.type === 'document') return <button type="button" disabled={documentLoading} onClick={async () => {
+    setDocumentLoading(true)
+    try {
+      const blob = selectedUrl?.startsWith('/api/')
+        ? (await api.get<Blob>(selectedUrl.slice(4), { responseType: 'blob' })).data
+        : await fetch(mediaSrc).then(response => { if (!response.ok) throw new Error('Documento indisponível'); return response.blob() })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'documento'
+      link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch { onError() }
+    finally { setDocumentLoading(false) }
+  }} className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-background/60 px-3 py-3 mb-1 max-w-[260px] hover:bg-background transition-colors disabled:opacity-60">
+    <FileText className="h-5 w-5 text-primary shrink-0" /><span className="text-xs font-medium truncate flex-1">{documentLoading ? 'Carregando documento…' : 'Baixar documento'}</span><Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+  </button>
+  return <p className="text-sm">{label}</p>
 }
 
-export function MessageBubble({ message }: { message: Message }) {
+export function MessageBubble({ message, conversationId }: { message: Message; conversationId: string }) {
   const outgoing = message.role === 'assistant'
   const hasMedia = message.type && message.type !== 'text'
   const textContent = hasMedia ? message.caption : message.content
@@ -103,7 +117,7 @@ export function MessageBubble({ message }: { message: Message }) {
             : 'bg-muted rounded-bl-sm'
         )}
       >
-        <MessageMedia message={message} />
+        <MessageMedia message={message} conversationId={conversationId} />
         {textContent && (
           <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{textContent}</p>
         )}

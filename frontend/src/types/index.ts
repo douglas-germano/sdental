@@ -172,7 +172,7 @@ export type ConversationStatus =
   | 'completed'
 
 export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed'
-export type MessageType = 'text' | 'image' | 'audio' | 'document'
+export type MessageType = 'text' | 'image' | 'audio' | 'document' | 'sticker' | 'video'
 
 export interface Message {
   id?: string

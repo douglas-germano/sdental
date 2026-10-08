@@ -211,7 +211,7 @@ class TestAudioTranscription:
     def test_transcribed_audio_keeps_bot_in_the_loop(self, app, db_session, wa_clinic):
         fake_b64 = base64.b64encode(b'fake-ogg-bytes').decode()
 
-        with patch('app.routes.webhook.EvolutionService') as MockEvoRoute, \
+        with patch('app.services.media_service.EvolutionService') as MockEvoRoute, \
              patch('app.routes.webhook.ClaudeService') as MockClaudeRoute, \
              patch('app.services.message_processor.ClaudeService') as MockClaudeProc, \
              patch('app.services.message_processor.EvolutionService') as MockEvoProc:
@@ -240,7 +240,7 @@ class TestAudioTranscription:
         assert MediaAsset.query.filter_by(clinic_id=wa_clinic.id).count() >= 1
 
     def test_transcription_failure_falls_back_to_human(self, app, db_session, wa_clinic):
-        with patch('app.routes.webhook.EvolutionService') as MockEvoRoute, \
+        with patch('app.services.media_service.EvolutionService') as MockEvoRoute, \
              patch('app.routes.webhook.ClaudeService') as MockClaudeRoute:
             MockEvoRoute.return_value.get_media_base64.return_value = {
                 'base64': base64.b64encode(b'x').decode(), 'mimetype': 'audio/ogg'

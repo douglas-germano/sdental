@@ -25,6 +25,8 @@ class MessageType:
     IMAGE = 'image'
     AUDIO = 'audio'
     DOCUMENT = 'document'
+    STICKER = 'sticker'
+    VIDEO = 'video'
 
 
 class Conversation(db.Model, SoftDeleteMixin, TimestampMixin):

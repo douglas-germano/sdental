@@ -186,7 +186,7 @@ class EvolutionService:
         except requests.exceptions.RequestException as e:
             logger.debug('sendPresence failed (non-fatal): %s', e)
 
-    def get_media_base64(self, evolution_message_id: str) -> Optional[dict]:
+    def get_media_base64(self, evolution_message_id: str, raw_message: dict = None) -> Optional[dict]:
         """
         Download (and decrypt) a received media message through Evolution API.
 
@@ -199,17 +199,20 @@ class EvolutionService:
 
         url = f'{self.api_url}/chat/getBase64FromMediaMessage/{self.instance_name}'
         payload = {
-            'message': {'key': {'id': evolution_message_id}},
+            # The full webhook payload avoids depending on Evolution's message DB.
+            'message': raw_message if raw_message and raw_message.get('message') else {'key': {'id': evolution_message_id}},
             'convertToMp4': False,
         }
         try:
             response = requests.post(url, json=payload, headers=self._get_headers(), timeout=30)
             response.raise_for_status()
             data = response.json() or {}
+            if not isinstance(data, dict):
+                return None
             b64 = data.get('base64') or data.get('media')
             if not b64:
                 return None
-            return {'base64': b64, 'mimetype': data.get('mimetype')}
+            return {'base64': b64, 'mimetype': data.get('mimetype'), 'filename': data.get('fileName')}
         except (requests.exceptions.RequestException, ValueError) as e:
             logger.warning('Failed to fetch media %s via Evolution API: %s', evolution_message_id, e)
             return None

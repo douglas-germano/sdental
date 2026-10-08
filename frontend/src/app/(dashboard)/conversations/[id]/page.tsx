@@ -643,7 +643,7 @@ export default function ConversationDetailPage() {
                   </div>
                   <div className="space-y-2">
                     {group.messages.map((msg, index) => (
-                      <MessageBubble key={msg.id || index} message={msg} />
+                      <MessageBubble key={msg.id || index} message={msg} conversationId={conversation.id} />
                     ))}
                   </div>
                 </div>

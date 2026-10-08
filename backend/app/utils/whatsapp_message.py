@@ -17,13 +17,17 @@ MEDIA_MESSAGE_KEYS = {
     'audioMessage': 'audio',
     'documentMessage': 'document',
     'documentWithCaptionMessage': 'document',
-    'stickerMessage': 'image',
+    'stickerMessage': 'sticker',
+    'videoMessage': 'video',
+    'ptvMessage': 'video',
 }
 
 MEDIA_PLACEHOLDER_TEXT = {
     'image': 'Imagem enviada',
     'audio': 'Audio enviado',
     'document': 'Documento enviado',
+    'sticker': 'Figurinha enviada',
+    'video': 'Vídeo enviado',
 }
 
 
@@ -41,8 +45,28 @@ def _sanitize_media_url(url: Optional[str]) -> Optional[str]:
     return url
 
 
+MESSAGE_WRAPPERS = (
+    'ephemeralMessage', 'viewOnceMessage', 'viewOnceMessageV2',
+    'viewOnceMessageV2Extension', 'documentWithCaptionMessage',
+)
+
+
+def unwrap_message(message_obj: dict) -> dict:
+    """Unwrap Baileys containers without following quoted messages."""
+    current = message_obj if isinstance(message_obj, dict) else {}
+    for _ in range(8):
+        nested = next((current[key].get('message') for key in MESSAGE_WRAPPERS
+                       if isinstance(current.get(key), dict)
+                       and isinstance(current[key].get('message'), dict)), None)
+        if nested is None:
+            break
+        current = nested
+    return current
+
+
 def extract_media(message_obj: dict) -> Optional[tuple]:
     """Return (message_type, media_url, mimetype, caption) for the first media key found, or None."""
+    message_obj = unwrap_message(message_obj)
     for key, media_type in MEDIA_MESSAGE_KEYS.items():
         media = message_obj.get(key)
         if not media:
@@ -60,6 +84,7 @@ def extract_media(message_obj: dict) -> Optional[tuple]:
 
 def extract_text(message_obj: dict) -> str:
     """Return the plain text content of a message object, or '' if none."""
+    message_obj = unwrap_message(message_obj)
     return (
         message_obj.get('conversation') or
         message_obj.get('extendedTextMessage', {}).get('text') or

@@ -1,5 +1,3 @@
-import base64
-import binascii
 import logging
 
 from flask import Blueprint, request, jsonify
@@ -8,13 +6,13 @@ from flask_limiter.util import get_remote_address
 from app import db
 from app.models import (
     Clinic, Conversation, ConversationStatus, Patient,
-    MediaAsset, MAX_MEDIA_BYTES,
 )
 from app.services.claude_service import ClaudeService
 from app.services.evolution_service import EvolutionService
 from app.services.conversation_service import ConversationService
 from app.services.email_service import EmailService
 from app.services.message_processor import enqueue_reply
+from app.services.media_service import persist_whatsapp_media
 from app.services.outreach_service import is_opt_out_message
 from app.services.realtime_service import publish_event
 from app.utils.datetime_utils import utcnow
@@ -152,6 +150,10 @@ def evolution_webhook():
             if media:
                 media_type, media_url, mimetype, caption = media
                 content = caption or MEDIA_PLACEHOLDER_TEXT.get(media_type, 'Midia enviada')
+                persisted = persist_whatsapp_media(clinic, evolution_message_id, mimetype, data)
+                if persisted:
+                    asset, _ = persisted
+                    media_url, mimetype = asset.public_path, asset.mimetype
             else:
                 media_type, media_url, mimetype, caption = 'text', None, None, None
                 content = message_text
@@ -178,7 +180,7 @@ def evolution_webhook():
         if media:
             return _handle_inbound_media(
                 clinic, conversation_service, conversation,
-                media, evolution_message_id, phone
+                media, evolution_message_id, phone, data
             )
 
         logger.info('Received message from %s: %s', phone, message_text[:50])
@@ -231,7 +233,7 @@ def evolution_webhook():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-def _handle_inbound_media(clinic, conversation_service, conversation, media, evolution_message_id, phone):
+def _handle_inbound_media(clinic, conversation_service, conversation, media, evolution_message_id, phone, raw_message=None):
     """
     Store an inbound media message. Media bytes are copied into our own
     storage when possible (WhatsApp CDN URLs are E2E-encrypted and expire).
@@ -243,23 +245,10 @@ def _handle_inbound_media(clinic, conversation_service, conversation, media, evo
 
     # Try to persist our own copy of the media
     asset_b64 = None
-    fetched = EvolutionService(clinic).get_media_base64(evolution_message_id)
-    if fetched:
-        try:
-            raw = base64.b64decode(fetched['base64'], validate=True)
-            if 0 < len(raw) <= MAX_MEDIA_BYTES:
-                asset = MediaAsset(
-                    clinic_id=clinic.id,
-                    mimetype=fetched.get('mimetype') or mimetype or 'application/octet-stream',
-                    data=raw,
-                )
-                db.session.add(asset)
-                db.session.commit()
-                media_url = asset.public_path
-                mimetype = asset.mimetype
-                asset_b64 = fetched['base64']
-        except (binascii.Error, ValueError) as e:
-            logger.warning('Discarding undecodable media payload: %s', e)
+    persisted = persist_whatsapp_media(clinic, evolution_message_id, mimetype, raw_message)
+    if persisted:
+        asset, asset_b64 = persisted
+        media_url, mimetype = asset.public_path, asset.mimetype
 
     # Voice notes: transcribe and keep the bot in the loop
     if (
